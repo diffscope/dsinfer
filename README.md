@@ -4,5 +4,13 @@ Low level library for DiffSinger onnx model inference.
 
 ## Requirements
 
-+ [json11](https://github.com/dropbox/json11)
++ [rapidjson](https://github.com/tencent/rapidjson)
 + [onnxruntime](https://github.com/onnxruntime/onnxruntime)
+
+## Functionalities
+
++ Vocoder Inference
++ Acoustic Inference
++ Duration Inference (Encoder/Decoder)
++ Pitch Inference
++ Variance Inference
