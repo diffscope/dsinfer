@@ -9,15 +9,22 @@
 extern "C" {
 #endif
 
+enum DSINFER_ErrorType {
+    ET_NoError = 0,
+    ET_LoadError,
+    ET_InferenceError,
+};
+
 enum DSINFER_ErrorCode {
-    LoadError,
-    InferenceError,
+    EC_NoError = 0,
+    EC_OnnxRuntimeNotFound = -1,
+    EC_EPInitializeFailed = -2,
 };
 
 struct DSINFER_Status {
     int type;
     int code;
-    const char *message;
+    char message[1];  // a null-terminated string
 };
 
 struct DSINFER_Model {
@@ -40,12 +47,7 @@ enum DSINFER_ExecutionProvider {
     EP_CPU = 1,
     EP_DirectML = 2,
     EP_CUDA = 3,
-    EP_CoreML_4,
-};
-
-enum DSINFER_Error {
-    OnnxRuntimeNotFound = -1,
-    EPInitializeFailed = -2,
+    EP_CoreML = 4,
 };
 
 enum DSINFER_ModelType {
@@ -58,7 +60,17 @@ enum DSINFER_ModelType {
 
 
 /**
- * @brief Release the release
+ * @brief Create the status
+ *
+ * @param type DSINFER_ErrorType
+ * @param code DSINFER_ErrorCode
+ * @param message Error Message (maximum 2048 characters, longer texts will be truncated)
+ */
+DSINFER_EXPORT DSINFER_Status *create_status(int type, int code, const char *message);
+
+
+/**
+ * @brief Release the status
  *
  * @param status Status to release
  */
