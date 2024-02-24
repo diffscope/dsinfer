@@ -6,7 +6,6 @@ project(dsinfer VERSION 0.0.1.0 LANGUAGES CXX)
 # Build Options
 # ----------------------------------
 option(DSINFER_BUILD_STATIC "Build static libraries" OFF)
-option(DSINFER_BUILD_DOCUMENTATIONS "Build documentations" OFF)
 option(DSINFER_INSTALL "Install library" ON)
 
 # ----------------------------------
@@ -40,6 +39,14 @@ endif()
 # ----------------------------------
 set(DSINFER_VERSION ${PROJECT_VERSION})
 set(DSINFER_INSTALL_NAME ${PROJECT_NAME})
+
+# ----------------------------------
+# Find basic dependencies
+# ----------------------------------
+find_package(qmsetup REQUIRED)
+
+qm_import(Filesystem)
+qm_init_directories()
 
 # ----------------------------------
 # Add source modules
