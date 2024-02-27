@@ -24,7 +24,7 @@ enum DSINFER_ErrorCode {
 struct DSINFER_Status {
     int type;
     int code;
-    char message[1];  // a null-terminated string
+    char message[1]; // a null-terminated string
 };
 
 struct DSINFER_Model {
@@ -80,16 +80,10 @@ DSINFER_EXPORT void release_status(DSINFER_Status *status);
 /**
  * @brief Initialize the library.
  *
- * @param ep Given execution provider
+ * @param path Ort runtime path
+ * @param ep   Given execution provider
  */
-DSINFER_EXPORT DSINFER_Status *dsinfer_init(DSINFER_ExecutionProvider ep);
-
-
-/**
- * @brief Finalize the library.
- *
- */
-DSINFER_EXPORT void dsinfer_quit();
+DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep);
 
 
 /**
