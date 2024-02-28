@@ -10,15 +10,20 @@ extern "C" {
 #endif
 
 enum DSINFER_ErrorType {
-    ET_NoError = 0,
+    ET_Invalid = -1,
+    ET_Default = 0,
     ET_LoadError,
     ET_InferenceError,
 };
 
 enum DSINFER_ErrorCode {
-    EC_NoError = 0,
-    EC_OnnxRuntimeNotFound = -1,
-    EC_EPInitializeFailed = -2,
+    EC_Invalid = -1,
+    EC_Success = 0,
+    EC_OnnxRuntimeLoadFailed,
+    EC_OnnxRuntimeAlreadyLoaded,
+    EC_EnvInitializeFailed,
+    EC_EnvAlreadyInitialized,
+    EC_EPInitializeFailed,
 };
 
 struct DSINFER_Status {
@@ -89,9 +94,13 @@ DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionP
 /**
  * @brief Load model from filesystem.
  *
- * @param path Configuration path
+ * @param path Model configuration path
+ * @param gpu_id Select GPU ID. If you want to force the model to run on CPU, set it to -1
  */
-DSINFER_EXPORT DSINFER_Status *dsinfer_load_model(const char *path, DSINFER_Model **model);
+DSINFER_EXPORT DSINFER_Status *dsinfer_load_model(
+    const char *path,
+    int gpu_id,
+    DSINFER_Model **model);
 
 
 /**
@@ -119,7 +128,7 @@ DSINFER_EXPORT DSINFER_Status *dsinfer_start_inference(int handle, DSINFER_Argum
 DSINFER_EXPORT DSINFER_Status *dsinfer_release_inference(DSINFER_InferenceContext *context);
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
 
 #endif // DSINFER_CAPI_H
