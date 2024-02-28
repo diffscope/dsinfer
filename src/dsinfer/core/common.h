@@ -1,7 +1,7 @@
 #ifndef DSINFER_COMMON_H
 #define DSINFER_COMMON_H
 
-#include <cstdint>
+#include <cstddef>
 
 namespace dsinfer {
 

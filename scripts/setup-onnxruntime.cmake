@@ -100,7 +100,7 @@ message(STATUS "Downloading ONNX Runtime from ${_url}")
 file(DOWNLOAD ${_url} ${_file_path}
 
     # EXPECTED_HASH SHA256=14e0b7ed6cc504f8c4c1d8e57451ada6d8469394d08e10afa6db616f082fe035
-    TIMEOUT 60
+    # TIMEOUT 60
     SHOW_PROGRESS
 )
 
