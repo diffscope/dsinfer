@@ -7,19 +7,28 @@
 #include <loadso/library.h>
 #include <loadso/system.h>
 
+namespace fs = std::filesystem;
+
 namespace dsinfer {
 
     static Environment *g_env = nullptr;
 
     class Environment::Impl {
     public:
-        void load(const std::filesystem::path &path, ExecutionProvider ep) {
+        void load(const fs::path &path, ExecutionProvider ep) {
             // 1. Load Ort shared library and create handle
+
+#ifdef _WIN32
+            LoadSO::System::SetLibraryPath(path.parent_path());
+#endif
             if (!lib.open(path)) {
                 auto msg = std::string("Load library failed: ") +
                            LoadSO::System::WideToMulti(lib.lastError());
                 throw std::runtime_error(msg);
             }
+#ifdef _WIN32
+            LoadSO::System::SetLibraryPath({});
+#endif
 
             // 2. Get Ort API getter handle
             auto addr = lib.entry("OrtGetApiBase");
@@ -32,10 +41,10 @@ namespace dsinfer {
             }
 
             // 3. Check Ort API
-            auto handle = (OrtApiBase * (ORT_API_CALL *) ()) lib.handle();
+            auto handle = (OrtApiBase * (ORT_API_CALL *) ()) addr;
             auto apiBase = handle();
-            auto api = ortApiBase->GetApi(ORT_API_VERSION);
-            if (!ortApi) {
+            auto api = apiBase->GetApi(ORT_API_VERSION);
+            if (!api) {
                 lib.close();
 
                 auto msg = std::string("Failed to get OrtApi.");
@@ -57,7 +66,7 @@ namespace dsinfer {
 
         // Metadata
         bool loaded = false;
-        std::filesystem::path libPath;
+        fs::path libPath;
         ExecutionProvider executionProvider = EP_CPU;
 
         // Library data
@@ -74,7 +83,7 @@ namespace dsinfer {
         g_env = nullptr;
     }
 
-    void Environment::load(const std::filesystem::path &path, ExecutionProvider ep) {
+    void Environment::load(const fs::path &path, ExecutionProvider ep) {
         if (_impl->loaded)
             return;
         _impl->load(path, ep);
@@ -88,7 +97,7 @@ namespace dsinfer {
         return g_env;
     }
 
-    std::filesystem::path Environment::libraryPath() const {
+    fs::path Environment::libraryPath() const {
         return _impl->libPath;
     }
 

@@ -9,7 +9,7 @@
 
 namespace dsinfer {
 
-    class Environment {
+    class DSINFER_EXPORT Environment {
     public:
         Environment();
         ~Environment();

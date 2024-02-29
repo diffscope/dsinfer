@@ -1,7 +1,7 @@
 qm_import(Preprocess)
 
-set(DSINFER_PROJECT_DESCRIPTION "Cross-platform window customization framework")
-set(DSINFER_PROJECT_COPYRIGHT "Copyright 2023 Stdware Collections")
+set(DSINFER_PROJECT_DESCRIPTION "DiffScope Inference Midware")
+set(DSINFER_PROJECT_COPYRIGHT "Copyright 2023-2024 Team OpenVPI")
 set(DSINFER_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../include)
 
 # ----------------------------------
