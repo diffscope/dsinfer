@@ -71,7 +71,7 @@ enum DSINFER_ModelType {
  * @param code DSINFER_ErrorCode
  * @param message Error Message (maximum 2048 characters, longer texts will be truncated)
  */
-DSINFER_EXPORT DSINFER_Status *create_status(int type, int code, const char *message);
+DSINFER_EXPORT DSINFER_Status *dsinfer_create_status(int type, int code, const char *message);
 
 
 /**
@@ -79,7 +79,7 @@ DSINFER_EXPORT DSINFER_Status *create_status(int type, int code, const char *mes
  *
  * @param status Status to release
  */
-DSINFER_EXPORT void release_status(DSINFER_Status *status);
+DSINFER_EXPORT void dsinfer_release_status(DSINFER_Status *status);
 
 
 /**
@@ -90,6 +90,11 @@ DSINFER_EXPORT void release_status(DSINFER_Status *status);
  */
 DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep);
 
+/**
+ * @brief Finialize the library.
+ */
+DSINFER_EXPORT DSINFER_Status *dsinfer_quit();
+
 
 /**
  * @brief Load model from filesystem.
@@ -97,10 +102,8 @@ DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionP
  * @param path Model configuration path
  * @param gpu_id Select GPU ID. If you want to force the model to run on CPU, set it to -1
  */
-DSINFER_EXPORT DSINFER_Status *dsinfer_load_model(
-    const char *path,
-    int gpu_id,
-    DSINFER_Model **model);
+DSINFER_EXPORT DSINFER_Status *dsinfer_load_model(const char *path, int gpu_id,
+                                                  DSINFER_Model **model);
 
 
 /**

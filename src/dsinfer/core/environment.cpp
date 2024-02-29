@@ -1,66 +1,103 @@
-#include <dsinfer/dsinfer_global.h>
-#include <dsinfer/dsinfer_capi.h>
-#include <dsinfer/ort_library.h>
-
-#include <onnxruntime_cxx_api.h>
-#include <syscmdline/system.h>
-
 #include "environment.h"
 
+#include <stdexcept>
+
+#include <onnxruntime_cxx_api.h>
+
+#include <loadso/library.h>
+#include <loadso/system.h>
 
 namespace dsinfer {
-    constexpr DSINFER_ExecutionProvider kDefaultEP = EP_CPU;
 
-    Environment::Environment() : m_isInitialized(false), m_ep(kDefaultEP), m_env(nullptr) {}
+    static Environment *g_env = nullptr;
 
-    Environment &Environment::getInstance() {
-        static Environment instance;
-        return instance;
-    }
-
-    Status Environment::init(const std::string &path, DSINFER_ExecutionProvider ep) {
-        if (m_isInitialized) {
-            return {ET_LoadError, EC_EnvAlreadyInitialized, "The environment is already initialized"};
-        }
-        m_ep = ep;
-        auto statusDllLoad = loadOrtLibrary(path);
-        if (statusDllLoad.code() != EC_Success) {
-            return statusDllLoad;
-        }
-        auto ortApi = Ort::GetApi();
-
-        auto status = Ort::Status(ortApi.CreateEnv(ORT_LOGGING_LEVEL_WARNING, "dsinfer", &m_env));
-
-        if (status) {
-            auto errCode = status.GetErrorCode();
-            auto errMsg = status.GetErrorMessage();
-            if (!status.IsOK()) {
-                return {ET_LoadError, EC_EnvInitializeFailed, errMsg};
+    class Environment::Impl {
+    public:
+        void load(const std::filesystem::path &path, ExecutionProvider ep) {
+            // 1. Load Ort shared library and create handle
+            if (!lib.open(path)) {
+                auto msg = std::string("Load library failed: ") +
+                           LoadSO::System::WideToMulti(lib.lastError());
+                throw std::runtime_error(msg);
             }
+
+            // 2. Get Ort API getter handle
+            auto addr = lib.entry("OrtGetApiBase");
+            if (!addr) {
+                lib.close();
+
+                auto msg = std::string("Get api handle failed: ") +
+                           LoadSO::System::WideToMulti(lib.lastError());
+                throw std::runtime_error(msg);
+            }
+
+            // 3. Check Ort API
+            auto handle = (OrtApiBase * (ORT_API_CALL *) ()) lib.handle();
+            auto apiBase = handle();
+            auto api = ortApiBase->GetApi(ORT_API_VERSION);
+            if (!ortApi) {
+                lib.close();
+
+                auto msg = std::string("Failed to get OrtApi.");
+                throw std::runtime_error(msg);
+            }
+
+            // Successfully get Ort API.
+            Ort::InitApi(api);
+
+            loaded = true;
+            libPath = path;
+            executionProvider = ep;
+
+            ortApiBase = apiBase;
+            ortApi = api;
         }
 
-        m_isInitialized = true;
+        LoadSO::Library lib;
 
-        return {ET_LoadError, EC_Success, ""};
+        // Metadata
+        bool loaded = false;
+        std::filesystem::path libPath;
+        ExecutionProvider executionProvider = EP_CPU;
+
+        // Library data
+        void *hLibrary = nullptr;
+        const OrtApi *ortApi = nullptr;
+        const OrtApiBase *ortApiBase = nullptr;
+    };
+
+    Environment::Environment() : _impl(std::make_unique<Impl>()) {
+        g_env = this;
     }
 
-    DSINFER_ExecutionProvider Environment::getExecutionProvider() const {
-        return m_ep;
-    }
-
-    OrtEnv *Environment::getOrtEnv() {
-        return m_env;
-    }
     Environment::~Environment() {
-        if (isOrtLoaded()) {
-            auto ortApi = Ort::GetApi();
-            ortApi.ReleaseEnv(m_env);
-        }
+        g_env = nullptr;
     }
-} // namespace dsinfer
 
+    void Environment::load(const std::filesystem::path &path, ExecutionProvider ep) {
+        if (_impl->loaded)
+            return;
+        _impl->load(path, ep);
+    }
 
-DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep) {
-    auto status = dsEnv.init(path, ep);
-    return status.release();
+    bool Environment::isLoaded() const {
+        return _impl->loaded;
+    }
+
+    Environment *Environment::instance() {
+        return g_env;
+    }
+
+    std::filesystem::path Environment::libraryPath() const {
+        return _impl->libPath;
+    }
+
+    ExecutionProvider Environment::executionProvider() const {
+        return _impl->executionProvider;
+    }
+
+    std::string Environment::versionString() const {
+        return _impl->ortApiBase ? _impl->ortApiBase->GetVersionString() : std::string();
+    }
+
 }

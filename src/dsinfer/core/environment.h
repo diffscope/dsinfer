@@ -1,37 +1,34 @@
 #ifndef DSINFER_ENVIRONMENT_H
 #define DSINFER_ENVIRONMENT_H
 
-#include <onnxruntime_cxx_api.h>
-#include <dsinfer/dsinfer_capi.h>
-#include <dsinfer/dsinfer_cxxapi.h>
+#include <filesystem>
 
-#define dsEnv (dsinfer::Environment::getInstance())
+#include <dsinfer/dsinfer_common.h>
+
+#define dsEnv (dsinfer::Environment::instance())
 
 namespace dsinfer {
 
-    class Environment final {
+    class Environment {
     public:
-        static Environment &getInstance();
-
-        Status init(const std::string &path, DSINFER_ExecutionProvider ep);
-
-        [[nodiscard]] DSINFER_ExecutionProvider getExecutionProvider() const;
-
-        [[nodiscard]] OrtEnv *getOrtEnv();
-
-    public:
-        Environment(const Environment &) = delete;
-        Environment(Environment &&) = delete;
-        Environment & operator=(const Environment &) = delete;
-    private:
         Environment();
         ~Environment();
 
-        bool m_isInitialized;
+        static Environment *instance();
 
-        DSINFER_ExecutionProvider m_ep;
+    public:
+        void load(const std::filesystem::path &path, ExecutionProvider ep);
+        bool isLoaded() const;
 
-        OrtEnv *m_env;
+        std::filesystem::path libraryPath() const;
+        ExecutionProvider executionProvider() const;
+        std::string versionString() const;
+
+    protected:
+        class Impl;
+        std::unique_ptr<Impl> _impl;
+
+        DSINFER_DISABLE_COPY(Environment)
     };
 
 } // namespace dsinfer
