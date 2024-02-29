@@ -10,6 +10,8 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <dlfcn.h>
 #endif
 
 #include "ort_library.h"
@@ -51,7 +53,6 @@ namespace dsinfer {
     static const OrtApi *g_ortApi = nullptr;
     static const OrtApiBase *g_ortApiBase = nullptr;
     static bool g_isOrtLoaded = false;
-    static const char *g_ortVersionString;
 
     Status loadOrtLibrary(const std::string &path) {
         if (g_isOrtLoaded) {
