@@ -77,13 +77,13 @@
         "type": "pitch",
         "level": 1,
         "path": "model.onnx",
-        "version": null,
+        "version": "${DATABASE_VERSION}",
         "arguments": {
-            ...
+            "linguistic": "${DATABASE_ROOT_FOLDER}/assets/linguist.onnx"
         },
         "dependencies": {
-            "linguistic": {
-                "id": "dummy-12138-linguist",
+            "dep1": {
+                "id": "dummy-12138-model1",
                 "level": 1
             }
         }
