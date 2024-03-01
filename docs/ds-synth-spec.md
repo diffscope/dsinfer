@@ -36,12 +36,13 @@
         + pitch
             + config.json
             + model.onnx
-        + ...
+        + shared
+            + linguistic.onnx
     + metadata.json
 ```
 
-+ `features`：必选目录，每个子目录包括一组模型与其对应的配置信息；
-+ `assets`：存放与声库信息相关的文件，以及一些全局共用的文件；
++ `features`：推荐在此存放模型，每个子目录包括一组模型与其对应的配置信息，将声库私有且需要复用的文件放在`shared`目录内；
++ `assets`：推荐存放与声库信息相关的文件；
 + `metadata.json`：声库描述文件
     ```json
     {
@@ -56,6 +57,14 @@
             "avatar": "assets/avatar.png",
             "background": "assets/sprite.png",
             "demoAudio": "assets/demo.wav"
+        },
+        "features": [
+            "features/acoustic/config.json",
+            "features/duration/config.json",
+            "features/pitch/config.json"
+        ],
+        "env": {
+            "SAMPLE_ENV_VAR": "sample"
         }
     }
     ```
@@ -68,6 +77,20 @@
         + `url`：声库网站
         + `dict`：声库字典文件路径
         + `character`：声库角色信息
+        + `features`：声库支持特性
+        + `env`：自定义环境变量
+    + 声库内置环境变量
+        + `DATABASE_ID`
+        + `DATABASE_VERSION`
+        + `DATABASE_VENDOR`
+        + `DATABASE_COPYRIGHT`
+        + `DATABASE_URL`
+        + `DATABASE_DICT`
+        + `DATABASE_CHARACTER_NAME`
+        + `DATABASE_CHARACTER_AVATAR`
+        + `DATABASE_CHARACTER_BACKGROUND`
+        + `DATABASE_CHARACTER_DEMOAUDIO`
+        + `DATABASE_ROOT_FOLDER`
     + 可添加其他字段
 
 + `features/xxx/config.json`：模型描述文件
@@ -79,7 +102,7 @@
         "path": "model.onnx",
         "version": "${DATABASE_VERSION}",
         "arguments": {
-            "linguistic": "${DATABASE_ROOT_FOLDER}/assets/linguist.onnx"
+            "linguistic": "${DATABASE_ROOT_FOLDER}/features/shared/linguist.onnx"
         },
         "dependencies": {
             "dep1": {
@@ -98,6 +121,7 @@
         + `version`：模型版本，如果不存在或者为`null`则视为与声库一致
         + `arguments`：模型支持的参数
         + `dependencies`：模型所依赖的其他模型
+    + 可添加其他字段
 
 
 `features`的子目录名在推理过程中没有实际用处，只为了方便辨别模型类型，一个声库内不重复即可；
@@ -114,7 +138,7 @@
 
 ## 推理中间件
 
-`dsinfer`是 DiffScope 管理器与 OnnxRuntime 底层推理库的中间件，负责加载、释放模型与执行推理任务。
+`dsinfer`是 DiffScope 管理器与 OnnxRuntime 底层推理库的中间件，负责加载、释放模型与执行推理任务，将与模型相关的逻辑尽可能实现，以降低管理器的开发难度，使管理器更专注于任务调度。
 
 ### 初始化
 
@@ -124,9 +148,11 @@ OnnxRuntime 支持 CPU、Cuda、DirectML（仅 Windows）等执行器（Executio
 
 初始化完成后，`onnxruntime`动态库将始终在内存中，直到与`dsinfer`的进程退出，因此运行期切换 ep 是不支持的。
 
+管理器需要实时将所有模型的配置信息与`dsinfer`进行同步。
+
 ### 加载与释放模型
 
-加载模型时应提供模型对应的`config.json`的路径，`dsinfer`将按照`type`字段指定的模型类型选择对应的调用约定进行后续的推理。
+加载模型时应提供模型的`id`，`dsinfer`将按照`type`字段指定的模型类型选择对应的调用约定进行后续的推理，并自行维护其所有依赖的引用计数。
 
 ### 推理
 
