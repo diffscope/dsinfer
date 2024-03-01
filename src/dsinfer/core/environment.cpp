@@ -19,24 +19,24 @@ namespace dsinfer {
             // 1. Load Ort shared library and create handle
 
 #ifdef _WIN32
-            LoadSO::System::SetLibraryPath(path.parent_path());
+            auto orgLibPath = LoadSO::System::SetLibraryPath(path.parent_path());
 #endif
-            if (!lib.open(path)) {
+            if (!lib.open(path, LoadSO::Library::ResolveAllSymbolsHint)) {
                 auto msg = std::string("Load library failed: ") +
-                           LoadSO::System::WideToMulti(lib.lastError());
+                           LoadSO::System::MultiFromPathString(lib.lastError());
                 throw std::runtime_error(msg);
             }
 #ifdef _WIN32
-            LoadSO::System::SetLibraryPath({});
+            LoadSO::System::SetLibraryPath(orgLibPath);
 #endif
 
             // 2. Get Ort API getter handle
-            auto addr = lib.entry("OrtGetApiBase");
+            auto addr = lib.resolve("OrtGetApiBase");
             if (!addr) {
                 lib.close();
 
                 auto msg = std::string("Get api handle failed: ") +
-                           LoadSO::System::WideToMulti(lib.lastError());
+                           LoadSO::System::MultiFromPathString(lib.lastError());
                 throw std::runtime_error(msg);
             }
 

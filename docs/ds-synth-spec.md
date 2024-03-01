@@ -50,11 +50,9 @@
         "vendor": "someone",
         "copyright": "someone",
         "url": "https://www.dummy.cn",
-        "updateUrl": "https://www.dummy.cn/update.json",
         "dict": "assets/dict.yaml",
         "character": {
             "name": "dummy",
-            "gender": "helicopter",
             "avatar": "assets/avatar.png",
             "background": "assets/sprite.png",
             "demoAudio": "assets/demo.wav"
@@ -65,13 +63,11 @@
         + `id`：声库的唯一标识符
         + `version`：声库版本号
     + 可选字段
-        + `name`：声库名，用于前端显示
-        + `avatar`：声库头像路径
-        + `background`: 声库背景图片路径
-        + `dict`：声库字典文件路径
         + `vender`：声库提供方
         + `copyright`：声库版权信息
         + `url`：声库网站
+        + `dict`：声库字典文件路径
+        + `character`：声库角色信息
     + 可添加其他字段
 
 + `features/xxx/config.json`：模型描述文件

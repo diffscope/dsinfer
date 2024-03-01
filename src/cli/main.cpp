@@ -16,5 +16,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     printf("Version: %s\n", env.versionString().data());
+
     return 0;
 }

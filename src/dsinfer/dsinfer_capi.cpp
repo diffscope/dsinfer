@@ -40,7 +40,7 @@ DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep) {
     if (!env) {
         env = new dsinfer::Environment();
         try {
-            env->load(LoadSO::System::MultiToWide(path),
+            env->load(LoadSO::System::MultiToPathString(path),
                       static_cast<dsinfer::ExecutionProvider>(ep));
         } catch (const std::exception &e) {
             delete env;
