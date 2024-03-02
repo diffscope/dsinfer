@@ -76,7 +76,13 @@ if(NOT DEFINED CMAKE_HOST_SYSTEM_PROCESSOR)
             endif()
         endif()
     else()
+
         execute_process(COMMAND uname -m OUTPUT_VARIABLE _detected_arch OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(_detected_arch STREQUAL "x86_64")
+            set(_detected_arch "x64")
+        else()
+            message(FATAL_ERROR "Unsupported Architecture: Linux-${_detected_arch}")
+        endif()
     endif()
 endif()
 
@@ -110,6 +116,8 @@ file(ARCHIVE_EXTRACT INPUT ${_file_path}
     DESTINATION ${_extract_dir}
 )
 file(REMOVE ${_file_path})
+file(MAKE_DIRECTORY ${_extract_dir}/${_name}/include)
+file(MAKE_DIRECTORY ${_extract_dir}/${_name}/lib)
 file(COPY ${_extract_dir}/${_name}/include DESTINATION ${_extract_dir})
 file(COPY ${_extract_dir}/${_name}/lib DESTINATION ${_extract_dir})
 file(REMOVE_RECURSE ${_extract_dir}/${_name})
