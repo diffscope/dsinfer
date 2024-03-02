@@ -30,6 +30,7 @@ namespace dsinfer {
     };
 
     enum ModelType {
+        MT_Unknown = 0,
         MT_Acoustic,
         MT_Pitch,
         MT_PhonemeDuration,

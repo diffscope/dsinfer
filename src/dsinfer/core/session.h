@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include <dsinfer/dsinfer_global.h>
+#include <dsinfer/dsinfer_common.h>
 
 namespace dsinfer {
 
@@ -13,8 +14,11 @@ namespace dsinfer {
         ~Session();
 
     public:
-        void load(const std::filesystem::path &path);
+        void load(const std::filesystem::path &path, int deviceIndex = -1);
         void free();
+        void terminate();
+        void unsetTerminate();
+        [[nodiscard]] ModelType type() const;
 
     protected:
         class Impl;
