@@ -3,6 +3,25 @@ qm_import(Preprocess)
 set(DSINFER_PROJECT_DESCRIPTION "DiffScope Inference Midware")
 set(DSINFER_PROJECT_COPYRIGHT "Copyright 2023-2024 Team OpenVPI")
 set(DSINFER_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../include)
+set(DSINFER_BUILD_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../etc/include)
+
+# ----------------------------------
+# Configurations
+# ----------------------------------
+set(QMSETUP_DEFINITION_SCOPE DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set(QMSETUP_DEFINITION_NUMERICAL off)
+
+qm_add_definition(DSINFER_TEST_CONFIG)
+qm_add_definition(DSINFER_ENABLE_DIRECTML CONDITION DSINFER_ENABLE_DIRECTML)
+qm_add_definition(DSINFER_ENABLE_CUDA CONDITION DSINFER_ENABLE_CUDA)
+
+qm_generate_config(${DSINFER_BUILD_INCLUDE_DIR}/dsinfer/dsinfer_config.h)
+
+if(DSINFER_INSTALL)
+    install(FILES ${DSINFER_BUILD_INCLUDE_DIR}/dsinfer/dsinfer_config.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${DSINFER_INSTALL_NAME}/dsinfer
+    )
+endif()
 
 # ----------------------------------
 # CMake API
@@ -42,6 +61,7 @@ macro(dsinfer_add_library _target)
     qm_configure_target(${_target} ${FUNC_UNPARSED_ARGUMENTS})
 
     # Add include directories
+    target_include_directories(${_target} PRIVATE ${DSINFER_BUILD_INCLUDE_DIR})
     target_include_directories(${_target} PRIVATE .)
 
     add_library(${DSINFER_INSTALL_NAME}::${_target} ALIAS ${_target})

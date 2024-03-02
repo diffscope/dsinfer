@@ -7,6 +7,8 @@ project(dsinfer VERSION 0.0.1.0 LANGUAGES CXX)
 # ----------------------------------
 option(DSINFER_BUILD_STATIC "Build static libraries" OFF)
 option(DSINFER_INSTALL "Install library" ON)
+option(DSINFER_ENABLE_DIRECTML "Enable DirectML provider" OFF)
+option(DSINFER_ENABLE_CUDA "Enable CUDA provider" OFF)
 
 # ----------------------------------
 # CMake Settings
