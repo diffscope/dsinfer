@@ -1,6 +1,4 @@
-#include "dsinfer_common.h"
 #include <memory>
-
 
 #include <onnxruntime_cxx_api.h>
 
@@ -26,10 +24,13 @@ namespace dsinfer {
     static ModelConfig parseModelConfig(const fs::path &configPath);
     static Ort::Status initCUDA(Ort::SessionOptions &options, int deviceIndex);
     static Ort::Status initDirectML(Ort::SessionOptions &options, int deviceIndex);
+    static std::vector<std::string> getModelInputNames(const Ort::Session &session);
+    static std::vector<std::string> getModelOutputNames(const Ort::Session &session);
 
     class Session::Impl {
     public:
-        Impl() : m_env(ORT_LOGGING_LEVEL_WARNING, "dsinfer"), m_runOptions(), m_session(nullptr) {
+        Impl()
+            : m_env(ORT_LOGGING_LEVEL_WARNING, "dsinfer"), m_runOptions(), m_session(nullptr) {
         }
 
         void load(const fs::path &path, int deviceIndex) {
@@ -63,6 +64,8 @@ namespace dsinfer {
 #endif
                 m_session = Ort::Session(m_env, modelPathString.c_str(), options);
 
+                inputNames = getModelInputNames(m_session);
+                outputNames = getModelOutputNames(m_session);
                 type = modelConfig.type;
                 loaded = true;
             } catch (const Ort::Exception &ortException) {
@@ -78,6 +81,9 @@ namespace dsinfer {
                 std::swap(m_session, tmp);
             }
             unsetTerminate();
+
+            inputNames = {};
+            outputNames = {};
             type = MT_Unknown;
         }
 
@@ -91,6 +97,7 @@ namespace dsinfer {
 
         bool loaded = false;
         ModelType type = MT_Unknown;
+        std::vector<std::string> inputNames{}, outputNames{};
 
     private:
         Ort::Env m_env;
@@ -135,6 +142,14 @@ namespace dsinfer {
 
     ModelType Session::type() const {
         return _impl->type;
+    }
+
+    std::vector<std::string> Session::inputNames() const {
+        return _impl->inputNames;
+    }
+
+    std::vector<std::string> Session::outputNames() const {
+        return _impl->outputNames;
     }
 
     static ModelConfig parseModelConfig(const fs::path &configPath) {
@@ -218,6 +233,36 @@ namespace dsinfer {
 #else
         return {"The library is not built with DirectML support.", ORT_EP_FAIL};
 #endif
+    }
+
+    static std::vector<std::string> getModelInputNames(const Ort::Session &session) {
+        auto n = session.GetInputCount();
+        std::vector<std::string> arr;
+        arr.reserve(n);
+
+        Ort::AllocatorWithDefaultOptions allocator;
+
+        for (size_t i = 0; i < n; ++i) {
+            auto ptr = session.GetInputNameAllocated(i, allocator);
+            arr.emplace_back(ptr.get());
+        }
+
+        return arr;
+    }
+
+    static std::vector<std::string> getModelOutputNames(const Ort::Session &session) {
+        auto n = session.GetOutputCount();
+        std::vector<std::string> arr;
+        arr.reserve(n);
+
+        Ort::AllocatorWithDefaultOptions allocator;
+
+        for (size_t i = 0; i < n; ++i) {
+            auto ptr = session.GetOutputNameAllocated(i, allocator);
+            arr.emplace_back(ptr.get());
+        }
+
+        return arr;
     }
 
 }

@@ -1,6 +1,8 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <string>
+#include <vector>
 #include <filesystem>
 
 #include <dsinfer/dsinfer_global.h>
@@ -18,7 +20,9 @@ namespace dsinfer {
         void free();
         void terminate();
         void unsetTerminate();
-        [[nodiscard]] ModelType type() const;
+        ModelType type() const;
+        std::vector<std::string> inputNames() const;
+        std::vector<std::string> outputNames() const;
 
     protected:
         class Impl;
