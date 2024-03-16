@@ -13,10 +13,10 @@
 
 ### 数据
 
-+ 内置模型：由合管理器自带的一组全局模型，如声码器等；
 + 声库：包括声学、唱法等模型在内的歌声数据库，称为`database`，可以从管理器中安装或卸载；
-+ 特性：声库所支持的参数，在声库中一般表现为一个模型（或者一个主模型与若干个附属模型，附属模型被视为资源），在文件系统中的静态数据称为`feature`，推理时在内存中的映像称为`inference`
-+ 模型：模型文件，推理时在内存中的映像称为`session`
++ 歌手：由一组来自同一个数据源的模块组成；
++ 模块：一组模型与配置信息，在文件系统中的静态数据称为`module`，在内存中的映像称为`session`；
++ 模型：模型文件，在文件系统中的静态数据称为`model`，推理时在内存中的映像称为`image`；
 
 ## 声库规范
 
@@ -30,23 +30,27 @@
         + avatar.png
         + dict.yaml
         + license.txt
-    + features
+    + modules
         + acoustic
-            + feat.json
+            + mod.json
             + model.onnx
         + duration
-            + feat.json
+            + mod.json
             + model.onnx
         + pitch
-            + feat.json
+            + mod.json
             + model.onnx
-        + shared
+        + linguistic
+            + mod.json
             + linguistic.onnx
+        + vocoder
+            + mod.json
+            + vocoder.onnx
     + database.json
 ```
 
-+ `features`：推荐在此存放模型，每个子目录包括一组模型与其对应的配置信息，将声库私有且需要复用的文件放在`shared`目录内；
 + `assets`：推荐存放与声库信息相关的文件；
++ `modules`：推荐在此存放各模块，每个子目录包括一组模型与其对应的配置信息；
 + `database.json`：声库描述文件（名称固定）
     ```json
     {
@@ -57,12 +61,12 @@
         "copyright": "someone",
         "description": "Some voice database",
         "url": "https://www.dummy.cn",
-        "features": [
-            "features/acoustic/feat.json",
-            "features/duration/feat.json",
-            "features/pitch/feat.json"
+        "modules": [
+            "modules/acoustic/mod.json",
+            "modules/duration/mod.json",
+            "modules/pitch/mod.json"
         ],
-        "characters": [
+        "singers": [
             {
                 "name": "Some singer",
                 "avatar": "assets/avatar.png",
@@ -84,8 +88,8 @@
         + `copyright`：声库版权信息
         + `description`：声库介绍
         + `url`：声库网站
-        + `features`：声库支持特性
-        + `characters`：声库角色信息
+        + `modules`：声库模块
+        + `singers`：歌手信息
         + `env`：自定义环境变量
     + 声库内置环境变量
         + `DATABASE_ID`
@@ -96,34 +100,38 @@
         + `DATABASE_ROOT_FOLDER`
     + 可添加其他字段
 
-+ `feat.json`：模型描述文件（名称可改）
++ `mod.json`：模型描述文件（名称可改）
     ```json
     {
-        "id": "dummy-12138-pitch",
+        "id": "pitch",
         "type": "pitch",
         "level": 1,
         "version": "${DATABASE_VERSION}",
         "path": "model.onnx",
         "arguments": {
-            "linguistic": "${DATABASE_ROOT_FOLDER}/features/shared/linguist.onnx"
+            "linguistic": "./linguist.onnx"
         },
         "dependencies": {
             "dep1": {
-                "id": "dummy-12138-model1",
-                "level": 1
+                "id": "pitch",
+                "level": 1,
+                "parent": "dummy-12138",
             }
         }
     }
     ```
     + 必选字段
-        + `id`：特性的唯一标识符，不同声库的特性`id`可以重复
-        + `type`：特性类型，目前有`acoustic`、`pitch`、`duration`、`variance`
-        + `level`：特性参数集等级
-        + `version`：特性版本
+        + `id`：唯一标识符，不同声库的模块`id`可以重复
+        + `type`：类型，目前有`acoustic`、`pitch`、`duration`、`variance`
+        + `level`：参数集等级
+        + `version`：版本
     + 可选字段
         + `path`: 模型路径
         + `arguments`：支持的参数
-        + `dependencies`：依赖的其他特性
+        + `dependencies`：依赖的其他模块
+            + `id`：依赖模块的`id`
+            + `level`：依赖的等级
+            + `parent`：选择来自的声库，若为空或`null`则从内置模型中搜索，若为`auto`则随机搜索一个匹配`level`的模型
     + 可添加其他字段
 
 ## 合成管理器
@@ -155,13 +163,13 @@
 
 ### 加载与释放模型
 
-+ 管理器以特性为单位向`dsinfer`发起加载模型的请求，加载时提供特性的`id`。由于特性之间可能存在依赖关系，因此`dsinfer`将自动维护依赖关系与引用计数，如果缺少依赖将会加载失败。同理，管理器也应使用`id`向`dsinfer`发起释放模型的请求，当模型仍在推理时，释放请求会失败。
++ 管理器以模块为单位向`dsinfer`发起加载模型的请求，加载时提供模块的`id`。由于模块之间可能存在依赖关系，因此`dsinfer`将自动维护依赖关系与引用计数，如果缺少依赖将会加载失败。同理，管理器也应使用`id`向`dsinfer`发起释放模型的请求，当模型仍在推理时，释放请求会失败。
 
-+ 一个特性被加载到内存时，将会加载其需要用到的所有模型，即创建一个`inference`与若干个`session`，不同的`inference`之间可以共享`session`，每个`inference`与`session`都有各自的引用计数。
++ 一个模块被加载到内存时，将会加载其需要用到的所有模型，即创建一个`session`与若干个`image`，不同的`session`之间可以共享`image`，每个`session`与`image`都有各自的引用计数。
 
-+ 一个`inference`将维护一条自己的`session`链，在其推理任务进行时尽可能减少数据在内存与显存中的拷贝。
++ 一个`session`将维护一条自己的`image`链，在其推理任务进行时尽可能减少数据在内存与显存中的拷贝。
 
-+ 对每一种`inference`，`dsinfer`将按照特性配置文件中`type`字段指定的类型选择对应的调用约定进行后续的推理。
++ 对每一种`session`，`dsinfer`将按照模块配置文件中`type`字段指定的类型选择对应的调用约定进行后续的推理。
 
 ### 推理
 
