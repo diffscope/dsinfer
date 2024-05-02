@@ -47,6 +47,37 @@
     + database.json
 ```
 
+<!--
+```
++ dummy
+    + assets
+        + avatar.png
+        + dict.yaml
+        + license.txt
+    + modules
+        + acoustic
+        	+ 1.1.0
+                + mod.json
+                + model.onnx
+        + duration
+            + mod.json
+            + model.onnx
+        + pitch
+            + mod.json
+            + model.onnx
+            + linguistic.onnx
+        + vocoder
+            + mod.json
+            + vocoder.onnx
+    + metadata
+    	+ 1.0.0
+    		+ metadata.json
+    	+ 1.1.0
+    		+ metadata.json
+```
+-->
+
+
 + `assets`：推荐存放与声库信息相关的文件；
 + `modules`：推荐在此存放各模块，每个子目录包括一组模型与其对应的配置信息；
 + `database.json`：声库描述文件（名称固定）
@@ -102,22 +133,29 @@
     ```json
     {
         "id": "pitch",
-        "type": "variance",
+        "type": "variance",  // acoustic, vocoder, ...
         "version": "${DATABASE_VERSION}",
-        "features": [
-            {
-                "type": "duration",
-                "arguments": {
-                    "linguistic": "./linguist.onnx"
-                }
+        "features": {
+            "PitchPrediction": {
+                "level": 1,
+                "attributes": [
+                    {
+                        "name": "linguistic",
+                        "visibility": "private",
+                        "value": "./linguistic.onnx",
+                    }
+                ]
             },
-            {
-                "type": "pitch",
+            "VariancePrediction": {
+                "level": 1,
+                "attributes": {
+                    "predictions": ["breathiness", "voicing"]
+                },
                 "arguments": {
-                    "linguistic": "./linguist.onnx"
+                    "hiddenSize": 256,
                 }
             }
-        ]
+        }
     }
     ```
     + 必选字段
@@ -128,7 +166,7 @@
     + 可选字段
         + `path`: 模型路径
         + `arguments`：支持的参数
-        <!-- + `dependencies`：依赖的其他模块
+          <!-- + `dependencies`：依赖的其他模块
             + `id`：依赖模块的`id`
             + `level`：依赖的等级
             + `parent`：选择来自的声库，若为空或`null`则从内置模型中搜索，若为`auto`则随机搜索一个匹配`level`的模型 -->
