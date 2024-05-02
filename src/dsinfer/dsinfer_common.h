@@ -35,7 +35,6 @@ namespace dsinfer {
         MT_Pitch,
         MT_PhonemeDuration,
         MT_Variance,
-        MT_Linguistic,
         MT_Vocoder,
     };
 

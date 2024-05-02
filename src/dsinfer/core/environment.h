@@ -1,9 +1,10 @@
 #ifndef DSINFER_ENVIRONMENT_H
 #define DSINFER_ENVIRONMENT_H
 
+#include <map>
 #include <filesystem>
 
-#include <dsinfer/dsinfer_common.h>
+#include <dsinfer/inference.h>
 
 #define dsEnv (dsinfer::Environment::instance())
 
@@ -23,6 +24,12 @@ namespace dsinfer {
         std::filesystem::path libraryPath() const;
         ExecutionProvider executionProvider() const;
         std::string versionString() const;
+
+        void addFeatureInfo(const std::filesystem::path &path,
+                            const std::map<std::string, std::string> &env);
+        void removeFeatureInfo(const std::string &id);
+
+        Inference *createInference(const std::string &id, const std::string &args);
 
     protected:
         class Impl;

@@ -13,6 +13,7 @@ dsinfer_add_library(${PROJECT_NAME}
         internal
     LINKS_PRIVATE
         loadso::loadso
+        $<BUILD_INTERFACE:utils>
     DEFINES
         ORT_API_MANUAL_INIT
     SYNC_INCLUDE_OPTIONS

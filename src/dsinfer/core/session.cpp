@@ -10,8 +10,6 @@
 #include <dsinfer/environment.h>
 #include "session.h"
 
-
-
 namespace fs = std::filesystem;
 
 namespace dsinfer {

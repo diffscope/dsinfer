@@ -102,6 +102,8 @@ macro(dsinfer_add_library _target)
     endif()
 endmacro()
 
+add_subdirectory(utils)
+
 add_subdirectory(dsinfer)
 
 add_subdirectory(cli)

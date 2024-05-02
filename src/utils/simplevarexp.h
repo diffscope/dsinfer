@@ -1,5 +1,5 @@
-#ifndef SIMPLEVAREXP_P_H
-#define SIMPLEVAREXP_P_H
+#ifndef SIMPLEVAREXP_H
+#define SIMPLEVAREXP_H
 
 #include <string>
 #include <unordered_map>
@@ -20,4 +20,4 @@ namespace dsinfer {
 
 }
 
-#endif // SIMPLEVAREXP_P_H
+#endif // SIMPLEVAREXP_H

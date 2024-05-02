@@ -40,8 +40,6 @@
         + pitch
             + mod.json
             + model.onnx
-        + linguistic
-            + mod.json
             + linguistic.onnx
         + vocoder
             + mod.json
@@ -104,34 +102,36 @@
     ```json
     {
         "id": "pitch",
-        "type": "pitch",
-        "level": 1,
+        "type": "variance",
         "version": "${DATABASE_VERSION}",
-        "path": "model.onnx",
-        "arguments": {
-            "linguistic": "./linguist.onnx"
-        },
-        "dependencies": {
-            "dep1": {
-                "id": "pitch",
-                "level": 1,
-                "parent": "dummy-12138",
+        "features": [
+            {
+                "type": "duration",
+                "arguments": {
+                    "linguistic": "./linguist.onnx"
+                }
+            },
+            {
+                "type": "pitch",
+                "arguments": {
+                    "linguistic": "./linguist.onnx"
+                }
             }
-        }
+        ]
     }
     ```
     + 必选字段
         + `id`：唯一标识符，不同声库的模块`id`可以重复
         + `type`：类型，目前有`acoustic`、`pitch`、`duration`、`variance`
-        + `level`：参数集等级
+        <!-- + `level`：参数集等级 -->
         + `version`：版本
     + 可选字段
         + `path`: 模型路径
         + `arguments`：支持的参数
-        + `dependencies`：依赖的其他模块
+        <!-- + `dependencies`：依赖的其他模块
             + `id`：依赖模块的`id`
             + `level`：依赖的等级
-            + `parent`：选择来自的声库，若为空或`null`则从内置模型中搜索，若为`auto`则随机搜索一个匹配`level`的模型
+            + `parent`：选择来自的声库，若为空或`null`则从内置模型中搜索，若为`auto`则随机搜索一个匹配`level`的模型 -->
     + 可添加其他字段
 
 ## 合成管理器
