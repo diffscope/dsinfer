@@ -85,6 +85,7 @@
     {
         "id": "dummy-12138",
         "version": "1.0.0",
+        "portVersion": 12,
         "name": "dummy",
         "vendor": "someone",
         "copyright": "someone",
@@ -133,26 +134,20 @@
     ```json
     {
         "id": "pitch",
-        "type": "variance",  // acoustic, vocoder, ...
         "version": "${DATABASE_VERSION}",
+        "namespace": "svs.Variance",
         "features": {
             "PitchPrediction": {
                 "level": 1,
-                "attributes": [
-                    {
-                        "name": "linguistic",
-                        "visibility": "private",
-                        "value": "./linguistic.onnx",
-                    }
-                ]
+                "attributes":{
+                    "linguistic": "./linguistic.onnx"
+                }
             },
             "VariancePrediction": {
                 "level": 1,
                 "attributes": {
-                    "predictions": ["breathiness", "voicing"]
-                },
-                "arguments": {
-                    "hiddenSize": 256,
+                    "predictions": ["breathiness", "voicing"],
+                    "hiddenSize": 256
                 }
             }
         }
@@ -160,16 +155,12 @@
     ```
     + 必选字段
         + `id`：唯一标识符，不同声库的模块`id`可以重复
-        + `type`：类型，目前有`acoustic`、`pitch`、`duration`、`variance`
-        <!-- + `level`：参数集等级 -->
         + `version`：版本
+        + `features`：支持的特性，一个 key -> object 的映射表
+            + `level`：支持的 API 集合等级
+            + `attributes`：模型相关参数
     + 可选字段
-        + `path`: 模型路径
-        + `arguments`：支持的参数
-          <!-- + `dependencies`：依赖的其他模块
-            + `id`：依赖模块的`id`
-            + `level`：依赖的等级
-            + `parent`：选择来自的声库，若为空或`null`则从内置模型中搜索，若为`auto`则随机搜索一个匹配`level`的模型 -->
+        + `namespace`：所有支持的特性共用的名字空间
     + 可添加其他字段
 
 ## 合成管理器
