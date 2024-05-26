@@ -88,17 +88,25 @@ endif()
 
 set(_arch ${_detected_arch})
 
-set(_version "1.17.0")
+set(_version "1.17.3")
 set(_base_url "https://github.com/microsoft/onnxruntime/releases/download/v${_version}")
 
 if(DEFINED ep AND "${ep}" STREQUAL gpu)
-    set(_full_version gpu-${_version})
+    set(_full_version      gpu-${_version})
+    set(_full_version_zip  gpu-${_version})
+elseif(DEFINED ep AND "${ep}" STREQUAL gpu-cuda12)
+    set(_full_version      gpu-cuda12-${_version})
+    set(_full_version_zip  gpu-${_version})
 else()
-    set(_full_version ${_version})
+    set(_full_version      ${_version})
+    set(_full_version_zip  ${_version})
 endif()
 
-set(_name "onnxruntime-${_os}-${_arch}-${_full_version}")
-set(_url "${_base_url}/${_name}.${_ext}")
+# TODO: DirectML version of ONNX Runtime
+
+set(_name      "onnxruntime-${_os}-${_arch}-${_full_version}")
+set(_name_zip  "onnxruntime-${_os}-${_arch}-${_full_version_zip}")
+set(_url       "${_base_url}/${_name}.${_ext}")
 set(_file_path "${CMAKE_BINARY_DIR}/${_name}.${_ext}")
 
 message(STATUS "Downloading ONNX Runtime from ${_url}")
@@ -116,8 +124,8 @@ file(ARCHIVE_EXTRACT INPUT ${_file_path}
     DESTINATION ${_extract_dir}
 )
 file(REMOVE ${_file_path})
-file(MAKE_DIRECTORY ${_extract_dir}/${_name}/include)
-file(MAKE_DIRECTORY ${_extract_dir}/${_name}/lib)
-file(COPY ${_extract_dir}/${_name}/include DESTINATION ${_extract_dir})
-file(COPY ${_extract_dir}/${_name}/lib DESTINATION ${_extract_dir})
-file(REMOVE_RECURSE ${_extract_dir}/${_name})
+file(MAKE_DIRECTORY ${_extract_dir}/${_name_zip}/include)
+file(MAKE_DIRECTORY ${_extract_dir}/${_name_zip}/lib)
+file(COPY ${_extract_dir}/${_name_zip}/include DESTINATION ${_extract_dir})
+file(COPY ${_extract_dir}/${_name_zip}/lib DESTINATION ${_extract_dir})
+file(REMOVE_RECURSE ${_extract_dir}/${_name_zip})
