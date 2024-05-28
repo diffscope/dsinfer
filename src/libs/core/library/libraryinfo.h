@@ -1,7 +1,7 @@
 #ifndef LIBRARYINFO_H
 #define LIBRARYINFO_H
 
-#include <dsinferLoader/dsinferloaderglobal.h>
+#include <dsinferCore/dsinfercoreglobal.h>
 
 namespace dsinfer {
 

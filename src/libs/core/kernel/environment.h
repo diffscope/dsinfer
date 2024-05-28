@@ -16,6 +16,9 @@ namespace dsinfer {
         Environment();
         ~Environment();
 
+        Environment(const Environment &) = delete;
+        Environment &operator=(const Environment &) = delete;
+
         static Environment *instance();
 
     public:
@@ -29,9 +32,6 @@ namespace dsinfer {
     protected:
         class Impl;
         std::unique_ptr<Impl> _impl;
-
-        Environment(const Environment &) = delete;
-        Environment &operator=(const Environment &) = delete;
     };
 
 }

@@ -1,6 +1,8 @@
 #include <iostream>
+#include <filesystem>
 
-#include <dsinfer/environment.h>
+#include <dsinferCore/interpreterloader.h>
+#include <dsinferCore/environment.h>
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -16,6 +18,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     printf("Version: %s\n", env.versionString().data());
+
+    dsinfer::InterpreterLoader ld;
+    ld.addLibraryPath(std::filesystem::current_path());
 
     return 0;
 }
