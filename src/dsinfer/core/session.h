@@ -1,6 +1,7 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -10,25 +11,28 @@
 
 namespace dsinfer {
 
+    class SessionPrivate;
+
     class DSINFER_EXPORT Session {
     public:
-        Session();
+        Session(Session &&other) noexcept;
+        Session &operator=(Session &&other) noexcept;
         ~Session();
 
+        DSINFER_DISABLE_COPY(Session)
+
     public:
-        void load(const std::filesystem::path &path, int deviceIndex = -1);
-        void free();
-        void terminate();
-        void unsetTerminate();
-        ModelType type() const;
+        bool isLoaded() const;
+        size_t useCount() const;
         std::vector<std::string> inputNames() const;
         std::vector<std::string> outputNames() const;
 
     protected:
-        class Impl;
-        std::unique_ptr<Impl> _impl;
-
-        DSINFER_DISABLE_COPY(Session)
+        friend class SessionManager;
+        friend class SharedSession;
+        // Each Session can only be contructed by SessionManager
+        explicit Session(const std::filesystem::path &path, bool forceOnCpu = false);
+        std::unique_ptr<SessionPrivate> d;
     };
 
 }

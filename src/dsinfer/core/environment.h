@@ -4,6 +4,7 @@
 #include <map>
 #include <filesystem>
 
+#include <dsinfer/sessionmanager.h>
 #include <dsinfer/inference.h>
 
 #define dsEnv (dsinfer::Environment::instance())
@@ -18,9 +19,12 @@ namespace dsinfer {
         static Environment *instance();
 
     public:
-        void load(const std::filesystem::path &path, ExecutionProvider ep);
+        void load(const std::filesystem::path &path, ExecutionProvider ep, int deviceIndex);
         bool isLoaded() const;
+        int deviceIndex() const;
+        void setDeviceIndex(int index);
 
+        SessionManager *sessionManager();
         std::filesystem::path libraryPath() const;
         ExecutionProvider executionProvider() const;
         std::string versionString() const;

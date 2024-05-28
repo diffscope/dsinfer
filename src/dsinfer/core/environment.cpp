@@ -15,7 +15,7 @@ namespace dsinfer {
 
     class Environment::Impl {
     public:
-        void load(const fs::path &path, ExecutionProvider ep) {
+        void load(const fs::path &path, ExecutionProvider ep, int devIndex) {
             // 1. Load Ort shared library and create handle
 
 #ifdef _WIN32
@@ -57,6 +57,7 @@ namespace dsinfer {
             loaded = true;
             libPath = path;
             executionProvider = ep;
+            deviceIndex = devIndex;
 
             ortApiBase = apiBase;
             ortApi = api;
@@ -68,11 +69,15 @@ namespace dsinfer {
         bool loaded = false;
         fs::path libPath;
         ExecutionProvider executionProvider = EP_CPU;
+        int deviceIndex = -1;
 
         // Library data
         void *hLibrary = nullptr;
         const OrtApi *ortApi = nullptr;
         const OrtApiBase *ortApiBase = nullptr;
+
+        // DsInfer library modules
+        SessionManager sessionManager;
     };
 
     Environment::Environment() : _impl(std::make_unique<Impl>()) {
@@ -83,10 +88,10 @@ namespace dsinfer {
         g_env = nullptr;
     }
 
-    void Environment::load(const fs::path &path, ExecutionProvider ep) {
+    void Environment::load(const fs::path &path, ExecutionProvider ep, int deviceIndex) {
         if (_impl->loaded)
             return;
-        _impl->load(path, ep);
+        _impl->load(path, ep, deviceIndex);
     }
 
     bool Environment::isLoaded() const {
@@ -109,4 +114,15 @@ namespace dsinfer {
         return _impl->ortApiBase ? _impl->ortApiBase->GetVersionString() : std::string();
     }
 
+    int Environment::deviceIndex() const {
+        return _impl->deviceIndex;
+    }
+
+    void Environment::setDeviceIndex(int index) {
+        _impl->deviceIndex = index;
+    }
+
+    SessionManager *Environment::sessionManager() {
+        return &_impl->sessionManager;
+    }
 }

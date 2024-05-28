@@ -8,41 +8,40 @@
 
 #include <dsinfer/dsinfer_common.h>
 #include <dsinfer/environment.h>
-#include "session.h"
 
-namespace fs = std::filesystem;
+#include "session.h"
+#include "session_p.h"
 
 namespace dsinfer {
 
-    struct ModelConfig {
-        fs::path path;
-        ModelType type = MT_Unknown;
-    };
-
-    static ModelConfig parseModelConfig(const fs::path &configPath);
     static Ort::Status initCUDA(Ort::SessionOptions &options, int deviceIndex);
     static Ort::Status initDirectML(Ort::SessionOptions &options, int deviceIndex);
     static std::vector<std::string> getModelInputNames(const Ort::Session &session);
     static std::vector<std::string> getModelOutputNames(const Ort::Session &session);
 
-    class Session::Impl {
-    public:
-        Impl()
-            : m_env(ORT_LOGGING_LEVEL_WARNING, "dsinfer"), m_runOptions(), m_session(nullptr) {
+    SessionPrivate::SessionPrivate() :
+          refCount(0),
+          forceOnCpu(false),
+          m_env(ORT_LOGGING_LEVEL_WARNING, "dsinfer"),
+          m_session(nullptr) {}
+
+    SessionPrivate::~SessionPrivate() {
+        free();
+    }
+
+    bool SessionPrivate::load() {
+        std::lock_guard<std::mutex> lock(mtx);
+
+        if (refCount > 0) {
+            ++refCount;
+            return true;
         }
 
-        void load(const fs::path &path, int deviceIndex) {
-            unsetTerminate();
-
-            auto modelConfig = parseModelConfig(path);
-            if (modelConfig.type == MT_Unknown) {
-                // TODO: error handling
-                return;
-            }
-
-            try {
-                Ort::SessionOptions options;
+        try {
+            Ort::SessionOptions options;
+            if (!forceOnCpu) {
                 auto ep = dsEnv->executionProvider();
+                auto deviceIndex = dsEnv->deviceIndex();
                 switch (ep) {
                     case EP_CUDA:
                         initCUDA(options, deviceIndex);
@@ -53,106 +52,76 @@ namespace dsinfer {
                     default:
                         break;
                 }
+            }
 
-                auto modelPathString =
+            auto onnxPathString =
 #ifdef _WIN32
-                    modelConfig.path.wstring();
+                onnxPath.wstring();
 #else
-                    modelConfig.path.string();
+                onnxPath.string();
 #endif
-                m_session = Ort::Session(m_env, modelPathString.c_str(), options);
+            m_session = Ort::Session(m_env, onnxPathString.c_str(), options);
 
-                inputNames = getModelInputNames(m_session);
-                outputNames = getModelOutputNames(m_session);
-                type = modelConfig.type;
-                loaded = true;
-            } catch (const Ort::Exception &ortException) {
-                // TODO: error handling
-            }
+            inputNames = getModelInputNames(m_session);
+            outputNames = getModelOutputNames(m_session);
+            ++refCount;
+            return true;
+        } catch (const Ort::Exception &ortException) {
+            // TODO: error handling
         }
-
-        void free() {
-            terminate();
-            {
-                // After swapping, when `tmp` leaves the scope, the session is destructed.
-                Ort::Session tmp(nullptr);
-                std::swap(m_session, tmp);
-            }
-            unsetTerminate();
-
-            inputNames = {};
-            outputNames = {};
-            type = MT_Unknown;
-        }
-
-        void terminate() {
-            m_runOptions.SetTerminate();
-        }
-
-        void unsetTerminate() {
-            m_runOptions.UnsetTerminate();
-        }
-
-        bool loaded = false;
-        ModelType type = MT_Unknown;
-        std::vector<std::string> inputNames{}, outputNames{};
-
-    private:
-        Ort::Env m_env;
-        Ort::RunOptions m_runOptions;
-        Ort::Session m_session;
-    };
-
-    Session::Session() : _impl(std::make_unique<Impl>()) {
+        return false;
     }
 
-    Session::~Session() {
-        free();
-    }
+    void SessionPrivate::free() {
+        std::lock_guard<std::mutex> lock(mtx);
 
-    void Session::load(const fs::path &path, int deviceIndex) {
-        if (_impl->loaded) {
+        if (refCount == 0) {
             return;
         }
-        _impl->load(path, deviceIndex);
-    }
-
-    void Session::free() {
-        if (!_impl->loaded) {
+        if (refCount > 1) {
+            --refCount;
             return;
         }
-        _impl->free();
+        m_session = Ort::Session(nullptr);
+
+        inputNames = {};
+        outputNames = {};
+        refCount = 0;
     }
 
-    void Session::terminate() {
-        if (!_impl->loaded) {
-            return;
+    Session::Session(const std::filesystem::path &path, bool forceOnCpu) : d(std::make_unique<SessionPrivate>()) {
+        d->onnxPath = path;
+        d->forceOnCpu = forceOnCpu;
+    }
+
+    Session::Session(Session &&other) noexcept : d(std::move(other.d)) {
+        other.d = nullptr;
+    }
+
+    Session &Session::operator=(Session &&other) noexcept {
+        if (this != &other) {
+            d = std::move(other.d);
+            other.d = nullptr;
         }
-        _impl->terminate();
+        return *this;
     }
 
-    void Session::unsetTerminate() {
-        if (!_impl->loaded) {
-            return;
-        }
-        _impl->unsetTerminate();
-    }
-
-    ModelType Session::type() const {
-        return _impl->type;
-    }
+    Session::~Session() = default;
 
     std::vector<std::string> Session::inputNames() const {
-        return _impl->inputNames;
+        return d->inputNames;
     }
 
     std::vector<std::string> Session::outputNames() const {
-        return _impl->outputNames;
+        return d->outputNames;
     }
 
-    static ModelConfig parseModelConfig(const fs::path &configPath) {
-        // TODO: parse model config JSON
-        return {};
+    size_t Session::useCount() const {
+        return d->refCount;
+    }
+
+    bool Session::isLoaded() const {
+        return d->m_session;
     }
 
     static Ort::Status initCUDA(Ort::SessionOptions &options, int deviceIndex) {

@@ -87,8 +87,9 @@ DSINFER_EXPORT void dsinfer_release_status(DSINFER_Status *status);
  *
  * @param path Ort runtime path
  * @param ep   Given execution provider
+ * @param deviceIndex GPU device index
  */
-DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep);
+DSINFER_EXPORT DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep, int deviceIndex);
 
 /**
  * @brief Finialize the library.

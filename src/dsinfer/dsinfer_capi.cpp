@@ -35,13 +35,13 @@ void dsinfer_release_status(DSINFER_Status *status) {
     delete[] reinterpret_cast<uint8_t *>(status);
 }
 
-DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep) {
+DSINFER_Status *dsinfer_init(const char *path, DSINFER_ExecutionProvider ep, int deviceIndex) {
     auto env = dsinfer::Environment::instance();
     if (!env) {
         env = new dsinfer::Environment();
         try {
             env->load(LoadSO::System::MultiToPathString(path),
-                      static_cast<dsinfer::ExecutionProvider>(ep));
+                      static_cast<dsinfer::ExecutionProvider>(ep), deviceIndex);
         } catch (const std::exception &e) {
             delete env;
             return dsinfer_create_status(EC_OnnxRuntimeLoadFailed, ET_LoadError, e.what());

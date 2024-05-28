@@ -7,4 +7,5 @@ namespace dsinfer {
     void ModelConfig::load(const std::filesystem::path &path, const SimpleVarExp &varMap) {
     }
 
+    void ModelConfig::loadArguments(const SimpleVarExp &varMap) {}
 }
