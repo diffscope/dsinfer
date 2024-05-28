@@ -5,7 +5,6 @@ project(dsinfer VERSION 0.0.1.0 LANGUAGES CXX)
 # ----------------------------------
 # Build Options
 # ----------------------------------
-option(DSINFER_BUILD_STATIC "Build static libraries" OFF)
 option(DSINFER_INSTALL "Install library" ON)
 option(DSINFER_ENABLE_DIRECTML "Enable DirectML provider" OFF)
 option(DSINFER_ENABLE_CUDA "Enable CUDA provider" OFF)
@@ -26,10 +25,6 @@ elseif(MINGW)
     set(CMAKE_STATIC_LIBRARY_PREFIX "")
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif()
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 if(DSINFER_INSTALL)
     include(GNUInstallDirs)

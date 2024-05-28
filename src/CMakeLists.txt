@@ -27,20 +27,20 @@ endif()
 # CMake API
 # ----------------------------------
 macro(dsinfer_add_library _target)
-    set(options NO_SYNC_INCLUDE NO_WIN_RC)
+    set(options SHARED NO_SYNC_INCLUDE NO_WIN_RC NO_EXPORT)
     set(oneValueArgs SYNC_INCLUDE_PREFIX PREFIX)
     set(multiValueArgs SYNC_INCLUDE_OPTIONS)
     cmake_parse_arguments(FUNC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(DSINFER_BUILD_STATIC)
-        set(_type STATIC)
-    else()
+    if(FUNC_SHARED)
         set(_type SHARED)
+    else()
+        set(_type STATIC)
     endif()
 
     add_library(${_target} ${_type})
 
-    if(WIN32 AND NOT FUNC_NO_WIN_RC AND(${_type} STREQUAL "SHARED"))
+    if(WIN32 AND NOT FUNC_NO_WIN_RC)
         qm_add_win_rc(${_target}
             NAME ${DSINFER_INSTALL_NAME}
             DESCRIPTION ${DSINFER_PROJECT_DESCRIPTION}
@@ -64,7 +64,15 @@ macro(dsinfer_add_library _target)
     target_include_directories(${_target} PRIVATE ${DSINFER_BUILD_INCLUDE_DIR})
     target_include_directories(${_target} PRIVATE .)
 
-    add_library(${DSINFER_INSTALL_NAME}::${_target} ALIAS ${_target})
+    # Library name
+    if(${_target} MATCHES "^dsinfer(.+)")
+        set(_name ${CMAKE_MATCH_1})
+        set_target_properties(${_target} PROPERTIES EXPORT_NAME ${_name})
+    else()
+        set(_name ${_target})
+    endif()
+
+    add_library(${DSINFER_INSTALL_NAME}::${_name} ALIAS ${_target})
 
     if(FUNC_SYNC_INCLUDE_PREFIX)
         set(_inc_name ${FUNC_SYNC_INCLUDE_PREFIX})
@@ -75,8 +83,14 @@ macro(dsinfer_add_library _target)
     set(_install_options)
 
     if(DSINFER_INSTALL)
+        if(FUNC_NO_EXPORT)
+            set(_export)
+        else()
+            set(_export EXPORT ${DSINFER_INSTALL_NAME}Targets)
+        endif()
+
         install(TARGETS ${_target}
-            EXPORT ${DSINFER_INSTALL_NAME}Targets
+            ${_export}
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" OPTIONAL
             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" OPTIONAL
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" OPTIONAL
@@ -102,11 +116,11 @@ macro(dsinfer_add_library _target)
     endif()
 endmacro()
 
-add_subdirectory(utils)
+add_subdirectory(libs)
 
-add_subdirectory(dsinfer)
+add_subdirectory(plugins)
 
-add_subdirectory(cli)
+# add_subdirectory(cli)
 
 if(DSINFER_INSTALL)
     # Add install target

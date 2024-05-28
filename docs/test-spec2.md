@@ -6,7 +6,7 @@
 + Singer Library（歌手库）
 + Module Library（组件库）
 
-库的根目录必须包含一个名为`library.json`的文件，文件格式如下。
+库的根目录必须包含一个名为`desc.json`的文件，文件格式如下。
 
 ```json
 {
@@ -24,7 +24,7 @@
 + 必选字段
     + `id`：唯一标识符
     + `version`：版本号，格式为`x.y[.z.w]`，
-    + `type`：类型，可为`singer`、`model`
+    + `type`：类型，可为`singer`、`module`
 + 可选字段
     + `compatVersion`：兼容到的最低版本，如果为`0.0.0.0`表示向下兼容所有，如果与`version`相同则表示不向下兼容，缺省为不向下兼容
     + `vender`：提供方
@@ -46,15 +46,26 @@
             "preset": [
                 {
                     "id": "acoustic-1",
-                    "version": "1.0.0.0"
+                    "version": "1.0.0.0",
+                    "features": [
+                        "acoustic"
+                    ]
                 },
                 {
-                    "id": "variance-1",
+                    "id": "variance-A",
                     "version": "1.0.0.0",
                     "required": false,
-                    "attributes": {
-                        "prediction": "energy"
-                    }
+                    "features": [
+                        "pitch"
+                    ]
+                },
+                {
+                    "id": "variance-B",
+                    "version": "1.0.0.0",
+                    "required": false,
+                    "features": [
+                        "dur"
+                    ]
                 }
             ]
         }
@@ -64,7 +75,7 @@
 
 ### 组件库
 
-模型库的根目录需要再提供一个`module.json`的文件，文件格式如下。
+组件库的根目录需要再提供一个`module.json`的文件，文件格式如下。
 ```json
 {
     "features": [

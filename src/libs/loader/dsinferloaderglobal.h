@@ -1,0 +1,19 @@
+#ifndef DSINFERLOADERGLOBAL_H
+#define DSINFERLOADERGLOBAL_H
+
+
+#include <dsinferCore/dsinfercoreglobal.h>
+
+#ifndef DSINFER_LOADER_EXPORT
+#  ifdef DSINFER_LOADER_STATIC
+#    define DSINFER_LOADER_EXPORT
+#  else
+#    ifdef DSINFER_LOADER_LIBRARY
+#      define DSINFER_LOADER_EXPORT DSINFER_CORE_DECL_EXPORT
+#    else
+#      define DSINFER_LOADER_EXPORT DSINFER_CORE_DECL_IMPORT
+#    endif
+#  endif
+#endif
+
+#endif // DSINFERLOADERGLOBAL_H
