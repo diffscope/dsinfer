@@ -7,6 +7,9 @@
 #include <loadso/library.h>
 #include <loadso/system.h>
 
+#include "dsinfer_pimpl.h"
+#include "format.h"
+
 namespace fs = std::filesystem;
 
 namespace dsinfer {
@@ -15,29 +18,28 @@ namespace dsinfer {
 
     class Environment::Impl {
     public:
-        void load(const fs::path &path, ExecutionProvider ep) {
-            // 1. Load Ort shared library and create handle
+        bool load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
+            LoadSO::Library tempLib;
 
+            // 1. Load Ort shared library and create handle
 #ifdef _WIN32
             auto orgLibPath = LoadSO::System::SetLibraryPath(path.parent_path());
 #endif
-            if (!lib.open(path, LoadSO::Library::ResolveAllSymbolsHint)) {
-                auto msg = std::string("Load library failed: ") +
-                           LoadSO::System::MultiFromPathString(lib.lastError());
-                throw std::runtime_error(msg);
+            if (!tempLib.open(path, LoadSO::Library::ResolveAllSymbolsHint)) {
+                *errorMessage =
+                    formatTextN("%1: Load library failed: %2", path, tempLib.lastError());
+                return false;
             }
 #ifdef _WIN32
             LoadSO::System::SetLibraryPath(orgLibPath);
 #endif
 
             // 2. Get Ort API getter handle
-            auto addr = lib.resolve("OrtGetApiBase");
+            auto addr = tempLib.resolve("OrtGetApiBase");
             if (!addr) {
-                lib.close();
-
-                auto msg = std::string("Get api handle failed: ") +
-                           LoadSO::System::MultiFromPathString(lib.lastError());
-                throw std::runtime_error(msg);
+                *errorMessage =
+                    formatTextN("%1: Get api handle failed: %2", path, tempLib.lastError());
+                return false;
             }
 
             // 3. Check Ort API
@@ -45,14 +47,14 @@ namespace dsinfer {
             auto apiBase = handle();
             auto api = apiBase->GetApi(ORT_API_VERSION);
             if (!api) {
-                lib.close();
-
-                auto msg = std::string("Failed to get OrtApi.");
-                throw std::runtime_error(msg);
+                *errorMessage = formatTextN("%1: Failed to get api instance");
+                return false;
             }
 
             // Successfully get Ort API.
             Ort::InitApi(api);
+
+            std::swap(lib, tempLib);
 
             loaded = true;
             libPath = path;
@@ -60,6 +62,7 @@ namespace dsinfer {
 
             ortApiBase = apiBase;
             ortApi = api;
+            return true;
         }
 
         LoadSO::Library lib;
@@ -83,14 +86,18 @@ namespace dsinfer {
         g_env = nullptr;
     }
 
-    void Environment::load(const fs::path &path, ExecutionProvider ep) {
-        if (_impl->loaded)
-            return;
-        _impl->load(path, ep);
+    bool Environment::load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
+        __impl_t;
+        if (impl.loaded) {
+            *errorMessage = formatTextN("%1: Library \"%2\" has been loaded", path, impl.libPath);
+            return false;
+        }
+        return impl.load(path, ep, errorMessage);
     }
 
     bool Environment::isLoaded() const {
-        return _impl->loaded;
+        __impl_t;
+        return impl.loaded;
     }
 
     Environment *Environment::instance() {
@@ -98,15 +105,18 @@ namespace dsinfer {
     }
 
     fs::path Environment::libraryPath() const {
-        return _impl->libPath;
+        __impl_t;
+        return impl.libPath;
     }
 
     ExecutionProvider Environment::executionProvider() const {
-        return _impl->executionProvider;
+        __impl_t;
+        return impl.executionProvider;
     }
 
     std::string Environment::versionString() const {
-        return _impl->ortApiBase ? _impl->ortApiBase->GetVersionString() : std::string();
+        __impl_t;
+        return impl.ortApiBase ? impl.ortApiBase->GetVersionString() : std::string();
     }
 
 }

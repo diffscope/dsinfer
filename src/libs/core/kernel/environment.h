@@ -16,13 +16,11 @@ namespace dsinfer {
         Environment();
         ~Environment();
 
-        Environment(const Environment &) = delete;
-        Environment &operator=(const Environment &) = delete;
-
         static Environment *instance();
 
     public:
-        void load(const std::filesystem::path &path, ExecutionProvider ep);
+        bool load(const std::filesystem::path &path, ExecutionProvider ep,
+                  std::string *errorMessage);
         bool isLoaded() const;
 
         std::filesystem::path libraryPath() const;

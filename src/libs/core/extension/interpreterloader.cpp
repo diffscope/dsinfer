@@ -10,6 +10,8 @@
 
 #include <loadso/library.h>
 
+#include "dsinfer_pimpl.h"
+
 namespace dsinfer {
 
 #ifndef _WIN32
@@ -22,7 +24,7 @@ namespace dsinfer {
 #if defined(_WIN32)
         ".dll"
 #elif defined(__APPLE__)
-        "dylib"
+        ".dylib"
 #else
         ".so"
 #endif
@@ -32,15 +34,15 @@ namespace dsinfer {
         scan_shared_libraries(const std::filesystem::path &dir) {
         std::vector<std::filesystem::path> res;
         try {
-            // 遍历目录（非递归）
-            for (const auto &entry : std::filesystem::directory_iterator(dir)) {
-                // 检查是否为文件且后缀为 .dll 或 .so
-                if (entry.is_regular_file() && entry.path().extension() == library_extension) {
+            for (const auto &entry :
+                 std::filesystem::directory_iterator(std::filesystem::canonical(dir))) {
+                const auto &path = entry.path();
+                if (entry.is_regular_file() && path.extension() == library_extension) {
 #if defined(_WIN32) || defined(_WIN64)
-                    res.push_back(entry.path());
+                    res.push_back(path);
 #else
-                    if (is_executable_by_user(entry.path())) {
-                        res.push_back(entry.path());
+                    if (is_executable_by_user(path)) {
+                        res.push_back(path);
                     }
 #endif
                 }
@@ -69,6 +71,8 @@ namespace dsinfer {
     InterpreterLoader::~InterpreterLoader() = default;
 
     void InterpreterLoader::addLibraryPath(const std::filesystem::path &path) {
+        __impl_t;
+
         auto shared_libraries = scan_shared_libraries(path);
         for (const auto &lib_path : std::as_const(shared_libraries)) {
             auto lib = std::make_unique<LoadSO::Library>();
@@ -88,18 +92,20 @@ namespace dsinfer {
                 continue;
             }
 
-            if (!_impl->interpreters.insert(std::make_pair(instance->key(), instance)).second)
+            if (!impl.interpreters.insert(std::make_pair(instance->key(), instance)).second) {
                 continue;
+            }
 
             printf("Loaded: %s\n", instance->key());
 
-            _impl->libraries.push_back(lib.release());
+            impl.libraries.push_back(lib.release());
         }
     }
 
     IInterpreter *InterpreterLoader::find(const std::string &key) const {
-        auto it = _impl->interpreters.find(key);
-        if (it == _impl->interpreters.end())
+        __impl_t;
+        auto it = impl.interpreters.find(key);
+        if (it == impl.interpreters.end())
             return nullptr;
         return it->second;
     }
