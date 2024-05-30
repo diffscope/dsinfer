@@ -48,4 +48,6 @@ qm_init_directories()
 # ----------------------------------
 # Add source modules
 # ----------------------------------
+add_subdirectory(libs)
+
 add_subdirectory(src)

@@ -120,7 +120,7 @@ add_subdirectory(libs)
 
 add_subdirectory(plugins)
 
-add_subdirectory(cli)
+# add_subdirectory(cli)
 
 if(DSINFER_INSTALL)
     # Add install target
