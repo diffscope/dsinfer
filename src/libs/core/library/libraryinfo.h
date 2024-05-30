@@ -14,7 +14,7 @@ namespace dsinfer {
         ~LibraryInfo();
 
         enum Type {
-            Singers = 1,
+            Singer = 1,
             Module = 2,
             UserType = 65535,
         };

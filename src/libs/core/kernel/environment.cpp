@@ -57,7 +57,7 @@ namespace dsinfer {
             std::swap(lib, tempLib);
 
             loaded = true;
-            libPath = path;
+            ortPath = path;
             executionProvider = ep;
 
             ortApiBase = apiBase;
@@ -69,7 +69,7 @@ namespace dsinfer {
 
         // Metadata
         bool loaded = false;
-        fs::path libPath;
+        fs::path ortPath;
         ExecutionProvider executionProvider = EP_CPU;
 
         // Library data
@@ -89,7 +89,7 @@ namespace dsinfer {
     bool Environment::load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
         __impl_t;
         if (impl.loaded) {
-            *errorMessage = formatTextN("%1: Library \"%2\" has been loaded", path, impl.libPath);
+            *errorMessage = formatTextN("%1: Library \"%2\" has been loaded", path, impl.ortPath);
             return false;
         }
         return impl.load(path, ep, errorMessage);
@@ -104,9 +104,9 @@ namespace dsinfer {
         return g_env;
     }
 
-    fs::path Environment::libraryPath() const {
+    fs::path Environment::runtimePath() const {
         __impl_t;
-        return impl.libPath;
+        return impl.ortPath;
     }
 
     ExecutionProvider Environment::executionProvider() const {

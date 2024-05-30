@@ -17,7 +17,23 @@
     "vendor": "someone",
     "copyright": "Copyright (C) someone",
     "description": "Some library",
-    "url": "https://www.dummy.cn"
+    "url": "https://www.dummy.cn",
+    "dependencies": [
+        {
+            "id": "acoustic-1",
+            "version": "1.0.0.0"
+        },
+        {
+            "id": "variance-A",
+            "version": "1.0.0.0",
+            "required": false
+        },
+        {
+            "id": "variance-B",
+            "version": "1.0.0.0",
+            "required": false
+        }
+    ]
 }
 ```
 
@@ -31,10 +47,14 @@
     + `copyright`：版权信息
     + `description`：介绍文字
     + `url`：网站
+    + `dependencies`：依赖的库
+        + `id`：依赖库 ID
+        + `version`：依赖库版本
+        + `required`：是否为强制依赖，默认为`true`
 
 ### 歌手库
 
-歌手库的根目录需要再提供一个`singers.json`的文件，文件格式如下。
+歌手库的根目录需要再提供一个`singer.json`的文件，文件格式如下。
 ```json
 {
     "singers": [
@@ -46,23 +66,18 @@
             "preset": [
                 {
                     "id": "acoustic-1",
-                    "version": "1.0.0.0",
                     "features": [
                         "acoustic"
                     ]
                 },
                 {
                     "id": "variance-A",
-                    "version": "1.0.0.0",
-                    "required": false,
                     "features": [
                         "pitch"
                     ]
                 },
                 {
                     "id": "variance-B",
-                    "version": "1.0.0.0",
-                    "required": false,
                     "features": [
                         "dur"
                     ]
@@ -108,3 +123,28 @@
     + zhibin-acoustic
     + zhibin-pitch
 ```
+
+## 架构
+
+### 库管理器
+
+给定一组路径，作为搜索库的搜索路径，类似于 PATH 环境变量。当加载一个库的时候，依次从这组路径中搜索其依赖并递归加载。
+
+每个库在内存中只有一份`LibraryImage`数据，使用引用计数维护。
+
+开发者使用`Library`对象访问`LibraryImage`，`Library`的`open`与`close`相当于`LibraryImage`引用计数的增减。
+
+### 模型管理器
+每个`onnx`模型在内存中只有一份`ModelImage`数据，使用引用计数维护。
+
+开发者使用`Session`对象访问`ModelImage`，`Session`的`open`与`close`相当于`ModelImage`引用计数的增减。
+
+### 推理解释器
+
+解释器（Interpreter）规定了一种`feature`的推理协议，每个解释器有一个`key`，与之对应的`feature`的`class`值相同。
+
+给定一组路径，在这些路径中放置一系列具有唯一导出函数`dsinfer_interpreter_instance`的动态库作为插件，`dsinfer`在初始化时将加载它们，每个插件提供一个解释器指针。
+
+当一个模块被加载时，其拥有的`feature`也将被加载。`dsinfer`将查找是否存在对应的解释器，如果不存在或`level`不兼容，则跳过。
+
+在解释器初始化时，它将根据`feature`中的参数动态地创建一个推理图，称为`Inference`，一个`Inference`中具有多一个以`Session`为节点的图，推理过程即从起点运算至终点。

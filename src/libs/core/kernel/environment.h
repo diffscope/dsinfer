@@ -23,7 +23,7 @@ namespace dsinfer {
                   std::string *errorMessage);
         bool isLoaded() const;
 
-        std::filesystem::path libraryPath() const;
+        std::filesystem::path runtimePath() const;
         ExecutionProvider executionProvider() const;
         std::string versionString() const;
 
