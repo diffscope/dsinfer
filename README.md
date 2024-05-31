@@ -49,6 +49,5 @@ cd vcpkg
 ### OnnxRuntime
 
 ```sh
-cd libs
-cmake [-Dep=gpu] -P ../scripts/setup-onnxruntime.cmake
+cd libs/flowonnx/libs && cmake [-Dep=gpu] -P ../scripts/setup-onnxruntime.cmake
 ```
