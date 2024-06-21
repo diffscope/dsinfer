@@ -4,8 +4,8 @@
         "loadso",
         "syscmdline",
         "qmsetup",
-        "rapidjson",
-        "yaml-cpp"
+        "yaml-cpp",
+        "nlohmann-json"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

@@ -1,5 +1,7 @@
 #include "acousticinterpreter.h"
 
+#include "acousticinference.h"
+
 namespace dsinfer {
 
     AcousticInterpreter::AcousticInterpreter() {
@@ -15,6 +17,10 @@ namespace dsinfer {
 
     bool AcousticInterpreter::load(const LibraryInfo &info, std::string *errorMessage) {
         return true;
+    }
+
+    Inference *AcousticInterpreter::create() const {
+        return new AcousticInference();
     }
 
 }

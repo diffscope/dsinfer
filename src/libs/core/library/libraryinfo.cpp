@@ -19,6 +19,7 @@ namespace dsinfer {
 
         LibraryInfo::Type type;
         std::string typeString;
+        std::vector<LibraryDependency> dependencies;
     };
 
     LibraryInfo::LibraryInfo() {
@@ -77,6 +78,11 @@ namespace dsinfer {
     std::string LibraryInfo::typeString() const {
         __impl_t;
         return impl.typeString;
+    }
+
+    const std::vector<LibraryDependency> &LibraryInfo::dependencies() const {
+        __impl_t;
+        return impl.dependencies;
     }
 
 }

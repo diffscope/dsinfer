@@ -1,5 +1,7 @@
 #include "pitchinterpreter.h"
 
+#include "pitchinference.h"
+
 namespace dsinfer {
 
     PitchInterpreter::PitchInterpreter() {
@@ -15,6 +17,10 @@ namespace dsinfer {
 
     bool PitchInterpreter::load(const LibraryInfo &info, std::string *errorMessage) {
         return true;
+    }
+
+    Inference *PitchInterpreter::create() const {
+        return new PitchInference();
     }
 
 }

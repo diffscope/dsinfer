@@ -4,6 +4,7 @@
 #include <string>
 
 #include <dsinferCore/libraryinfo.h>
+#include <dsinferCore/inference.h>
 
 namespace dsinfer {
 
@@ -14,14 +15,15 @@ namespace dsinfer {
         IInterpreter();
         virtual ~IInterpreter();
 
-        IInterpreter(const IInterpreter &) = delete;
-        IInterpreter &operator=(const IInterpreter &) = delete;
-
     public:
         virtual const char *key() const = 0;
         virtual int level() const = 0;
 
         virtual bool load(const LibraryInfo &info, std::string *errorMessage);
+        virtual Inference *create() const = 0;
+
+    protected:
+        DSINFER_DISABLE_COPY(IInterpreter)
     };
 
 }

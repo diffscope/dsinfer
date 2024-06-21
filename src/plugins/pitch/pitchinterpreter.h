@@ -16,6 +16,7 @@ namespace dsinfer {
         int level() const override;
 
         bool load(const LibraryInfo &info, std::string *errorMessage) override;
+        Inference *create() const override;
     };
 
 }
