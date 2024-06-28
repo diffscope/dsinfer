@@ -4,7 +4,7 @@
 #include <string>
 #include <filesystem>
 
-#include <dsinferCore/dsinfercoreglobal.h>
+#include <dsinferCore/inferenceinfo.h>
 
 namespace dsinfer {
 
@@ -14,7 +14,8 @@ namespace dsinfer {
         virtual ~Inference();
 
     public:
-        virtual bool exec(const std::string &input, std::string &output) const = 0;
+    virtual bool load()
+        virtual int start(const std::string &input);
 
     protected:
         DSINFER_DISABLE_COPY(Inference)

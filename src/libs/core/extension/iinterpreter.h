@@ -19,7 +19,7 @@ namespace dsinfer {
         virtual const char *key() const = 0;
         virtual int level() const = 0;
 
-        virtual bool load(const LibraryInfo &info, std::string *errorMessage);
+        virtual bool load();
         virtual Inference *create() const = 0;
 
     protected:

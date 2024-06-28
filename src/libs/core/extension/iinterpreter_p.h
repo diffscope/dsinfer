@@ -1,5 +1,0 @@
-#ifndef IINTERPRETER_P_H
-#define IINTERPRETER_P_H
-
-
-#endif // IINTERPRETER_P_H

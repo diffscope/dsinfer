@@ -23,7 +23,6 @@ namespace dsinfer {
         class Impl;
         std::unique_ptr<Impl> _impl;
         
-    protected:
         DSINFER_DISABLE_COPY(InterpreterLoader)
     };
 

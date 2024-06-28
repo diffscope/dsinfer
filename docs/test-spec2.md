@@ -90,14 +90,14 @@
 
 ### 组件库
 
-组件库的根目录需要再提供一个`module.json`的文件，文件格式如下。
+组件库的根目录需要再提供一个`inference.json`的文件，文件格式如下。
 ```json
 {
-    "features": [
+    "inferences": [
         {
             "class": "svs.Variance.PitchPrediction",
             "level": 1,
-            "attributes":{
+            "attributes": {
                 "linguistic": "./linguistic.onnx"
             }
         },

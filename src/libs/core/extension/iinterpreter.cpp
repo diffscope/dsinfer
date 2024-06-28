@@ -6,7 +6,7 @@ namespace dsinfer {
 
     IInterpreter::~IInterpreter() = default;
 
-    bool IInterpreter::load(const LibraryInfo &info, std::string *errorMessage) {
+    bool IInterpreter::load() {
         return true;
     }
 
