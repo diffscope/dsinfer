@@ -41,13 +41,13 @@
             "version": "1.0.0.0"
         }
     ],
-    "require": [
-        "singer"
-    ],
     "properties": {
         "accessory": true,
         "single": true
-    }
+    },
+    "content": [
+        "singer"
+    ]
 }
 ```
 + 必选字段
@@ -63,12 +63,12 @@
         + `id`：依赖库 ID
         + `version`：依赖库版本
         + `required`：是否为强制依赖，默认为`true`
-    + `require`：引入的附加声明文件列表，只有一个的话可以写字符串（不需要扩展名）
     + `properties`：与加载器或安装器相关的属性
         + `accessory`：表示是其他 Library 的配件，当其所属的 Library 不存在时，可以自动删除，默认为`false`
         + `single`: 同`id`的 Library 只能加载同一个，默认为`false`
+    + `content`：引入的附加声明文件列表，只有一个的话可以写字符串（不需要扩展名）
 
-`require`引入的必须是一个`json`文件，其格式如下。
+`content`引入的必须是一个`json`文件，其格式如下。
 ```json
 {
     "type": "<type name>"
@@ -124,12 +124,12 @@
 
 ### 附加声明文件
 
-通过`require`可引入附加声明文件，目前支持的`type`有以下几种。
+通过`content`可引入附加声明文件，目前支持的`type`有以下几种。
 
 - `inference`：包含可推理的模型
 - `singer`：包含歌手信息，歌手预设
 
-如果`require`为空，那么说明此 Library 只包含公用数据供其他 Library 访问，不提供其他功能。
+如果`content`为空，那么说明此 Library 只包含公用数据供其他 Library 访问，不提供其他功能。
 
 ## Inference Library
 
@@ -158,7 +158,7 @@ Inference Library 负责执行某一项参数的推理任务，承担了最底�
                 },
                 "required": ["prediction"]
             },
-            "internal": {
+            "internalAttributes": {
                 "config": {
                     "linguistic": "./linguistic.onnx"
                 }
@@ -168,7 +168,7 @@ Inference Library 负责执行某一项参数的推理任务，承担了最底�
             "id": "variance",
             "class": "org.DiffSinger.VariancePrediction",
             "level": 1,
-            "internal": {
+            "internalAttributes": {
                 "config": {
                     "hiddenSize": 256
                 }
@@ -183,7 +183,7 @@ Inference Library 负责执行某一项参数的推理任务，承担了最底�
 + 可选字段
     + `class`: 对应的推理解释器，如果不填则与`id`一致
     + `arguments`：其他可选/可调模型参数，为一个 Json Schema
-    + `internal`：解释器内部使用配置信息
+    + `internalAttributes`：解释器内部使用配置信息
 
 ### 注意事项
 
@@ -247,7 +247,7 @@ Singer Library 负责定义一个或若干个歌手的信息，以及其需要�
 
 ## 混合 Library
 
-若一个 Library 的`desc.json`中，`require`引入了多个声明文件，既包含`singer`也包含`inference`，那么是一个混合 Library，只需满足这两种 Library 的注意事项中的限制条件即可。
+若一个 Library 的`desc.json`中，`content`引入了多个声明文件，既包含`singer`也包含`inference`，那么是一个混合 Library，只需满足这两种 Library 的注意事项中的限制条件即可。
 
 如果将歌手信息与其预设中依赖的推理库都放在混合 Library 中，那么`preset`中的项可以不需要`id`，没有`id`则`id`默认为当前 Library。
 

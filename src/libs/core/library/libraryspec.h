@@ -4,8 +4,10 @@
 #include <map>
 #include <vector>
 #include <filesystem>
+#include <functional>
 
-#include <dsinferCore/dsinfercoreglobal.h>
+#include <dsinferCore/librarymanifestbase.h>
+#include <dsinferCore/json_cxxapi.h>
 
 namespace dsinfer {
 
@@ -14,37 +16,33 @@ namespace dsinfer {
         std::string version;
         bool required;
 
-        LibraryDependency(bool required = true) : required(required){};
+        inline LibraryDependency(bool required = true) : required(required) {
+        }
+
+        bool operator==(const LibraryDependency &other) const;
     };
 
-    class DSINFER_CORE_EXPORT LibraryInfo {
+    class DSINFER_CORE_EXPORT LibrarySpec {
     public:
-        LibraryInfo();
-        ~LibraryInfo();
-
-        enum Type {
-            Singer = 1,
-            Module = 2,
-            UserType = 65535,
-        };
-
-    public:
-        bool load(const std::filesystem::path &path);
+        LibrarySpec();
+        ~LibrarySpec();
 
     public:
         std::string id() const;
         std::string version() const;
         std::string compatVersion() const;
-
         std::string description() const;
         std::string vendor() const;
         std::string copyright() const;
         std::string url() const;
 
-        Type type() const;
-        std::string typeString() const;
+        std::vector<LibraryDependency> dependencies() const;
+        JsonObject properties() const;
 
-        const std::vector<LibraryDependency> &dependencies() const;
+        std::vector<LibraryManifestBase *> content() const;
+
+    public:
+        LibrarySpec read(const std::filesystem::path &path);
 
     protected:
         class Impl;

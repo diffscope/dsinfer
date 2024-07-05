@@ -1,10 +1,10 @@
-#ifndef INFERENCE_H
-#define INFERENCE_H
+#ifndef DSINFERCORE_INFERENCE_H
+#define DSINFERCORE_INFERENCE_H
 
 #include <string>
 #include <filesystem>
 
-#include <dsinferCore/inferenceinfo.h>
+#include <dsinferCore/inferencemanifest.h>
 
 namespace dsinfer {
 
@@ -14,7 +14,8 @@ namespace dsinfer {
         virtual ~Inference();
 
     public:
-    virtual bool load()
+        virtual bool load(const InferenceInfo &info);
+
         virtual int start(const std::string &input);
 
     protected:
@@ -23,4 +24,4 @@ namespace dsinfer {
 
 }
 
-#endif // INFERENCE_H
+#endif // DSINFERCORE_INFERENCE_H

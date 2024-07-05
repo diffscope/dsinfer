@@ -1,5 +1,5 @@
-#ifndef INTERPRETERLOADER_H
-#define INTERPRETERLOADER_H
+#ifndef INTERPRETERLOADER_P_H
+#define INTERPRETERLOADER_P_H
 
 #include <memory>
 #include <filesystem>
@@ -8,7 +8,7 @@
 
 namespace dsinfer {
 
-    class DSINFER_CORE_EXPORT InterpreterLoader {
+    class InterpreterLoader {
     public:
         InterpreterLoader();
         ~InterpreterLoader();
@@ -28,4 +28,4 @@ namespace dsinfer {
 
 }
 
-#endif // INTERPRETERLOADER_H
+#endif // INTERPRETERLOADER_P_H

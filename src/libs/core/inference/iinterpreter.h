@@ -3,12 +3,12 @@
 
 #include <string>
 
-#include <dsinferCore/libraryinfo.h>
+#include <dsinferCore/libraryspec.h>
 #include <dsinferCore/inference.h>
 
 namespace dsinfer {
 
-    class LibraryInfo;
+    class LibrarySpec;
 
     class DSINFER_CORE_EXPORT IInterpreter {
     public:

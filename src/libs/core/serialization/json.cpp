@@ -1,12 +1,10 @@
-#include "jsonapi.h"
+#include  "json_cxxapi.h"
 
 #include <cstring>
 
-#include "jsonapi_capi.h"
+static dsinfer_json_bridge g_bridge;
 
-static jsonapi_bridge g_bridge;
-
-void jsonapi_string_create(jsonapi_string *s, const char *data, int managed) {
+void dsinfer_json_string_create(dsinfer_json_string *s, const char *data, int managed) {
     int size = strlen(data);
     s->data = new char[size + 1];
     for (int i = 0; i < size; ++i) {
@@ -16,30 +14,31 @@ void jsonapi_string_create(jsonapi_string *s, const char *data, int managed) {
     s->managed = managed;
 }
 
-void jsonapi_string_destroy(jsonapi_string *s) {
-    if (!s->managed) {
+void dsinfer_json_string_destroy(dsinfer_json_string *s) {
+    if (s->data && !s->managed) {
         delete[] s->data;
     }
 }
 
-void jsonapi_bridge_global_set(const jsonapi_bridge *b) {
+void dsinfer_json_bridge_global_set(const dsinfer_json_bridge *b) {
     g_bridge = *b;
 }
 
-void jsonapi_bridge_global_get(jsonapi_bridge *b) {
+void dsinfer_json_bridge_global_get(dsinfer_json_bridge *b) {
     *b = g_bridge;
 }
 
-static std::string jsonapi_string_to_std_string(jsonapi_string *s) {
+// Copy `dsinfer_json_string` to `std::string` and free the buffer.
+static std::string dsinfer_json_string_to_std_string(dsinfer_json_string *s) {
     if (s->data == nullptr) {
         return {};
     }
     std::string res(s->data, s->size);
-    jsonapi_string_destroy(s);
+    dsinfer_json_string_destroy(s);
     return res;
 }
 
-namespace JsonApi {
+namespace dsinfer {
 
     // Value
     JsonValue::JsonValue(JsonValue::Type type) {
@@ -110,9 +109,9 @@ namespace JsonApi {
         if (_data.type != Double) {
             return defaultValue;
         }
-        jsonapi_string res;
+        dsinfer_json_string res;
         g_bridge.value_get(&_data, &res);
-        return jsonapi_string_to_std_string(&res);
+        return dsinfer_json_string_to_std_string(&res);
     }
     JsonArray JsonValue::toArray() const {
         return toArray({});
@@ -121,7 +120,7 @@ namespace JsonApi {
         if (_data.type != Array) {
             return defaultValue;
         }
-        jsonapi_array res;
+        dsinfer_json_array res;
         g_bridge.value_get(&_data, &res);
         return res;
     }
@@ -132,7 +131,7 @@ namespace JsonApi {
         if (_data.type != Object) {
             return defaultValue;
         }
-        jsonapi_object res;
+        dsinfer_json_object res;
         g_bridge.value_get(&_data, &res);
         return res;
     }
@@ -151,7 +150,7 @@ namespace JsonApi {
     bool JsonValue::operator==(const JsonValue &other) const {
         return g_bridge.value_equal(&_data, &other._data);
     }
-    JsonValue::JsonValue(jsonapi_value &&data) : _data(data) {
+    JsonValue::JsonValue(dsinfer_json_value &&data) : _data(data) {
     }
     JsonValueConstRef::JsonValueConstRef(const JsonValueConstRef &other) {
         if (other.is_object) {
@@ -180,11 +179,11 @@ namespace JsonApi {
     }
     JsonValue JsonValueConstRef::toValue() const {
         if (is_object) {
-            jsonapi_value res;
+            dsinfer_json_value res;
             g_bridge.object_iterator_get(&it, &res);
             return res;
         }
-        jsonapi_value res;
+        dsinfer_json_value res;
         g_bridge.array_get(arr, idx, &res);
         return res;
     }
@@ -212,9 +211,9 @@ namespace JsonApi {
         return arr == other.arr && idx == other.idx;
     }
     std::string JsonValueConstRef::objectKey() const {
-        jsonapi_string res;
+        dsinfer_json_string res;
         g_bridge.object_iterator_key(&it, &res);
-        return jsonapi_string_to_std_string(&res);
+        return dsinfer_json_string_to_std_string(&res);
     }
     void JsonValueConstRef::objectIteratorNext() {
         g_bridge.object_iterator_next(&it);
@@ -222,11 +221,11 @@ namespace JsonApi {
     void JsonValueConstRef::objectIteratorPrev() {
         g_bridge.object_iterator_prev(&it);
     }
-    JsonValueConstRef::JsonValueConstRef(jsonapi_array *array, int idx) : is_object(false) {
+    JsonValueConstRef::JsonValueConstRef(dsinfer_json_array *array, int idx) : is_object(false) {
         this->arr = array;
         this->idx = idx;
     }
-    JsonValueConstRef::JsonValueConstRef(jsonapi_object_iterator &&it) : is_object(true) {
+    JsonValueConstRef::JsonValueConstRef(dsinfer_json_object_iterator &&it) : is_object(true) {
         this->it = it;
     }
     JsonValueRef::JsonValueRef(const JsonValueRef &other) = default;
@@ -277,7 +276,7 @@ namespace JsonApi {
         other._data.data = nullptr;
     }
     JsonValue JsonArray::at(int i) const {
-        jsonapi_value res;
+        dsinfer_json_value res;
         g_bridge.array_get(&_data, i, &res);
         return res;
     }
@@ -312,7 +311,7 @@ namespace JsonApi {
     bool JsonArray::operator==(const JsonArray &other) const {
         return g_bridge.array_equal(&_data, &other._data);
     }
-    JsonArray::JsonArray(jsonapi_array &&data) : _data(data) {
+    JsonArray::JsonArray(dsinfer_json_array &&data) : _data(data) {
     }
 
 
@@ -357,15 +356,15 @@ namespace JsonApi {
         return res;
     }
     JsonValue JsonObject::value(const char *key) const {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_find(&_data, key, &it);
-        jsonapi_value res;
+        dsinfer_json_value res;
         g_bridge.object_iterator_get(&it, &res);
         g_bridge.object_iterator_destroy(&it);
         return res;
     }
     JsonValueRef JsonObject::operator[](const char *key) {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_find(&_data, key, &it);
         return it;
     }
@@ -390,7 +389,7 @@ namespace JsonApi {
     }
 
     JsonObject::iterator JsonObject::begin() {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_begin(&_data, &it);
         return it;
     }
@@ -398,7 +397,7 @@ namespace JsonApi {
         return begin();
     }
     JsonObject::iterator JsonObject::end() {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_end(&_data, &it);
         return it;
     }
@@ -410,7 +409,7 @@ namespace JsonApi {
         return it;
     }
     JsonObject::iterator JsonObject::find(const char *key) {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_find(&_data, key, &it);
         return it;
     }
@@ -418,12 +417,12 @@ namespace JsonApi {
         return find(key);
     }
     JsonObject::iterator JsonObject::insert(const char *key, const JsonValue &value) {
-        jsonapi_object_iterator it;
+        dsinfer_json_object_iterator it;
         g_bridge.object_insert(&_data, key, &value._data, &it);
         return it;
     }
 
-    JsonObject::JsonObject(jsonapi_object &&data) : _data(data) {
+    JsonObject::JsonObject(dsinfer_json_object &&data) : _data(data) {
     }
 
 
@@ -461,13 +460,13 @@ namespace JsonApi {
         other._data.type = JsonValue::Undefined;
     }
     JsonDocument JsonDocument::fromJson(const char *json, std::string *error) {
-        jsonapi_value doc;
-        jsonapi_string err;
-        g_bridge.document_deserialize(&doc, &err);
+        dsinfer_json_value doc;
+        dsinfer_json_string err;
+        g_bridge.json_deserialize(&doc, &err);
         if (error) {
-            *error = jsonapi_string_to_std_string(&err);
+            *error = dsinfer_json_string_to_std_string(&err);
         } else {
-            jsonapi_string_destroy(&err);
+            dsinfer_json_string_destroy(&err);
         }
         return doc;
     }
@@ -475,9 +474,33 @@ namespace JsonApi {
         switch (_data.type) {
             case JsonValue::Array:
             case JsonValue::Object: {
-                jsonapi_string res;
-                g_bridge.document_serialize(&_data, &res, options);
-                return jsonapi_string_to_std_string(&res);
+                dsinfer_json_string res;
+                g_bridge.json_serialize(&_data, &res, options);
+                return dsinfer_json_string_to_std_string(&res);
+            }
+            default:
+                break;
+        }
+        return {};
+    }
+    JsonDocument JsonDocument::fromCbor(const char *cbor, std::string *error) {
+        dsinfer_json_value doc;
+        dsinfer_json_string err;
+        g_bridge.cbor_deserialize(&doc, &err);
+        if (error) {
+            *error = dsinfer_json_string_to_std_string(&err);
+        } else {
+            dsinfer_json_string_destroy(&err);
+        }
+        return doc;
+    }
+    std::string JsonDocument::toCbor(int options) const {
+        switch (_data.type) {
+            case JsonValue::Array:
+            case JsonValue::Object: {
+                dsinfer_json_string res;
+                g_bridge.cbor_serialize(&_data, &res, options);
+                return dsinfer_json_string_to_std_string(&res);
             }
             default:
                 break;
@@ -507,12 +530,12 @@ namespace JsonApi {
         return _data.type == JsonValue::Null || _data.type == JsonValue::Undefined;
     }
     JsonObject JsonDocument::object() const {
-        jsonapi_object o;
+        dsinfer_json_object o;
         g_bridge.value_get(&_data, &o);
         return o;
     }
     JsonArray JsonDocument::array() const {
-        jsonapi_array a;
+        dsinfer_json_array a;
         g_bridge.value_get(&_data, &a);
         return a;
     }
@@ -524,7 +547,7 @@ namespace JsonApi {
         g_bridge.value_destroy(&_data);
         g_bridge.value_create(&_data, JsonValue::Array, &array._data);
     }
-    JsonDocument::JsonDocument(jsonapi_value &&data) : _data(data) {
+    JsonDocument::JsonDocument(dsinfer_json_value &&data) : _data(data) {
     }
 
 }

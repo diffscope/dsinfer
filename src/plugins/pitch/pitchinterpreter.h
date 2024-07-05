@@ -5,7 +5,7 @@
 
 namespace dsinfer {
 
-    class LibraryInfo;
+    class LibrarySpec;
 
     class PitchInterpreter : public IInterpreter {
     public:
@@ -15,7 +15,7 @@ namespace dsinfer {
         const char *key() const override;
         int level() const override;
 
-        bool load(const LibraryInfo &info, std::string *errorMessage) override;
+        bool load(const LibrarySpec &info, std::string *errorMessage) override;
         Inference *create() const override;
     };
 

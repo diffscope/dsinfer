@@ -15,7 +15,7 @@ namespace dsinfer {
         return 0;
     }
 
-    bool AcousticInterpreter::load(const LibraryInfo &info, std::string *errorMessage) {
+    bool AcousticInterpreter::load(const LibrarySpec &info, std::string *errorMessage) {
         return true;
     }
 

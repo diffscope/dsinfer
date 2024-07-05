@@ -1,14 +1,14 @@
-#ifndef JSONAPI_H
-#define JSONAPI_H
+#ifndef DSINFERCORE_JSON_CXXAPI_H
+#define DSINFERCORE_JSON_CXXAPI_H
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <string_view>
 
-#include <dsinferCore/jsonapi_capi.h>
+#include <dsinferCore/json_capi.h>
 
-namespace JsonApi {
+namespace dsinfer {
 
     class JsonValueConstRef;
 
@@ -104,8 +104,8 @@ namespace JsonApi {
         }
 
     protected:
-        JsonValue(jsonapi_value &&data);
-        jsonapi_value _data;
+        JsonValue(dsinfer_json_value &&data);
+        dsinfer_json_value _data;
 
         friend class JsonValueConstRef;
         friend class JsonValueRef;
@@ -191,15 +191,15 @@ namespace JsonApi {
         void objectIteratorNext();
         void objectIteratorPrev();
 
-        JsonValueConstRef(jsonapi_array *array, int idx);
-        JsonValueConstRef(jsonapi_object_iterator &&it);
+        JsonValueConstRef(dsinfer_json_array *array, int idx);
+        JsonValueConstRef(dsinfer_json_object_iterator &&it);
 
         union {
             struct {
-                jsonapi_array *arr;
+                dsinfer_json_array *arr;
                 int idx;
             };
-            jsonapi_object_iterator it;
+            dsinfer_json_object_iterator it;
         };
         bool is_object;
 
@@ -216,10 +216,10 @@ namespace JsonApi {
         JsonValueRef &operator=(const JsonValueRef &val);
 
     protected:
-        JsonValueRef(jsonapi_array *array, int idx) : JsonValueConstRef(array, idx) {
+        JsonValueRef(dsinfer_json_array *array, int idx) : JsonValueConstRef(array, idx) {
         }
-        JsonValueRef(jsonapi_object_iterator &&it)
-            : JsonValueConstRef(std::forward<jsonapi_object_iterator>(it)) {
+        JsonValueRef(dsinfer_json_object_iterator &&it)
+            : JsonValueConstRef(std::forward<dsinfer_json_object_iterator>(it)) {
         }
 
         friend class JsonValue;
@@ -412,7 +412,7 @@ namespace JsonApi {
             inline const_iterator() : const_iterator(static_cast<const JsonArray *>(nullptr), 0) {
             }
             explicit inline const_iterator(const JsonArray *array, int index)
-                : item(const_cast<jsonapi_array *>(&array->_data), index) {
+                : item(const_cast<dsinfer_json_array *>(&array->_data), index) {
             }
             inline const_iterator(const iterator &o) : item(o.item) {
             }
@@ -567,8 +567,8 @@ namespace JsonApi {
         typedef int difference_type;
 
     protected:
-        JsonArray(jsonapi_array &&data);
-        jsonapi_array _data;
+        JsonArray(dsinfer_json_array &&data);
+        dsinfer_json_array _data;
 
         friend class JsonValue;
         friend class JsonValueConstRef;
@@ -667,8 +667,8 @@ namespace JsonApi {
             friend class JsonObject;
             JsonValueRef item;
 
-            iterator(jsonapi_object_iterator &&it)
-                : item(std::forward<jsonapi_object_iterator>(it)) {
+            iterator(dsinfer_json_object_iterator &&it)
+                : item(std::forward<dsinfer_json_object_iterator>(it)) {
             }
 
         public:
@@ -678,7 +678,7 @@ namespace JsonApi {
             typedef JsonValueRef reference;
             typedef JsonValueRef *pointer;
 
-            inline iterator() : item(jsonapi_object_iterator{nullptr, nullptr}) {
+            inline iterator() : item(dsinfer_json_object_iterator{nullptr, nullptr}) {
             }
 
             iterator(const iterator &other) = default;
@@ -740,8 +740,8 @@ namespace JsonApi {
             friend class iterator;
             JsonValueConstRef item;
 
-            const_iterator(jsonapi_object_iterator &&it)
-                : item(std::forward<jsonapi_object_iterator>(it)) {
+            const_iterator(dsinfer_json_object_iterator &&it)
+                : item(std::forward<dsinfer_json_object_iterator>(it)) {
             }
 
         public:
@@ -751,7 +751,7 @@ namespace JsonApi {
             typedef const JsonValueConstRef reference;
             typedef const JsonValueConstRef *pointer;
 
-            inline const_iterator() : item(jsonapi_object_iterator{nullptr, nullptr}) {
+            inline const_iterator() : item(dsinfer_json_object_iterator{nullptr, nullptr}) {
             }
             inline const_iterator(const iterator &other) : item(other.item) {
             }
@@ -862,8 +862,8 @@ namespace JsonApi {
         }
 
     protected:
-        JsonObject(jsonapi_object &&data);
-        jsonapi_object _data;
+        JsonObject(dsinfer_json_object &&data);
+        dsinfer_json_object _data;
 
         friend class JsonValue;
         friend class JsonValueConstRef;
@@ -892,6 +892,9 @@ namespace JsonApi {
     public:
         static JsonDocument fromJson(const char *json, std::string *error = nullptr);
         std::string toJson(int options = 0) const;
+        
+        static JsonDocument fromCbor(const char *cbor, std::string *error = nullptr);
+        std::string toCbor(int options = 0) const;
 
         bool isEmpty() const;
         bool isArray() const;
@@ -905,10 +908,10 @@ namespace JsonApi {
         void setArray(const JsonArray &array);
 
     private:
-        JsonDocument(jsonapi_value &&data);
-        jsonapi_value _data;
+        JsonDocument(dsinfer_json_value &&data);
+        dsinfer_json_value _data;
     };
 
 }
 
-#endif // JSONAPI_H
+#endif // DSINFERCORE_JSON_CXXAPI_H

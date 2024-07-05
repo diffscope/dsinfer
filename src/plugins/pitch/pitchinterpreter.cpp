@@ -15,7 +15,7 @@ namespace dsinfer {
         return 0;
     }
 
-    bool PitchInterpreter::load(const LibraryInfo &info, std::string *errorMessage) {
+    bool PitchInterpreter::load(const LibrarySpec &info, std::string *errorMessage) {
         return true;
     }
 

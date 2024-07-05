@@ -1,4 +1,4 @@
-#include "interpreterloader.h"
+#include "interpreterloader_p.h"
 
 #ifndef _WIN32
 #  include <unistd.h>
