@@ -1,4 +1,4 @@
-# DiffSinger 数据格式与推理接口规范 2.2
+# DiffSinger 数据格式与推理接口规范 2.3
 
 > DiffSinger Data Format and Inference Interface Specification 2.2
 
@@ -7,9 +7,9 @@
 本规范主要指导以下几种基础设施的开发：
 1. 安装器（Installer）
 2. 加载器（Loader）
-3. 推理器（Actuator）
+3. 执行器（Executor）
 
-## 关于 Library
+## 1. 关于 Library
 
 ### 文件结构
 
@@ -17,10 +17,12 @@
 
 压缩包内基本结构为：
 ```
-- xxx.dslib
++ xxx.dslib
   - desc.json
   - ...
 ```
+
+Library 内多使用`json`作为声明文件，我们规定，声明文件中使用的相对路径的基路径是这个声明文件的在所目录。
 
 #### 描述文件
 
@@ -35,19 +37,32 @@
     "copyright": "Copyright (C) someone",
     "description": "Some library",
     "url": "https://www.dummy.cn",
+    "contributes": {
+        "inferences": [
+            {
+                "id": "pitch",
+                "class": "org.DiffSinger.PitchInference",
+                "configuration": "./inferences/pitch.json"
+            },
+            {
+                "id": "variance",
+                "class": "org.DiffSinger.PitchInference",
+                "configuration": "./inferences/variance.json"
+            }
+        ],
+        "singers": [
+            {
+                "id": "zhibin",
+                "path": "./characters/zhibin.json"
+            }
+        ]
+    },
     "dependencies": [
         {
             "id": "bar",
             "version": "1.0.0.0"
         }
     ],
-    "properties": {
-        "accessory": true,
-        "single": true
-    },
-    "content": [
-        "singer"
-    ]
 }
 ```
 + 必选字段
@@ -59,22 +74,21 @@
     + `copyright`：版权信息
     + `description`：介绍文字
     + `url`：网站
+    + `contributes`：功能贡献列表，主要包含子模块
+        + `inferences`：推理模块
+            + `id`：推理模块 ID
+            + `class`：推理类型
+            + `configuration`：配置文件
+        + `singers`：歌手模块
+            + `id`：歌手 ID
+            + `path`：歌手信息文件
     + `dependencies`：依赖的库
         + `id`：依赖库 ID
         + `version`：依赖库版本
         + `required`：是否为强制依赖，默认为`true`
-    + `properties`：与加载器或安装器相关的属性
+    <!-- + `properties`：与加载器或安装器相关的属性
         + `accessory`：表示是其他 Library 的配件，当其所属的 Library 不存在时，可以自动删除，默认为`false`
-        + `single`: 同`id`的 Library 只能加载同一个，默认为`false`
-    + `content`：引入的附加声明文件列表，只有一个的话可以写字符串（不需要扩展名）
-
-`content`引入的必须是一个`json`文件，其格式如下。
-```json
-{
-    "type": "<type name>"
-}
-```
-所有`json`文件中的相对路径都是相对于所在的`json`文件。
+        + `single`: 同`id`的 Library 只能加载同一个，默认为`false` -->
 
 #### 依赖项
 
@@ -109,12 +123,12 @@
 
 安装器将所有`dslib`安装到同一个目录（如`~/.diffsinger/lib`），所有被安装的`dslib`平铺在这个目录中。
 ```
-- ~/.diffsinger
-  - lib
-      - lib1
++ ~/.diffsinger
+  + lib
+      + lib1
         - desc.json
         - ...
-      - lib2
+      + lib2
         - desc.json
         - ...
   - ...
@@ -122,109 +136,57 @@
 
 加载器可由用户在启动时指定一个路径列表（如`~/.diffsinger/lib;~/lib1;~/lib2;~/lib3`），当加载器加载某个`dslib`并伴随着解析其依赖时，加载器将依次遍历这个列表，尝试每个路径，如果在这个路径中找到了符合条件的依赖则加载之，并按同样的方法解析下一个依赖，直到结束。
 
-### 附加声明文件
+## 2. 模块
 
-通过`content`可引入附加声明文件，目前支持的`type`有以下几种。
+### Inference 模块
 
-- `inference`：包含可推理的模型
-- `singer`：包含歌手信息，歌手预设
+Inference 模块负责执行某一项参数的推理任务，承担了最底层、核心的工作。
 
-如果`content`为空，那么说明此 Library 只包含公用数据供其他 Library 访问，不提供其他功能。
-
-## Inference Library
-
-Inference Library 负责执行某一项参数的推理任务，承担了最底层、核心的工作。
-
-声明文件中的`type`字段应为`inference`。
-
-### 声明文件
-
-`inference.json`是 Library 所支持的推理形式的声明文件，主要包括以下内容。
+#### 配置文件
 
 ```json
 {
-    "type": "inference",
-    "inferences": [
-        {
-            "id": "pitch",
-            "class": "org.DiffSinger.PitchPrediction",
-            "level": 1,
-            "arguments": {
-                "properties": {
-                    "prediction": {
-                        "type": "string",
-                        "enum": ["breathiness", "voicing"]
-                    }
-                },
-                "required": ["prediction"]
-            },
-            "internalAttributes": {
-                "config": {
-                    "linguistic": "./linguistic.onnx"
-                }
-            }
-        },
-        {
-            "id": "variance",
-            "class": "org.DiffSinger.VariancePrediction",
-            "level": 1,
-            "internalAttributes": {
-                "config": {
-                    "hiddenSize": 256
-                }
-            }
-        }
-    ]
+    "name": "Zhibin - Variance",
+    "level": 1,
+    "schema": {
+        "predictions": [
+            "breathness", "duration"
+        ],
+    },
+    "configuration": {
+        "hiddenSize": 512
+    }
 }
 ```
 + 必选字段
-    + `id`: 推理模型标识符
-    + `level`: 推理解释器应选择的调用约定版本
+    + `name`: 推理模块名称
+    + `level`: 推理解释器应选择的 API 版本
 + 可选字段
-    + `class`: 对应的推理解释器，如果不填则与`id`一致
-    + `arguments`：其他可选/可调模型参数，为一个 Json Schema
-    + `internalAttributes`：解释器内部使用配置信息
+    + `schema`: 输出参数的限制条件
+    + `configuration`：配置信息
 
-### 注意事项
+### Singer 模块
 
-- 不同的`class`值代表不同的可以被推理的参数类型，如声音、音高、音素，推理程序中必须存在一种与之匹配的解释器。
+Singer 模块负责定义一个或若干个歌手的信息，以及其需要使用的推理库。
 
-- 同一个 Library 的所有`inferences`中不可出现`id`相同的对象，否则将视为非法 Library。
-
-## Singer Library
-
-Singer Library 负责定义一个或若干个歌手的信息，以及其需要使用的推理库。
-
-声明文件中的`type`字段应为`singer`。
-
-### 声明文件
+#### 声明文件
 
 `singer.json`是 Singer 的信息声明文件，主要包括以下内容。
 
 ```json
 {
-    "type": "singer",
-    "singers": [
+    "name": "Zhibin",
+    "avatar": "../assets/avatar.png",
+    "background": "../assets/sprite.png",
+    "demoAudio": "../assets/demo.wav",
+    "preset": [
+        "acoustic-1",
+        "bar/pitch",
         {
-            "name": "Some singer",
-            "avatar": "assets/avatar.png",
-            "background": "assets/sprite.png",
-            "demoAudio": "assets/demo.wav",
-            "preset": [
-                {
-                    "id": "acoustic-1",
-                    "inference": "acoustic"
-                },
-                {
-                    "id": "variance-A",
-                    "inference": {
-                        "id": "variance",
-                        "arguments": {
-                            "prediction": "duration"
-                        }
-                    }
-                }
-            ]
+            "id": "variance-A",
+            "options": {
+                "prediction": "duration"
+            }
         }
     ]
 }
@@ -232,24 +194,16 @@ Singer Library 负责定义一个或若干个歌手的信息，以及其需要�
 + 必选字段
     + `name`: 歌手名称
     + `preset`：歌手预设
+        + `id`：依赖的推理模块 ID，如果是别的库的那么使用`<lib>/<id>`的形式
+        + `options`：输出参数，需要符合对应的 API 版本以及推理模块的`schema`的限制
 + 可选字段
     + `avatar`：头像
     + `background`：可用于 SVS 编辑器显示的立绘背景
     + `demoAudio`：可用于 SVS 编辑器预览的声音
 
-### 注意事项
+#### 注意事项
 
 - 每个歌手的预设所用到的`id`都必须在`desc.json`的`dependencies`中声明。
-
-- 每个`preset`中的`arguments`必须与对应的`inference`中定义的 Json Schema 匹配，否则将加载失败。
-
-- 同一个 Library 的所有`singers`中不可出现`name`相同的对象，否则将视为非法 Library。
-
-## 混合 Library
-
-若一个 Library 的`desc.json`中，`content`引入了多个声明文件，既包含`singer`也包含`inference`，那么是一个混合 Library，只需满足这两种 Library 的注意事项中的限制条件即可。
-
-如果将歌手信息与其预设中依赖的推理库都放在混合 Library 中，那么`preset`中的项可以不需要`id`，没有`id`则`id`默认为当前 Library。
 
 ## 后记
 

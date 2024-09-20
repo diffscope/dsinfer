@@ -27,10 +27,11 @@ namespace dsinfer {
     public:
         std::filesystem::path path() const;
 
+    public:
         std::filesystem::path avatar() const;
         std::filesystem::path background() const;
         std::filesystem::path demoAudio() const;
-        
+
         std::vector<PresetItem> preset() const;
 
     protected:
