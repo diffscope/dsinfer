@@ -2,27 +2,43 @@
 
 #include "acousticinference.h"
 
+#include <dsinfer/format.h>
+
 namespace dsinfer {
 
-    AcousticInterpreter::AcousticInterpreter() {
-    }
+    AcousticInterpreter::AcousticInterpreter() = default;
 
     const char *AcousticInterpreter::key() const {
-        return "svs.Acoustic";
+        return "org.DiffSinger.AcousticPrediction";
     }
 
-    int AcousticInterpreter::level() const {
-        return 0;
+    int AcousticInterpreter::apiLevel() const {
+        return 1;
     }
 
-    bool AcousticInterpreter::load(const LibrarySpec &info, std::string *errorMessage) {
-        return true;
+    bool AcousticInterpreter::validate(const InferenceSpec *spec, std::string *message) const {
+        return false;
     }
 
-    Inference *AcousticInterpreter::create() const {
-        return new AcousticInference();
+    bool AcousticInterpreter::validate(const InferenceSpec *spec, const JsonObject &importOptions,
+                                       std::string *message) const {
+        return false;
+    }
+
+    Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
+                                           std::string *error) const {
+        switch (spec->apiLevel()) {
+            case 1:
+                return new AcousticInference(spec->env());
+            case 2:
+                return new AcousticInference(spec->env());
+            default:
+                break;
+        }
+        *error = formatTextN("Acoustic api level %1 not supported", spec->apiLevel());
+        return nullptr;
     }
 
 }
 
-DSINFER_EXPORT_INTERPRETER(dsinfer::AcousticInterpreter)
+DSINFER_EXPORT_PLUGIN(dsinfer::AcousticInterpreter)

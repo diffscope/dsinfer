@@ -1,27 +1,41 @@
-#ifndef DSINFERCORE_INFERENCE_H
-#define DSINFERCORE_INFERENCE_H
+#ifndef INFERENCE_H
+#define INFERENCE_H
 
-#include <string>
-#include <filesystem>
-
-#include <dsinferCore/inferencemanifest.h>
+#include <dsinfer/jsonvalue.h>
+#include <dsinfer/environment.h>
 
 namespace dsinfer {
 
-    class DSINFER_CORE_EXPORT Inference {
+    class DSINFER_EXPORT Inference {
     public:
-        Inference();
+        explicit Inference(Environment *env);
         virtual ~Inference();
 
-    public:
-        virtual bool load(const InferenceInfo &info);
+        enum State {
+            Idle,
+            Running,
+            Error,
+            Terminated,
+        };
 
-        virtual int start(const std::string &input);
+    public:
+        virtual bool initialize(const JsonObject &args, std::string *error) = 0;
+
+        virtual bool start(const JsonValue &input, std::string *error) = 0;
+        virtual bool stop() = 0;
+
+        virtual State state() const = 0;
+        virtual JsonObject result() const = 0;
+
+    public:
+        Environment *env() const;
 
     protected:
-        DSINFER_DISABLE_COPY(Inference)
+        class Impl;
+        std::unique_ptr<Impl> _impl;
+        explicit Inference(Impl &impl);
     };
 
 }
 
-#endif // DSINFERCORE_INFERENCE_H
+#endif // INFERENCE_H

@@ -1,20 +1,26 @@
 #ifndef ACOUSTICINTERPRETER_H
 #define ACOUSTICINTERPRETER_H
 
-#include <dsinferCore/iinterpreter.h>
+#include <dsinfer/inferenceinterpreter.h>
 
 namespace dsinfer {
 
-    class AcousticInterpreter : public IInterpreter {
+    class AcousticInterpreter : public InferenceInterpreter {
     public:
         AcousticInterpreter();
 
     public:
         const char *key() const override;
-        int level() const override;
 
-        bool load(const LibrarySpec &info, std::string *errorMessage) override;
-        Inference *create() const override;
+    public:
+        int apiLevel() const override;
+
+        bool validate(const InferenceSpec *spec, std::string *message) const override;
+        bool validate(const InferenceSpec *spec, const JsonObject &importOptions,
+                      std::string *message) const override;
+
+        virtual Inference *create(const InferenceSpec *spec, const JsonObject &options,
+                                  std::string *error) const override;
     };
 
 }

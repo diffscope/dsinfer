@@ -4,25 +4,30 @@
 
 namespace dsinfer {
 
-    PitchInterpreter::PitchInterpreter() {
-    }
+    PitchInterpreter::PitchInterpreter() = default;
 
     const char *PitchInterpreter::key() const {
-        return "svs.Variance.Pitch";
+        return "org.DiffSinger.PitchPrediction";
     }
 
-    int PitchInterpreter::level() const {
-        return 0;
+    int PitchInterpreter::apiLevel() const {
+        return 1;
     }
 
-    bool PitchInterpreter::load(const LibrarySpec &info, std::string *errorMessage) {
-        return true;
+    bool PitchInterpreter::validate(const InferenceSpec *spec, std::string *message) const {
+        return false;
     }
 
-    Inference *PitchInterpreter::create() const {
-        return new PitchInference();
+    bool PitchInterpreter::validate(const InferenceSpec *spec, const JsonObject &importOptions,
+                                    std::string *message) const {
+        return false;
+    }
+
+    Inference *PitchInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
+                                        std::string *error) const {
+        return nullptr;
     }
 
 }
 
-DSINFER_EXPORT_INTERPRETER(dsinfer::PitchInterpreter)
+DSINFER_EXPORT_PLUGIN(dsinfer::PitchInterpreter)

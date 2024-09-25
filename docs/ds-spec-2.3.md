@@ -46,7 +46,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
             },
             {
                 "id": "variance",
-                "class": "org.DiffSinger.PitchInference",
+                "class": "org.DiffSinger.VarianceInference",
                 "configuration": "./inferences/variance.json"
             }
         ],
@@ -62,7 +62,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
             "id": "bar",
             "version": "1.0.0.0"
         }
-    ],
+    ]
 }
 ```
 + 必选字段
@@ -151,7 +151,7 @@ Inference 模块负责执行某一项参数的推理任务，承担了最底层�
     "schema": {
         "predictions": [
             "breathness", "duration"
-        ],
+        ]
     },
     "configuration": {
         "hiddenSize": 512
@@ -179,7 +179,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
     "avatar": "../assets/avatar.png",
     "background": "../assets/sprite.png",
     "demoAudio": "../assets/demo.wav",
-    "preset": [
+    "imports": [
         "acoustic-1",
         "bar/pitch",
         {
@@ -193,7 +193,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 ```
 + 必选字段
     + `name`: 歌手名称
-    + `preset`：歌手预设
+    + `imports`：歌手依赖的推理模块
         + `id`：依赖的推理模块 ID，如果是别的库的那么使用`<lib>/<id>`的形式
         + `options`：输出参数，需要符合对应的 API 版本以及推理模块的`schema`的限制
 + 可选字段
