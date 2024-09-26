@@ -15,11 +15,11 @@ namespace dsinfer {
 
     AcousticInference::~AcousticInference() = default;
 
-    bool AcousticInference::initialize(const JsonObject &args, std::string *error) {
+    bool AcousticInference::initialize(const JsonObject &args, Error *error) {
         return false;
     }
 
-    bool AcousticInference::start(const JsonValue &input, std::string *error) {
+    bool AcousticInference::start(const JsonValue &input, Error *error) {
         return false;
     }
 

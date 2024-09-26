@@ -32,7 +32,7 @@ namespace dsinfer {
         const std::vector<SingerImport> &imports() const;
 
     public:
-        std::vector<Inference *> createInferences(std::string *error) const;
+        std::vector<class Inference *> createInferences(Error *error) const;
 
     protected:
         class Impl;

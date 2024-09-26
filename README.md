@@ -4,9 +4,7 @@ Low level library for DiffSinger onnx model inference.
 
 ## Requirements
 
-+ [rapidjson](https://github.com/tencent/rapidjson)
-+ [yaml-cpp](https://github.com/jbeder/yaml-cpp)
-+ [onnxruntime](https://github.com/onnxruntime/onnxruntime)
++ [nlohmann_json](https://github.com/nlohmann/json)
 + [qmsetup](https://github.com/stdware/qmsetup)
 
 ## Functionalities
@@ -44,10 +42,4 @@ cd vcpkg
 # triplet:
 #   Mac:   `x64-osx` or `arm64-osx`
 #   Linux: `x64-linux` or `arm64-linux`
-```
-
-### OnnxRuntime
-
-```sh
-cd libs/flowonnx/libs && cmake [-Dep=gpu] -P ../scripts/setup-onnxruntime.cmake
 ```

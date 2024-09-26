@@ -10,12 +10,12 @@ namespace dsinfer {
     class SingerSpec::Impl : public ContributeSpec::Impl {
     public:
         explicit Impl(LibrarySpec *parent)
-            : ContributeSpec::Impl(ContributeSpec::CT_Singer, parent) {
+            : ContributeSpec::Impl(ContributeSpec::Singer, parent) {
         }
 
     public:
         bool read(std::filesystem::path &basePath, const dsinfer::JsonObject &obj,
-                  std::string *error) override {
+                  Error *error) override {
             return false;
         }
 
@@ -64,7 +64,7 @@ namespace dsinfer {
         return impl.imports;
     }
 
-    std::vector<Inference *> SingerSpec::createInferences(std::string *error) const {
+    std::vector<Inference *> SingerSpec::createInferences(Error *error) const {
         __dsinfer_impl_t;
 
         return {};

@@ -102,7 +102,7 @@ namespace dsinfer {
 
     public:
         std::string toJson(int indent = 0) const;
-        static JsonValue fromJson(const std::string &json, std::string *error = nullptr);
+        static JsonValue fromJson(const std::string &json, std::string *error);
 
     protected:
         std::shared_ptr<JsonValueContainter> _data;

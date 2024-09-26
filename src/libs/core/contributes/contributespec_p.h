@@ -16,7 +16,7 @@ namespace dsinfer {
 
     public:
         virtual bool read(std::filesystem::path &basePath, const JsonObject &obj,
-                          std::string *error) = 0;
+                          Error *error) = 0;
 
     public:
         int type;

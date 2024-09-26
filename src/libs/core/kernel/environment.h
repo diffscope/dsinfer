@@ -3,6 +3,7 @@
 
 #include <filesystem>
 
+#include <dsinfer/error.h>
 #include <dsinfer/pluginfactory.h>
 #include <dsinfer/versionnumber.h>
 
@@ -26,7 +27,7 @@ namespace dsinfer {
         const std::vector<std::filesystem::path> &libraryPaths() const;
 
     public:
-        LibrarySpec *openLibrary(const std::filesystem::path &path, std::string *error);
+        LibrarySpec *openLibrary(const std::filesystem::path &path, Error *error);
         void closeLibrary(LibrarySpec *lib);
         LibrarySpec *findLibrary(const std::string &id, const VersionNumber &version = {}) const;
         std::vector<LibrarySpec *> findLibraries(const std::string &id) const;

@@ -5,7 +5,7 @@ project(acoustic
 
 file(GLOB_RECURSE _src *.h *.cpp)
 
-dsinfer_add_library(${PROJECT_NAME} SHARED
+dsinfer_add_plugin(${PROJECT_NAME} inferenceinterpreters
     SOURCES ${_src}
     FEATURES cxx_std_17
     LINKS dsinfer

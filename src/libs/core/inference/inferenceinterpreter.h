@@ -13,10 +13,6 @@ namespace dsinfer {
         virtual ~InferenceInterpreter();
 
         const char *iid() const override {
-            return static_iid();
-        }
-
-        static inline const char *static_iid() {
             return "org.OpenVPI.InferenceInterpreter";
         }
 
@@ -28,7 +24,7 @@ namespace dsinfer {
                               std::string *message) const;
 
         virtual Inference *create(const InferenceSpec *spec, const JsonObject &options,
-                                  std::string *error) const = 0;
+                                  Error *error) const = 0;
 
     public:
         DSINFER_DISABLE_COPY(InferenceInterpreter)

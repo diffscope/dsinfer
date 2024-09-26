@@ -5,7 +5,7 @@ namespace dsinfer {
 
     class SingerRegistry::Impl : public ContributeRegistry::Impl {
     public:
-        explicit Impl(Environment *env) : ContributeRegistry::Impl(ContributeSpec::CT_Singer, env) {
+        explicit Impl(Environment *env) : ContributeRegistry::Impl(ContributeSpec::Singer, env) {
         }
     };
 
@@ -38,8 +38,8 @@ namespace dsinfer {
         return _key;
     }
 
-    ContributeSpec *SingerRegistry::load(const std::filesystem::path &basePath,
-                                         const JsonObject &config, std::string *error) const {
+    ContributeSpec *SingerRegistry::parseSpec(const std::filesystem::path &basePath,
+                                              const JsonObject &config, Error *error) const {
         __dsinfer_impl_t;
         // TODO
         return nullptr;

@@ -15,40 +15,34 @@ namespace dsinfer {
         MyInferenceDriver() {
         }
 
-        bool initialize(const JsonObject &args, const std::string *error) {
-            return false;
+    public:
+        bool initialize(const JsonObject &args, Error *error) const override {
+            return {};
         }
-
-        int64_t sessionCreate(const JsonObject &args) const {
-            return 0;
+        int64_t sessionCreate(const std::filesystem::path &path, const JsonObject &args,
+                              Error *error) const override {
+            return {};
         }
-        int64_t sessionDestroy(int64_t id) const {
-            return 0;
+        int64_t sessionDestroy(int64_t handle, Error *error) const override {
+            return {};
         }
-        int64_t sessionAttributeGet(int64_t id, int attr, JsonValue *out) const {
-            return 0;
+        int64_t taskCreate() const override {
+            return {};
         }
-        int64_t sessionAttributeSet(int64_t id, int attr, const JsonValue &in) const {
-            return 0;
+        int64_t taskDestroy(int64_t handle) const override {
+            return {};
         }
-
-        int64_t taskCreate(const JsonObject &args) const {
-            return 0;
+        int64_t taskStart(int64_t handle, const JsonObject &input, Error *error) const override {
+            return {};
         }
-        int64_t taskDestroy(int64_t id) const {
-            return 0;
+        int64_t taskStop(int64_t handle, Error *error) const override {
+            return {};
         }
-        int64_t taskStart(int64_t id) const {
-            return 0;
+        int64_t taskRunning(int64_t handle) const override {
+            return {};
         }
-        int64_t taskStop() const {
-            return 0;
-        }
-        int64_t taskAttributeGet(int64_t id, int attr, JsonValue *out) const {
-            return 0;
-        }
-        int64_t taskAttributeSet(int64_t id, int attr, const JsonValue &in) const {
-            return 0;
+        int64_t taskResult(int64_t handle, JsonObject *result) const override {
+            return {};
         }
     };
 
@@ -60,11 +54,13 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    std::string error;
+    DS::Error error;
 
     // Configure environment
     DS::Environment env;
-    env.addPluginPath("org.OpenVPI.InferenceInterpreter", fs::current_path() / "plugins");
+    env.addPluginPath("org.OpenVPI.InferenceInterpreter", fs::current_path().parent_path() / "lib" /
+                                                              "plugins" / "dsinfer" /
+                                                              "inferenceinterpreters");
 
     fs::path libPath = fs::current_path() / "lib";
     env.addLibraryPath(libPath);
@@ -72,36 +68,36 @@ int main(int argc, char *argv[]) {
     auto driver = new DS::MyInferenceDriver();
     if (!driver->initialize(
             {
-                {"ep", "DML"}
+                {"ep", "DML"},
     },
             &error)) {
-        printf("Error: %s\n", error.data());
+        printf("Error: %s\n", error.what());
         return -1;
     }
 
     // Set driver
-    auto inf_reg = env.registry(DS::ContributeSpec::CT_Inference)->cast<DS::InferenceRegistry>();
+    auto inf_reg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
     inf_reg->setDriver(driver);
 
     // Load library
     auto lib1 = env.openLibrary(libPath / "zhibin-0.5.1.0", &error);
     if (!lib1) {
-        printf("Error: %s\n", error.data());
+        printf("Error: %s\n", error.what());
         return -1;
     }
 
     // Get inference
     auto inf_spec =
-        lib1->contribute(DS::ContributeSpec::CT_Inference, "pitch")->cast<DS::InferenceSpec>();
+        lib1->contribute(DS::ContributeSpec::Inference, "pitch")->cast<DS::InferenceSpec>();
 
     auto inf1 = inf_spec->create({}, &error);
     if (!inf1) {
-        printf("Error: %s\n", error.data());
+        printf("Error: %s\n", error.what());
         return -1;
     }
 
     if (!inf1->initialize({}, &error)) {
-        printf("Error: %s\n", error.data());
+        printf("Error: %s\n", error.what());
         return -1;
     }
 
@@ -111,7 +107,7 @@ int main(int argc, char *argv[]) {
 
     // Start inf1
     if (!inf1->start(input, &error)) {
-        printf("Error: %s\n", error.data());
+        printf("Error: %s\n", error.what());
         return -1;
     }
 

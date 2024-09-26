@@ -7,8 +7,7 @@ namespace dsinfer {
 
     class InferenceRegistry::Impl : public ContributeRegistry::Impl {
     public:
-        explicit Impl(Environment *env)
-            : ContributeRegistry::Impl(InferenceSpec::CT_Inference, env) {
+        explicit Impl(Environment *env) : ContributeRegistry::Impl(InferenceSpec::Inference, env) {
         }
 
         ~Impl() {
@@ -68,8 +67,8 @@ namespace dsinfer {
         return _key;
     }
 
-    ContributeSpec *InferenceRegistry::load(const std::filesystem::path &basePath,
-                                            const JsonObject &config, std::string *error) const {
+    ContributeSpec *InferenceRegistry::parseSpec(const std::filesystem::path &basePath,
+                                                 const JsonObject &config, Error *error) const {
         __dsinfer_impl_t;
         // TODO
         return nullptr;

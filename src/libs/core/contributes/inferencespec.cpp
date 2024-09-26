@@ -2,7 +2,6 @@
 #include "contributespec_p.h"
 
 #include "format.h"
-#include "inferenceregistry.h"
 #include "libraryspec.h"
 #include "inferenceinterpreter.h"
 
@@ -16,11 +15,11 @@ namespace dsinfer {
     class InferenceSpec::Impl : public ContributeSpec::Impl {
     public:
         explicit Impl(LibrarySpec *parent)
-            : ContributeSpec::Impl(ContributeSpec::CT_Inference, parent) {
+            : ContributeSpec::Impl(ContributeSpec::Inference, parent) {
         }
 
         bool read(std::filesystem::path &basePath, const dsinfer::JsonObject &obj,
-                  std::string *error) override {
+                  Error *error) override {
             std::string id_;
             std::string className_;
             fs::path configPath;
@@ -34,39 +33,57 @@ namespace dsinfer {
             // Parse desc
             {
                 // id_
-                auto it = obj.find("id_");
+                auto it = obj.find("id");
                 if (it == obj.end()) {
-                    *error = R"(missing "id_" field in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"(missing "id" field in brief manifest)",
+                    };
                     return false;
                 }
                 id_ = it->second.toString();
                 if (id_.empty()) {
-                    *error = R"("id_" field has invalid value in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"("id" field has invalid value in brief manifest)",
+                    };
                     return false;
                 }
 
                 // class
                 it = obj.find("class");
                 if (it == obj.end()) {
-                    *error = R"(missing "class" field in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"(missing "class" field in brief manifest)",
+                    };
                     return false;
                 }
                 className_ = it->second.toString();
                 if (className_.empty()) {
-                    *error = R"("class" field has invalid value in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"("class" field has invalid value in brief manifest)",
+                    };
                     return false;
                 }
 
                 // configuration_
                 it = obj.find("configuration_");
                 if (it == obj.end()) {
-                    *error = R"(missing "configuration_" field in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"(missing "configuration" field in brief manifest)",
+                    };
                     return false;
                 }
 
                 std::string configPathString = it->second.toString();
                 if (configPathString.empty()) {
-                    *error = R"("configuration_" field has invalid value in brief manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"("configuration" field has invalid value in brief manifest)",
+                    };
                     return false;
                 }
 
@@ -81,7 +98,10 @@ namespace dsinfer {
             {
                 std::ifstream file(configPath);
                 if (!file.is_open()) {
-                    *error = formatTextN(R"(failed to open configuration_ "%1")", configPath);
+                    *error = {
+                        Error::FileNotFound,
+                        formatTextN(R"(failed to open configuration "%1")", configPath),
+                    };
                     return false;
                 }
 
@@ -91,8 +111,10 @@ namespace dsinfer {
                 std::string error2;
                 auto configRoot = JsonValue::fromJson(ss.str(), &error2);
                 if (!error2.empty() || !configRoot.isObject()) {
-                    *error = formatTextN(R"(invalid configuration_ format "%1": %2)", configPath,
-                                         error2);
+                    *error = {
+                        Error::InvalidFormat,
+                        formatTextN(R"(invalid configuration format "%1": %2)", configPath, error2),
+                    };
                     return false;
                 }
                 configObj = configRoot.toObject();
@@ -101,45 +123,62 @@ namespace dsinfer {
             // Get configuration_
             {
                 // name_
-                auto it = configObj.find("name_");
+                auto it = configObj.find("name");
                 if (it == configObj.end()) {
-                    *error = R"(missing "name_" field in configuration_ manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"(missing "name" field in configuration manifest)",
+                    };
                     return false;
                 }
                 name_ = it->second.toString();
                 if (name_.empty()) {
-                    *error = R"("name_" field has invalid value in configuration_ manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"("name" field has invalid value in configuration manifest)",
+                    };
                     return false;
                 }
 
                 // level
                 it = configObj.find("level");
                 if (it == configObj.end()) {
-                    *error = R"(missing "level" field in configuration_ manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"(missing "level" field in configuration manifest)",
+                    };
                     return false;
                 }
                 apiLevel_ = it->second.toInt();
                 if (apiLevel_ == 0) {
-                    *error = R"("level" field has invalid value in configuration_ manifest)";
+                    *error = {
+                        Error::InvalidFormat,
+                        R"("level" field has invalid value in configuration manifest)",
+                    };
                     return false;
                 }
 
                 // schema_
-                it = configObj.find("schema_");
+                it = configObj.find("schema");
                 if (it != configObj.end()) {
                     if (!it->second.isObject()) {
-                        *error = R"("schema_" field has invalid value in configuration_ manifest)";
+                        *error = {
+                            Error::InvalidFormat,
+                            R"("schema_" field has invalid value in configuration manifest)",
+                        };
                         return false;
                     }
                     schema_ = it->second.toObject();
                 }
 
                 // configuration_
-                it = configObj.find("configuration_");
+                it = configObj.find("configuration");
                 if (it != configObj.end()) {
                     if (!it->second.isObject()) {
-                        *error =
-                            R"("configuration_" field has invalid value in configuration_ manifest)";
+                        *error = {
+                            Error::InvalidFormat,
+                            R"("configuration_" field has invalid value in configuration_ manifest)",
+                        };
                         return false;
                     }
                     configuration_ = it->second.toObject();
@@ -200,13 +239,15 @@ namespace dsinfer {
         return impl.configuration;
     }
 
-    Inference *InferenceSpec::create(const JsonObject &options, std::string *error) const {
+    Inference *InferenceSpec::create(const JsonObject &options, Error *error) const {
         __dsinfer_impl_t;
 
-        auto interp = static_cast<InferenceInterpreter *>(
-            env()->plugin(InferenceInterpreter::static_iid(), impl.className));
+        auto interp = env()->plugin<InferenceInterpreter>(impl.className.data());
         if (!interp) {
-            *error = formatTextN("Interpreter \"%1\" not found", impl.className);
+            *error = {
+                Error::FeatureNotSupported,
+                formatTextN("Interpreter \"%1\" not found", impl.className),
+            };
             return nullptr;
         }
         return interp->create(this, options, error);

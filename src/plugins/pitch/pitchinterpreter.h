@@ -20,7 +20,7 @@ namespace dsinfer {
                       std::string *message) const override;
 
         virtual Inference *create(const InferenceSpec *spec, const JsonObject &options,
-                                  std::string *error) const override;
+                                  Error *error) const override;
     };
 
 }

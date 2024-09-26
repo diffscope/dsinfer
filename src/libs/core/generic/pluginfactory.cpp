@@ -6,17 +6,16 @@ namespace dsinfer {
     PluginFactory::Impl::Impl(PluginFactory *decl) : _decl(decl) {
     }
 
-    PluginFactory::Impl::~Impl() {
+    PluginFactory::Impl::~Impl() = default;
+
+    void PluginFactory::Impl::scanPlugins(const char *iid) const {
+
     }
 
-    void PluginFactory::Impl::scanPlugins(const std::string &iid) const {
+    PluginFactory::PluginFactory() : _impl(new Impl(this)) {
     }
 
-    PluginFactory::PluginFactory() {
-    }
-
-    PluginFactory::~PluginFactory() {
-    }
+    PluginFactory::~PluginFactory() = default;
 
     void PluginFactory::addStaticPlugin(Plugin *plugin) {
         __dsinfer_impl_t;
@@ -31,14 +30,14 @@ namespace dsinfer {
         return impl.staticPlugins;
     }
 
-    void PluginFactory::addPluginPath(const std::string &iid, const std::filesystem::path &path) {
+    void PluginFactory::addPluginPath(const char *iid, const std::filesystem::path &path) {
         __dsinfer_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.plugins_mtx);
         impl.pluginPaths[iid].push_back(path);
         impl.pluginsDirty.insert(iid);
     }
 
-    void PluginFactory::setPluginPaths(const std::string &iid,
+    void PluginFactory::setPluginPaths(const char *iid,
                                        const std::vector<std::filesystem::path> &paths) {
         __dsinfer_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.plugins_mtx);
@@ -50,8 +49,7 @@ namespace dsinfer {
         impl.pluginsDirty.insert(iid);
     }
 
-    const std::vector<std::filesystem::path> &
-        PluginFactory::pluginPaths(const std::string &iid) const {
+    const std::vector<std::filesystem::path> &PluginFactory::pluginPaths(const char *iid) const {
         __dsinfer_impl_t;
 
         std::shared_lock<std::shared_mutex> lock(impl.plugins_mtx);
@@ -63,7 +61,7 @@ namespace dsinfer {
         return it->second;
     }
 
-    Plugin *PluginFactory::plugin(const std::string &iid, const std::string &key) const {
+    Plugin *PluginFactory::plugin(const char *iid, const char *key) const {
         __dsinfer_impl_t;
 
         std::unique_lock<std::shared_mutex> lock(impl.plugins_mtx);

@@ -15,11 +15,11 @@ namespace dsinfer {
 
     PitchInference::~PitchInference() = default;
 
-    bool PitchInference::initialize(const JsonObject &args, std::string *error) {
+    bool PitchInference::initialize(const JsonObject &args, Error *error) {
         return false;
     }
 
-    bool PitchInference::start(const JsonValue &input, std::string *error) {
+    bool PitchInference::start(const JsonValue &input, Error *error) {
         return false;
     }
 

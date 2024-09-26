@@ -16,8 +16,8 @@ namespace dsinfer {
 
     protected:
         virtual std::string specKey() const = 0;
-        virtual ContributeSpec *load(const std::filesystem::path &basePath,
-                                     const JsonObject &config, std::string *error) const = 0;
+        virtual ContributeSpec *parseSpec(const std::filesystem::path &basePath,
+                                          const JsonObject &config, Error *error) const = 0;
         virtual void unload(ContributeSpec *spec) = 0;
 
     public:

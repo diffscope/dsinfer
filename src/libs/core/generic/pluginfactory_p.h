@@ -1,7 +1,7 @@
 #ifndef PLUGINFACTORY_P_H
 #define PLUGINFACTORY_P_H
 
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <shared_mutex>
 
@@ -18,12 +18,15 @@ namespace dsinfer {
         PluginFactory *_decl;
 
     public:
-        void scanPlugins(const std::string &iid) const;
+        void scanPlugins(const char *iid) const;
 
-        std::map<std::string, std::vector<std::filesystem::path>> pluginPaths;
+        std::unordered_map<std::string, std::vector<std::filesystem::path>> pluginPaths;
         std::vector<Plugin *> staticPlugins;
         mutable std::set<std::string> pluginsDirty;
-        mutable std::map<std::string, std::map<std::string, Plugin *>> allPlugins;
+        mutable std::unordered_map<std::string, std::unordered_map<std::string, Plugin *>>
+            allPlugins;
+        mutable std::unordered_map<std::filesystem::path, std::pair<std::string, std::string>>
+            pluginCache;
         mutable std::shared_mutex plugins_mtx;
     };
 

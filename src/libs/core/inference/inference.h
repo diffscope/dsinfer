@@ -14,14 +14,14 @@ namespace dsinfer {
         enum State {
             Idle,
             Running,
-            Error,
+            Failed,
             Terminated,
         };
 
     public:
-        virtual bool initialize(const JsonObject &args, std::string *error) = 0;
+        virtual bool initialize(const JsonObject &args, Error *error) = 0;
 
-        virtual bool start(const JsonValue &input, std::string *error) = 0;
+        virtual bool start(const JsonValue &input, Error *error) = 0;
         virtual bool stop() = 0;
 
         virtual State state() const = 0;

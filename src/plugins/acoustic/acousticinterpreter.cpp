@@ -26,7 +26,7 @@ namespace dsinfer {
     }
 
     Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
-                                           std::string *error) const {
+                                           Error *error) const {
         switch (spec->apiLevel()) {
             case 1:
                 return new AcousticInference(spec->env());
@@ -35,7 +35,10 @@ namespace dsinfer {
             default:
                 break;
         }
-        *error = formatTextN("Acoustic api level %1 not supported", spec->apiLevel());
+        *error = {
+            Error::FeatureNotSupported,
+            formatTextN("Acoustic api level %1 not supported", spec->apiLevel()),
+        };
         return nullptr;
     }
 

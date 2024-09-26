@@ -7,8 +7,8 @@
 namespace dsinfer {
 
     Environment::Impl::Impl(Environment *decl) : PluginFactory::Impl(decl) {
-        registries[InferenceSpec::CT_Inference] = new InferenceRegistry(decl);
-        registries[InferenceSpec::CT_Singer] = new SingerRegistry(decl);
+        registries[ContributeSpec::Inference] = new InferenceRegistry(decl);
+        registries[ContributeSpec::Singer] = new SingerRegistry(decl);
     }
 
     Environment::Impl::~Impl() {
@@ -43,7 +43,7 @@ namespace dsinfer {
         return impl.libraryPaths;
     }
 
-    LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, std::string *error) {
+    LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, Error *error) {
         __dsinfer_impl_t;
 
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx);

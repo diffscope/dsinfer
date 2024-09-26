@@ -11,9 +11,9 @@ namespace dsinfer {
         ~PitchInference();
 
     public:
-        bool initialize(const dsinfer::JsonObject &args, std::string *error) override;
+        bool initialize(const dsinfer::JsonObject &args, Error *error) override;
 
-        bool start(const JsonValue &input, std::string *error) override;
+        bool start(const JsonValue &input, Error *error) override;
         bool stop() override;
 
         State state() const override;

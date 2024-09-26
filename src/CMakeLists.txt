@@ -1,6 +1,6 @@
 qm_import(Preprocess)
 
-set(DSINFER_PROJECT_DESCRIPTION "DiffSinger Inference Midware")
+set(DSINFER_PROJECT_DESCRIPTION "DiffSinger Inference Framework")
 set(DSINFER_PROJECT_COPYRIGHT "Copyright 2023-2024 Team OpenVPI")
 set(DSINFER_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../include)
 set(DSINFER_BUILD_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../etc/include)
@@ -112,6 +112,55 @@ macro(dsinfer_add_library _target)
         )
         target_include_directories(${_target} PUBLIC
             "$<BUILD_INTERFACE:${DSINFER_GENERATED_INCLUDE_DIR}>"
+        )
+    endif()
+endmacro()
+
+macro(dsinfer_add_plugin _target _category)
+    set(options NO_WIN_RC)
+    set(oneValueArgs)
+    set(multiValueArgs)
+    cmake_parse_arguments(FUNC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    add_library(${_target} SHARED)
+
+    if(WIN32 AND NOT FUNC_NO_WIN_RC)
+        qm_add_win_rc(${_target}
+            NAME ${DSINFER_INSTALL_NAME}
+            DESCRIPTION ${DSINFER_PROJECT_DESCRIPTION}
+            COPYRIGHT ${DSINFER_PROJECT_COPYRIGHT}
+        )
+    endif()
+
+    # Configure target
+    qm_configure_target(${_target} ${FUNC_UNPARSED_ARGUMENTS})
+
+    # Add include directories
+    target_include_directories(${_target} PRIVATE ${DSINFER_BUILD_INCLUDE_DIR})
+    target_include_directories(${_target} PRIVATE .)
+
+    # Library name
+    if(${_target} MATCHES "^dsinfer(.+)")
+        set(_name ${CMAKE_MATCH_1})
+        set_target_properties(${_target} PROPERTIES EXPORT_NAME ${_name})
+    else()
+        set(_name ${_target})
+    endif()
+
+    add_library(${DSINFER_INSTALL_NAME}::${_name} ALIAS ${_target})
+
+    set(_plugin_dir ../lib/plugins/${DSINFER_INSTALL_NAME}/${_category})
+
+    set_target_properties(${_target} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${_plugin_dir}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${_plugin_dir}
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${_plugin_dir}
+    )
+
+    if(DSINFER_INSTALL)
+        install(TARGETS ${_target}
+            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}/${_plugin_dir}" OPTIONAL
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${_plugin_dir}" OPTIONAL
         )
     endif()
 endmacro()

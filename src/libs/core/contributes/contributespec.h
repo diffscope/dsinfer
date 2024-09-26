@@ -15,9 +15,9 @@ namespace dsinfer {
 
     class DSINFER_EXPORT ContributeSpec {
     public:
-        enum ContributeType {
-            CT_Inference,
-            CT_Singer,
+        enum Type {
+            Inference,
+            Singer,
         };
 
         virtual ~ContributeSpec();

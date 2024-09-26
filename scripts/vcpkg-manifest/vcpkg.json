@@ -1,10 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "dependencies": [
-        "loadso",
-        "syscmdline",
         "qmsetup",
-        "yaml-cpp",
         "nlohmann-json"
     ],
     "vcpkg-configuration": {

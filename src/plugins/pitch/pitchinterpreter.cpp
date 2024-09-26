@@ -24,7 +24,7 @@ namespace dsinfer {
     }
 
     Inference *PitchInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
-                                        std::string *error) const {
+                                        Error *error) const {
         return nullptr;
     }
 
