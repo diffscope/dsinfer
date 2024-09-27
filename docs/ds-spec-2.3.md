@@ -1,6 +1,6 @@
 # DiffSinger 数据格式与推理接口规范 2.3
 
-> DiffSinger Data Format and Inference Interface Specification 2.2
+> DiffSinger Data Format and Inference Interface Specification 2.3
 
 此规范为 OpenVPI 为各种 AI 推理工具制定的标准，旨在为各种模型提供通用的组织结构与调用接口，使 AI 模型的分发与调用更为有序、规范。
 
@@ -41,7 +41,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
         "inferences": [
             {
                 "id": "pitch",
-                "class": "org.DiffSinger.PitchInference",
+                "class": "org.DiffSinger.Inference.PitchInference",
                 "configuration": "./inferences/pitch.json"
             },
             {
@@ -53,6 +53,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
         "singers": [
             {
                 "id": "zhibin",
+                "model": "diffsinger",
                 "path": "./characters/zhibin.json"
             }
         ]
@@ -81,6 +82,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
             + `configuration`：配置文件
         + `singers`：歌手模块
             + `id`：歌手 ID
+            + `model`：歌手架构
             + `path`：歌手信息文件
     + `dependencies`：依赖的库
         + `id`：依赖库 ID
@@ -179,7 +181,6 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
     "avatar": "../assets/avatar.png",
     "background": "../assets/sprite.png",
     "demoAudio": "../assets/demo.wav",
-    "dictionary": "../assets/dsdict.yaml",
     "imports": [
         "acoustic-1",
         "bar/pitch",
@@ -189,28 +190,115 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
                 "prediction": "duration"
             }
         }
-    ]
+    ],
+    "configuration": {
+        "dictionary": "../assets/dsdict.json"
+    }
 }
 ```
 + 必选字段
     + `name`: 歌手名称
     + `imports`：歌手依赖的推理模块
-        + `id`：依赖的推理模块 ID，如果是别的库的那么使用`<lib>/<id>`的形式
+        + `id`：依赖的推理模块 ID，如果是别的库的那么使用`lib[version]/id`的形式，`lib`与`version`可以省略
         + `options`：输出参数，需要符合对应的 API 版本以及推理模块的`schema`的限制
-    + `dictionary`：歌手词典
 + 可选字段
     + `avatar`：头像
     + `background`：可用于 SVS 编辑器显示的立绘背景
     + `demoAudio`：可用于 SVS 编辑器预览的声音
+    + `configuration`：其他属性（根据`model`设置）
+        + `dictionary`：歌手词典
 
 #### 注意事项
 
 - 每个歌手的预设所用到的`id`都必须在`desc.json`的`dependencies`中声明。
-
-## 后记
 
 ### 可扩展性
 
 - 具有新功能的模型开发完成后，开发者为之起一个`class`名，再基于现有的推理程序开发一个与这种模型匹配的解释器，这样即可扩展推理功能。
 
 - 非 DiffSinger 甚至非 AI 的开发者，如 UTAU、Vocaloid，亦可通过扩展`class`来支持其他引擎，可以使用混合 Library 将歌手信息与歌声采样放在同一个 Library 中。
+
+## 3. 工具开发
+
+下面介绍一种经典的工具套件，命名为`dsinfer-cli`。
+
+### 功能贡献
+
+- 校验
+- 安装
+- 命令行推理
+
+#### 校验
+
+```sh
+dsinfer-cli stat <package>
+```
+
+如果是正确的包，则打印信息，否则报错。
+
+#### 安装
+
+```sh
+dsinfer-cli install <package> [--path <path>]
+```
+
+用户需要先在特定目录（如`/.config/dsinfer`）创建一个名为`config.json`的配置文件，指定默认安装路径（如`/.config/dsinfer/packages`）。
+
+安装成功后，安装工具将会执行校验、解压等操作，将其解压在安装路径的子目录中，并生成记忆文件，记录安装的包名和其功能信息。
+
+#### 命令行推理
+
+```sh
+dsinfer-cli exec <singer> [--arg <key> <value>] [--paths <paths>]
+```
+
+推理工具将会在所有搜索路径中搜索含有歌手的包，将其元数据全部加载，并执行推理任务。
+
+### 推理插件开发
+
+在`plugins`中添加插件。
+
+#### 推理解释器
+
+创建派生于`InferenceInterpreter`的解释器类。
+
+- `key`：返回对应的推理参数类型的`class`，如`org.DiffSinger.PitchInference`
+    ```c++
+    const char *key() const override;
+    ```
+- `validate`：校验推理模块是否符合规范，以及使用某个推理模块的歌手模块是否指定了正确的参数
+    ```c++
+    bool validate(const InferenceSpec *spec, std::string *message) const override;
+    bool validate(const InferenceSpec *spec, const JsonObject &importOptions,
+                  std::string *message) const override;
+    ```
+- `create`：创建对应的推理任务类
+    ```c++
+    Inference *create(const InferenceSpec *spec, const JsonObject &options,
+                      Error *error) const override;
+    ```
+
+#### 推理任务
+
+创建派生于`Inference`的推理任务类。
+
+- `initialize`：初始化推理任务，应当加载需要用到的模型
+    ```c++
+    bool initialize(const JsonObject &args, Error *error) override;
+    ```
+- `start`：开始推理任务，应当对输入的参数进行预处理，并构建推理图（异步）
+    ```c++
+    bool start(const JsonValue &input, Error *error) override;
+    ```
+- `stop`：立即停止推理任务（同步）
+    ```c++
+    bool stop() override;
+    ```
+- `state`：推理任务状态
+    ```c++
+    State state() const override;
+    ```
+- `result`：推理结果
+    ```c++
+    JsonValue result() const override;
+    ```

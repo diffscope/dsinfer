@@ -14,7 +14,7 @@ namespace dsinfer {
     public:
         std::string libraryId;
         std::string inferenceId;
-        
+
         JsonObject options;
     };
 
@@ -25,13 +25,16 @@ namespace dsinfer {
     public:
         std::filesystem::path path() const;
 
+        std::string model() const;
         std::string name() const;
+
         std::filesystem::path avatar() const;
         std::filesystem::path background() const;
         std::filesystem::path demoAudio() const;
-        std::filesystem::path dictionary() const;
 
         const std::vector<SingerImport> &imports() const;
+        
+        JsonObject configuration() const;
 
     public:
         std::vector<class Inference *> createInferences(Error *error) const;

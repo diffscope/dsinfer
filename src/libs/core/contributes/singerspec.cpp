@@ -1,6 +1,5 @@
 #include "singerspec.h"
 
-#include <utility>
 #include "contributespec_p.h"
 
 namespace fs = std::filesystem;
@@ -21,14 +20,14 @@ namespace dsinfer {
         std::filesystem::path path;
 
         std::string name;
+        std::string model;
+
         fs::path avatar;
         fs::path background;
         fs::path demoAudio;
-        fs::path dictionary;
 
         std::vector<SingerImport> imports;
 
-        JsonObject schema;
         JsonObject configuration;
     };
 
@@ -37,6 +36,11 @@ namespace dsinfer {
     std::filesystem::path SingerSpec::path() const {
         __dsinfer_impl_t;
         return impl.path;
+    }
+
+    std::string SingerSpec::model() const {
+        __dsinfer_impl_t;
+        return impl.model;
     }
 
     std::string SingerSpec::name() const {
@@ -59,14 +63,14 @@ namespace dsinfer {
         return impl.demoAudio;
     }
 
-    std::filesystem::path SingerSpec::dictionary() const {
-        __dsinfer_impl_t;
-        return impl.dictionary;
-    }
-
     const std::vector<SingerImport> &SingerSpec::imports() const {
         __dsinfer_impl_t;
         return impl.imports;
+    }
+
+    JsonObject SingerSpec::configuration() const {
+        __dsinfer_impl_t;
+        return impl.configuration;
     }
 
     std::vector<Inference *> SingerSpec::createInferences(Error *error) const {
