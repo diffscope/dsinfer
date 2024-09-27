@@ -20,10 +20,11 @@ namespace dsinfer {
 
     public:
         bool start(const JsonValue &input, Error *error);
-        bool stop();
+        bool stop(Error *error);
 
+        int64_t id() const;
         State state() const;
-        JsonObject result() const;
+        JsonValue result() const;
 
     public:
         Environment *env() const;

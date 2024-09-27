@@ -10,17 +10,18 @@ namespace dsinfer {
 
     class ContributeSpec::Impl {
     public:
-        Impl(int type, LibrarySpec *parent) : type(type), parent(parent) {
+        explicit Impl(int type) : type(type), state(Invalid) {
         }
         virtual ~Impl() = default;
 
     public:
-        virtual bool read(std::filesystem::path &basePath, const JsonObject &obj,
-                          Error *error) = 0;
+        virtual bool read(const std::filesystem::path &basePath, const JsonObject &obj,
+                          Error *error);
 
     public:
         int type;
-        LibrarySpec *parent;
+        ContributeSpec::State state;
+        LibrarySpec *parent = nullptr;
 
         std::string id;
     };

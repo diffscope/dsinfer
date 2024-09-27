@@ -19,7 +19,7 @@ namespace dsinfer {
         bool stop() override;
 
         State state() const override;
-        JsonObject result() const override;
+        JsonValue result() const override;
 
     protected:
         class Impl;

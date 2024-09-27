@@ -1,6 +1,9 @@
 #include "singerregistry.h"
 #include "contributeregistry_p.h"
 
+#include "contributespec_p.h"
+#include "singerspec.h"
+
 namespace dsinfer {
 
     class SingerRegistry::Impl : public ContributeRegistry::Impl {
@@ -39,15 +42,24 @@ namespace dsinfer {
     }
 
     ContributeSpec *SingerRegistry::parseSpec(const std::filesystem::path &basePath,
-                                              const JsonObject &config, Error *error) const {
-        __dsinfer_impl_t;
-        // TODO
-        return nullptr;
+                                              const JsonValue &config, Error *error) const {
+        if (!config.isObject()) {
+            *error = {
+                Error::InvalidFormat,
+                R"(invalid inference specification)",
+            };
+            return nullptr;
+        }
+        auto spec = new SingerSpec();
+        if (!spec->_impl->read(basePath, config.toObject(), error)) {
+            delete spec;
+            return nullptr;
+        }
+        return spec;
     }
 
-    void SingerRegistry::unload(dsinfer::ContributeSpec *spec) {
-        __dsinfer_impl_t;
-        // TODO
+    bool SingerRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error) {
+        return false;
     }
 
     SingerRegistry::SingerRegistry(Environment *env) : ContributeRegistry(*new Impl(env)) {

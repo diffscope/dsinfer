@@ -12,13 +12,14 @@ namespace dsinfer {
         virtual ~ContributeRegistry();
 
     public:
+        int type() const;
         Environment *env() const;
 
     protected:
         virtual std::string specKey() const = 0;
         virtual ContributeSpec *parseSpec(const std::filesystem::path &basePath,
-                                          const JsonObject &config, Error *error) const = 0;
-        virtual void unload(ContributeSpec *spec) = 0;
+                                          const JsonValue &config, Error *error) const = 0;
+        virtual bool loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error) = 0;
 
     public:
         template <class T>
@@ -33,6 +34,7 @@ namespace dsinfer {
         explicit ContributeRegistry(Impl &impl);
 
         friend class Environment;
+        friend class LibrarySpec;
     };
 
     template <class T>

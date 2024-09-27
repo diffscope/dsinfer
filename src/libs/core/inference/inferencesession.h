@@ -13,7 +13,7 @@ namespace dsinfer {
 
     public:
         bool open(const std::filesystem::path &path, const JsonObject &args, Error *error);
-        void close();
+        bool close(Error *error);
 
     public:
         int64_t id() const;

@@ -17,9 +17,9 @@ namespace dsinfer {
 
     protected:
         std::string specKey() const override;
-        ContributeSpec *parseSpec(const std::filesystem::path &basePath, const JsonObject &config,
-                             Error *error) const override;
-        void unload(dsinfer::ContributeSpec *spec) override;
+        ContributeSpec *parseSpec(const std::filesystem::path &basePath, const JsonValue &config,
+                                  Error *error) const override;
+        bool loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error) override;
 
     protected:
         class Impl;

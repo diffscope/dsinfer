@@ -13,8 +13,12 @@ namespace dsinfer {
         }
         ~Impl();
 
+        bool read(const std::filesystem::path &dir,
+                  const std::map<std::string, ContributeRegistry *> &regs, Error *error);
+
         Environment *env;
 
+        std::filesystem::path path;
         std::string id;
 
         VersionNumber version;

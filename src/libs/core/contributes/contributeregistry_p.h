@@ -21,6 +21,8 @@ namespace dsinfer {
         inline std::shared_mutex &env_mtx() const {
             return static_cast<Environment::Impl *>(env->_impl.get())->env_mtx;
         }
+
+        static void setSpecState(ContributeSpec *spec, ContributeSpec::State state);
     };
 
 }

@@ -11,13 +11,13 @@
 
 namespace dsinfer {
 
-    DSINFER_EXPORT std::string wideToUtf8(const std::wstring &utf16Str);
+    DSINFER_EXPORT std::string wideToUtf8(const wchar_t *s, int size = -1);
 
-    DSINFER_EXPORT std::wstring utf8ToWide(const std::string &utf8Str);
+    DSINFER_EXPORT std::wstring utf8ToWide(const char *s, int size = -1);
 
     template <class T>
     std::string anyToString(T &&t) {
-        using T2 = std::remove_cv_t<std::remove_reference_t<T>>;
+        using T2 = std::decay_t<std::remove_cv_t<std::remove_reference_t<T>>>;
         if constexpr (std::is_same_v<T2, bool>) {
             return t ? "true" : "false";
         } else if constexpr (std::is_integral_v<T2>) {
@@ -29,6 +29,8 @@ namespace dsinfer {
         } else if constexpr (std::is_same_v<T2, std::filesystem::path>) {
             return anyToString(t.string());
         } else if constexpr (std::is_same_v<T2, std::wstring>) {
+            return wideToUtf8(t.data(), int(t.size()));
+        } else if constexpr (std::is_same_v<T2, wchar_t *>) {
             return wideToUtf8(t);
         } else {
             return std::string(t);
@@ -45,7 +47,7 @@ namespace dsinfer {
 
     inline std::filesystem::path pathFromString(const std::string &s) {
 #ifdef _WIN32
-        return utf8ToWide(s);
+        return utf8ToWide(s.data(), int(s.size()));
 #else
         return s;
 #endif

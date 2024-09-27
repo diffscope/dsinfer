@@ -1,6 +1,9 @@
 #ifndef ENVIRONMENT_P_H
 #define ENVIRONMENT_P_H
 
+#include <map>
+#include <array>
+
 #include <dsinfer/environment.h>
 #include <dsinfer/private/pluginfactory_p.h>
 
@@ -15,7 +18,9 @@ namespace dsinfer {
         using Decl = Environment;
 
     public:
-        ContributeRegistry *registries[2];
+        std::vector<ContributeRegistry *> registries;
+        std::map<std::string, ContributeRegistry *> regSpecMap;
+
         std::vector<std::filesystem::path> libraryPaths;
         mutable std::shared_mutex env_mtx;
     };

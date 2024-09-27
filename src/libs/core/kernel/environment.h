@@ -37,6 +37,7 @@ namespace dsinfer {
         class Impl;
 
         friend class ContributeRegistry;
+        friend class LibrarySpec;
     };
 
 }

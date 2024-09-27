@@ -31,7 +31,7 @@ namespace dsinfer {
         return Inference::Terminated;
     }
 
-    JsonObject PitchInference::result() const {
+    JsonValue PitchInference::result() const {
         return {};
     }
 

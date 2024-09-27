@@ -32,7 +32,7 @@ namespace dsinfer {
     protected:
         class Impl;
 
-        explicit InferenceSpec(LibrarySpec *parent);
+        InferenceSpec();
 
         friend class InferenceRegistry;
     };

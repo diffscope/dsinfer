@@ -3,18 +3,25 @@
 
 #include "inferenceregistry.h"
 #include "singerregistry.h"
+#include "format.h"
+#include "algorithms.h"
+
+#include "libraryspec_p.h"
 
 namespace dsinfer {
 
     Environment::Impl::Impl(Environment *decl) : PluginFactory::Impl(decl) {
+        registries.resize(2);
         registries[ContributeSpec::Inference] = new InferenceRegistry(decl);
         registries[ContributeSpec::Singer] = new SingerRegistry(decl);
+
+        for (const auto &reg : std::as_const(registries)) {
+            regSpecMap.insert(std::make_pair(reg->specKey(), reg));
+        }
     }
 
     Environment::Impl::~Impl() {
-        for (auto &item : std::as_const(registries)) {
-            delete item;
-        }
+        deleteAll(registries);
     }
 
     Environment::Environment() : PluginFactory(*new Impl(this)) {
@@ -45,13 +52,18 @@ namespace dsinfer {
 
     LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, Error *error) {
         __dsinfer_impl_t;
-
-        std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
-        return nullptr;
+        auto spec = new LibrarySpec(this);
+        if (!spec->_impl->read(path, impl.regSpecMap, error)) {
+            delete spec;
+            return nullptr;
+        }
+        return spec;
     }
 
     void Environment::closeLibrary(LibrarySpec *lib) {
         __dsinfer_impl_t;
+
+        std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
     }
 
     LibrarySpec *Environment::findLibrary(const std::string &id,

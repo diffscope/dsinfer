@@ -3,6 +3,7 @@
 
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
+#include <dsinfer/format.h>
 
 namespace fs = std::filesystem;
 
@@ -23,25 +24,27 @@ namespace dsinfer {
                               Error *error) const override {
             return {};
         }
-        int64_t sessionDestroy(int64_t handle, Error *error) const override {
+        bool sessionDestroy(int64_t handle, Error *error) const override {
+            return {};
+        }
+        bool sessionRunning(int64_t handle) const override {
             return {};
         }
         int64_t taskCreate() const override {
             return {};
         }
-        int64_t taskDestroy(int64_t handle) const override {
+        void taskDestroy(int64_t handle) const override {
+        }
+        bool taskStart(int64_t handle, const JsonValue &input, Error *error) const override {
             return {};
         }
-        int64_t taskStart(int64_t handle, const JsonObject &input, Error *error) const override {
+        bool taskStop(int64_t handle, Error *error) const override {
             return {};
         }
-        int64_t taskStop(int64_t handle, Error *error) const override {
+        int taskState(int64_t handle) const override {
             return {};
         }
-        int64_t taskRunning(int64_t handle) const override {
-            return {};
-        }
-        int64_t taskResult(int64_t handle, JsonObject *result) const override {
+        bool taskResult(int64_t handle, JsonValue *result) const override {
             return {};
         }
     };

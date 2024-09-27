@@ -18,14 +18,15 @@ namespace dsinfer {
 
         virtual int64_t sessionCreate(const std::filesystem::path &path, const JsonObject &args,
                                       Error *error) const = 0;
-        virtual int64_t sessionDestroy(int64_t handle, Error *error) const = 0;
+        virtual bool sessionDestroy(int64_t handle, Error *error) const = 0;
+        virtual bool sessionRunning(int64_t handle) const = 0;
 
         virtual int64_t taskCreate() const = 0;
-        virtual int64_t taskDestroy(int64_t handle) const = 0;
-        virtual int64_t taskStart(int64_t handle, const JsonObject &input, Error *error) const = 0;
-        virtual int64_t taskStop(int64_t handle, Error *error) const = 0;
-        virtual int64_t taskRunning(int64_t handle) const = 0;
-        virtual int64_t taskResult(int64_t handle, JsonObject *result) const = 0;
+        virtual void taskDestroy(int64_t handle) const = 0;
+        virtual bool taskStart(int64_t handle, const JsonValue &input, Error *error) const = 0;
+        virtual bool taskStop(int64_t handle, Error *error) const = 0;
+        virtual int taskState(int64_t handle) const = 0;
+        virtual bool taskResult(int64_t handle, JsonValue *result) const = 0;
 
     public:
         DSINFER_DISABLE_COPY(InferenceDriver)

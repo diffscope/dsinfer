@@ -14,7 +14,7 @@ namespace dsinfer {
         VersionNumber version;
         bool required;
 
-        inline explicit LibraryDependency(bool required = true) : required(required) {
+        inline LibraryDependency(bool required = true) : required(required) {
         }
 
         bool operator==(const LibraryDependency &other) const;
@@ -27,6 +27,8 @@ namespace dsinfer {
         ~LibrarySpec();
 
     public:
+        std::filesystem::path path() const;
+
         std::string id() const;
 
         VersionNumber version() const;

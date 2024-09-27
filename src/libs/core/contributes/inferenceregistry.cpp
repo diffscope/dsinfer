@@ -1,5 +1,6 @@
 #include "inferenceregistry.h"
 
+#include "contributespec_p.h"
 #include "contributeregistry_p.h"
 #include "environment_p.h"
 
@@ -68,15 +69,26 @@ namespace dsinfer {
     }
 
     ContributeSpec *InferenceRegistry::parseSpec(const std::filesystem::path &basePath,
-                                                 const JsonObject &config, Error *error) const {
+                                                 const JsonValue &config, Error *error) const {
         __dsinfer_impl_t;
-        // TODO
-        return nullptr;
+        if (!config.isObject()) {
+            *error = {
+                Error::InvalidFormat,
+                R"(invalid inference specification)",
+            };
+            return nullptr;
+        }
+        auto spec = new InferenceSpec();
+        if (!spec->_impl->read(basePath, config.toObject(), error)) {
+            delete spec;
+            return nullptr;
+        }
+        return spec;
     }
 
-    void InferenceRegistry::unload(ContributeSpec *spec) {
-        __dsinfer_impl_t;
-        // TODO
+    bool InferenceRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state,
+                                     Error *error) {
+        return false;
     }
 
     InferenceRegistry::InferenceRegistry(Environment *env) : ContributeRegistry(*new Impl(env)) {

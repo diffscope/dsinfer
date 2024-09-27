@@ -3,11 +3,21 @@
 
 namespace dsinfer {
 
+    bool ContributeSpec::Impl::read(const std::filesystem::path &basePath, const JsonObject &obj,
+                                    Error *error) {
+        return false;
+    }
+
     ContributeSpec::~ContributeSpec() = default;
 
     int ContributeSpec::type() const {
         __dsinfer_impl_t;
         return impl.type;
+    }
+
+    ContributeSpec::State ContributeSpec::state() const {
+        __dsinfer_impl_t;
+        return impl.state;
     }
 
     LibrarySpec *ContributeSpec::parent() const {

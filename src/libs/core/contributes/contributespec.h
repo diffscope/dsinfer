@@ -20,10 +20,18 @@ namespace dsinfer {
             Singer,
         };
 
+        enum State {
+            Invalid,
+            Loaded,
+            Ready,
+            Deleted,
+        };
+
         virtual ~ContributeSpec();
 
     public:
         int type() const;
+        State state() const;
         LibrarySpec *parent() const;
         inline Environment *env() const {
             return parent()->env();

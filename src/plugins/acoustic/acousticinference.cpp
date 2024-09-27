@@ -31,7 +31,7 @@ namespace dsinfer {
         return Inference::Terminated;
     }
 
-    JsonObject AcousticInference::result() const {
+    JsonValue AcousticInference::result() const {
         return {};
     }
 

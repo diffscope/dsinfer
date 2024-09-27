@@ -14,6 +14,7 @@ namespace dsinfer {
     public:
         std::string libraryId;
         std::string inferenceId;
+        
         JsonObject options;
     };
 
@@ -28,6 +29,7 @@ namespace dsinfer {
         std::filesystem::path avatar() const;
         std::filesystem::path background() const;
         std::filesystem::path demoAudio() const;
+        std::filesystem::path dictionary() const;
 
         const std::vector<SingerImport> &imports() const;
 
@@ -37,7 +39,7 @@ namespace dsinfer {
     protected:
         class Impl;
 
-        explicit SingerSpec(LibrarySpec *parent);
+        SingerSpec();
 
         friend class SingerRegistry;
     };

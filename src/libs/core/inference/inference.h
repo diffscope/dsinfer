@@ -25,7 +25,7 @@ namespace dsinfer {
         virtual bool stop() = 0;
 
         virtual State state() const = 0;
-        virtual JsonObject result() const = 0;
+        virtual JsonValue result() const = 0;
 
     public:
         Environment *env() const;

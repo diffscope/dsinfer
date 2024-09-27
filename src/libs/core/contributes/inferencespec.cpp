@@ -14,15 +14,14 @@ namespace dsinfer {
 
     class InferenceSpec::Impl : public ContributeSpec::Impl {
     public:
-        explicit Impl(LibrarySpec *parent)
-            : ContributeSpec::Impl(ContributeSpec::Inference, parent) {
+        Impl() : ContributeSpec::Impl(ContributeSpec::Inference) {
         }
 
-        bool read(std::filesystem::path &basePath, const dsinfer::JsonObject &obj,
+        bool read(const std::filesystem::path &basePath, const dsinfer::JsonObject &obj,
                   Error *error) override {
+            fs::path configPath;
             std::string id_;
             std::string className_;
-            fs::path configPath;
 
             std::string name_;
             int apiLevel_;
@@ -32,7 +31,7 @@ namespace dsinfer {
 
             // Parse desc
             {
-                // id_
+                // id
                 auto it = obj.find("id");
                 if (it == obj.end()) {
                     *error = {
@@ -68,7 +67,7 @@ namespace dsinfer {
                     return false;
                 }
 
-                // configuration_
+                // configuration
                 it = obj.find("configuration_");
                 if (it == obj.end()) {
                     *error = {
@@ -93,7 +92,7 @@ namespace dsinfer {
                 }
             }
 
-            // Read configuration_
+            // Read configuration
             JsonObject configObj;
             {
                 std::ifstream file(configPath);
@@ -109,20 +108,27 @@ namespace dsinfer {
                 ss << file.rdbuf();
 
                 std::string error2;
-                auto configRoot = JsonValue::fromJson(ss.str(), &error2);
-                if (!error2.empty() || !configRoot.isObject()) {
+                auto root = JsonValue::fromJson(ss.str(), &error2);
+                if (!error2.empty()) {
                     *error = {
                         Error::InvalidFormat,
                         formatTextN(R"(invalid configuration format "%1": %2)", configPath, error2),
                     };
                     return false;
                 }
-                configObj = configRoot.toObject();
+                if (!root.isObject()) {
+                    *error = {
+                        Error::InvalidFormat,
+                        formatTextN(R"(invalid configuration format "%1")", configPath),
+                    };
+                    return false;
+                }
+                configObj = root.toObject();
             }
 
-            // Get configuration_
+            // Get attributes
+            // name
             {
-                // name_
                 auto it = configObj.find("name");
                 if (it == configObj.end()) {
                     *error = {
@@ -139,9 +145,10 @@ namespace dsinfer {
                     };
                     return false;
                 }
-
-                // level
-                it = configObj.find("level");
+            }
+            // level
+            {
+                auto it = configObj.find("level");
                 if (it == configObj.end()) {
                     *error = {
                         Error::InvalidFormat,
@@ -157,27 +164,29 @@ namespace dsinfer {
                     };
                     return false;
                 }
-
-                // schema_
-                it = configObj.find("schema");
+            }
+            // schema
+            {
+                auto it = configObj.find("schema");
                 if (it != configObj.end()) {
                     if (!it->second.isObject()) {
                         *error = {
                             Error::InvalidFormat,
-                            R"("schema_" field has invalid value in configuration manifest)",
+                            R"("schema" field has invalid value in configuration manifest)",
                         };
                         return false;
                     }
                     schema_ = it->second.toObject();
                 }
-
-                // configuration_
-                it = configObj.find("configuration");
+            }
+            // configuration
+            {
+                auto it = configObj.find("configuration");
                 if (it != configObj.end()) {
                     if (!it->second.isObject()) {
                         *error = {
                             Error::InvalidFormat,
-                            R"("configuration_" field has invalid value in configuration_ manifest)",
+                            R"("configuration" field has invalid value in configuration manifest)",
                         };
                         return false;
                     }
@@ -185,7 +194,7 @@ namespace dsinfer {
                 }
             }
 
-            path = fs::canonical(configPath);
+            path = fs::canonical(configPath).parent_path();
             id = id_;
             className = className_;
             name = name_;
@@ -201,7 +210,7 @@ namespace dsinfer {
         std::string className;
 
         std::string name;
-        int apiLevel;
+        int apiLevel = 0;
 
         JsonObject schema;
         JsonObject configuration;
@@ -253,7 +262,7 @@ namespace dsinfer {
         return interp->create(this, options, error);
     }
 
-    InferenceSpec::InferenceSpec(LibrarySpec *parent) : ContributeSpec(*new Impl(parent)) {
+    InferenceSpec::InferenceSpec() : ContributeSpec(*new Impl()) {
     }
 
 }
