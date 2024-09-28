@@ -1,8 +1,12 @@
 #include "inferenceregistry.h"
 
-#include "contributespec_p.h"
+#include <unordered_map>
+#include <list>
+
+#include "inferencespec_p.h"
 #include "contributeregistry_p.h"
 #include "environment_p.h"
+#include "format.h"
 
 namespace dsinfer {
 
@@ -20,26 +24,27 @@ namespace dsinfer {
 
     InferenceRegistry::~InferenceRegistry() = default;
 
-    InferenceSpec *InferenceRegistry::findInference(const std::string &id,
-                                                    const VersionNumber &version) const {
+    std::vector<InferenceSpec *>
+        InferenceRegistry::findInferences(const ContributeIdentifier &identifier) const {
         __dsinfer_impl_t;
-        std::shared_lock<std::shared_mutex> lock(impl.env_mtx());
-        // TODO
-        return nullptr;
-    }
-
-    std::vector<InferenceSpec *> InferenceRegistry::findInferences(const std::string &id) const {
-        __dsinfer_impl_t;
-        std::shared_lock<std::shared_mutex> lock(impl.env_mtx());
-        // TODO
-        return {};
+        std::vector<InferenceSpec *> res;
+        auto temp = impl.findContributes(identifier);
+        res.reserve(res.size());
+        for (const auto &item : std::as_const(temp)) {
+            res.push_back(static_cast<InferenceSpec *>(item));
+        }
+        return res;
     }
 
     std::vector<InferenceSpec *> InferenceRegistry::inferences() const {
         __dsinfer_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx());
-        // TODO
-        return {};
+        std::vector<InferenceSpec *> res;
+        res.reserve(impl.contributes.size());
+        for (const auto &item : impl.contributes) {
+            res.push_back(static_cast<InferenceSpec *>(item));
+        }
+        return res;
     }
 
     InferenceDriver *InferenceRegistry::driver() const {
@@ -88,6 +93,47 @@ namespace dsinfer {
 
     bool InferenceRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state,
                                      Error *error) {
+        __dsinfer_impl_t;
+        switch (state) {
+            case ContributeSpec::Initialized: {
+                return ContributeRegistry::loadSpec(spec, state, error);
+            }
+            case ContributeSpec::Ready: {
+                auto inferenceSpec = static_cast<InferenceSpec *>(spec);
+                // Search interpreter
+                auto interp =
+                    env()->plugin<InferenceInterpreter>(inferenceSpec->className().data());
+                if (!interp) {
+                    *error = {
+                        Error::FeatureNotSupported,
+                        formatTextN(R"(inference interpreter "%1" not found)",
+                                    inferenceSpec->className()),
+                    };
+                    return false;
+                }
+                // Check schema and configuration
+                std::string errMsg;
+                if (!interp->validate(inferenceSpec, &errMsg)) {
+                    *error = {
+                        Error::InvalidFormat,
+                        formatTextN(R"(inference "%1" validate failed: %2)",
+                                    inferenceSpec->className(), errMsg),
+                    };
+                    return false;
+                }
+                auto spec_d = static_cast<InferenceSpec::Impl *>(inferenceSpec->_impl.get());
+                spec_d->interp = interp;
+                return true;
+            }
+            case ContributeSpec::Finished: {
+                return true;
+            }
+            case ContributeSpec::Deleted: {
+                return ContributeRegistry::loadSpec(spec, state, error);
+            }
+            default:
+                break;
+        }
         return false;
     }
 

@@ -64,11 +64,11 @@ namespace dsinfer_private {
 
 }
 
-#define __dsinfer_get_impl(T) ::dsinfer_private::get<std::remove_const_t<T::Impl>>(_impl)
-#define __dsinfer_get_decl(T) static_cast<T *>(_decl)
+#define __dsinfer_impl_get(T) ::dsinfer_private::get<std::remove_const_t<T::Impl>>(_impl)
+#define __dsinfer_decl_get(T) static_cast<T *>(_decl)
 
-#define __dsinfer_impl(T) auto &impl = *__dsinfer_get_impl(T)
-#define __dsinfer_decl(T) auto &decl = *__dsinfer_get_decl(T)
+#define __dsinfer_impl(T) auto &impl = *__dsinfer_impl_get(T)
+#define __dsinfer_decl(T) auto &decl = *__dsinfer_decl_get(T)
 
 #define __dsinfer_impl_t __dsinfer_impl(std::remove_pointer_t<decltype(this)>)
 #define __dsinfer_decl_t __dsinfer_decl(Decl)

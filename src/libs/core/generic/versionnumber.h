@@ -32,6 +32,7 @@ namespace dsinfer {
         }
 
         std::string toString() const;
+        bool isEmpty() const;
 
         bool operator==(const VersionNumber &rhs) const;
         bool operator!=(const VersionNumber &rhs) const;
@@ -42,6 +43,15 @@ namespace dsinfer {
 
     private:
         int m_numbers[4];
+    };
+
+}
+
+namespace std {
+
+    template <>
+    struct DSINFER_EXPORT hash<dsinfer::VersionNumber> {
+        size_t operator()(const dsinfer::VersionNumber &key) const;
     };
 
 }

@@ -1,6 +1,8 @@
 #include "pluginfactory.h"
 #include "pluginfactory_p.h"
 
+namespace fs = std::filesystem;
+
 namespace dsinfer {
 
     PluginFactory::Impl::Impl(PluginFactory *decl) : _decl(decl) {
@@ -9,7 +11,47 @@ namespace dsinfer {
     PluginFactory::Impl::~Impl() = default;
 
     void PluginFactory::Impl::scanPlugins(const char *iid) const {
+        auto &plugins = allPlugins[iid];
+        for (const auto &plugin : staticPlugins) {
+            if (strcmp(iid, plugin->iid()) == 0) {
+                std::ignore = plugins.insert(std::make_pair(plugin->key(), plugin));
+            }
+        }
 
+        auto it = pluginPaths.find(iid);
+        if (it != pluginPaths.end()) {
+            for (const auto &pluginPath : it->second) {
+                for (const auto &entry : fs::directory_iterator(pluginPath)) {
+                    const auto &entryPath = fs::canonical(entry.path());
+                    if (libraryInstances.count(entryPath) || !SharedLibrary::isLibrary(entryPath)) {
+                        continue;
+                    }
+
+                    SharedLibrary so;
+                    if (!so.open(entryPath)) {
+                        continue;
+                    }
+
+                    using PluginGetter = Plugin *(*) ();
+                    auto getter =
+                        reinterpret_cast<PluginGetter>(so.resolve("dsinfer_plugin_instance"));
+                    if (!getter) {
+                        continue;
+                    }
+
+                    auto plugin = getter();
+                    if (!plugin || strcmp(iid, plugin->iid()) != 0 ||
+                        !plugins.insert(std::make_pair(plugin->key(), plugin)).second) {
+                        continue;
+                    }
+                    libraryInstances[entryPath] = new SharedLibrary(std::move(so));
+                }
+            }
+        }
+
+        if (plugins.empty()) {
+            allPlugins.erase(iid);
+        }
     }
 
     PluginFactory::PluginFactory() : _impl(new Impl(this)) {

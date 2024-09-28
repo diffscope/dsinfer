@@ -11,8 +11,7 @@ namespace dsinfer {
         ~SingerRegistry();
 
     public:
-        SingerSpec *findSinger(const std::string &id, const VersionNumber &version = {}) const;
-        std::vector<SingerSpec *> findSingers(const std::string &id) const;
+        std::vector<SingerSpec *> findSingers(const ContributeIdentifier &identifier) const;
         std::vector<SingerSpec *> singers() const;
 
     protected:
@@ -23,7 +22,7 @@ namespace dsinfer {
 
     protected:
         class Impl;
-        SingerRegistry(Environment *env);
+        explicit SingerRegistry(Environment *env);
 
         friend class Environment;
     };

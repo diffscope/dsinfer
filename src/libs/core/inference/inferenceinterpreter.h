@@ -20,10 +20,10 @@ namespace dsinfer {
         virtual int apiLevel() const = 0;
 
         virtual bool validate(const InferenceSpec *spec, std::string *message) const;
-        virtual bool validate(const InferenceSpec *spec, const JsonObject &importOptions,
+        virtual bool validate(const InferenceSpec *spec, const JsonValue &importOptions,
                               std::string *message) const;
 
-        virtual Inference *create(const InferenceSpec *spec, const JsonObject &options,
+        virtual Inference *create(const InferenceSpec *spec, const JsonValue &options,
                                   Error *error) const = 0;
 
     public:

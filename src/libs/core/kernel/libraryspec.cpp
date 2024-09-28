@@ -4,6 +4,7 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 
 #include "contributeregistry.h"
 #include "contributespec.h"
@@ -20,8 +21,8 @@ namespace dsinfer {
 
     LibrarySpec::Impl::~Impl() {
         for (const auto &it : std::as_const(contributes)) {
-            for (const auto &spec : it.second) {
-                delete spec;
+            for (const auto &it2 : it.second) {
+                delete it2.second;
             }
         }
     }
@@ -61,9 +62,11 @@ namespace dsinfer {
         return res;
     }
 
-    bool LibrarySpec::Impl::read(const std::filesystem::path &dir,
-                                 const std::map<std::string, ContributeRegistry *> &regs,
-                                 Error *error) {
+    bool LibrarySpec::Impl::parse(const std::filesystem::path &dir,
+                                  const std::map<std::string, ContributeRegistry *> &regs,
+                                  std::vector<ContributeSpec *> *outContributes, Error *error) {
+        __dsinfer_decl_t;
+
         std::string id_;
         VersionNumber version_;
         VersionNumber compatVersion_;
@@ -77,38 +80,11 @@ namespace dsinfer {
 
         // Read desc
         JsonObject obj;
-        {
-            const auto &descPath = dir / _TSTR("desc.json");
-            std::ifstream file(descPath);
-            if (!file.is_open()) {
-                *error = {
-                    Error::FileNotFound,
-                    formatTextN(R"(failed to open library manifest "%1")", descPath),
-                };
-                return false;
-            }
-
-            std::stringstream ss;
-            ss << file.rdbuf();
-
-            std::string error2;
-            auto root = JsonValue::fromJson(ss.str(), &error2);
-            if (!error2.empty()) {
-                *error = {
-                    Error::InvalidFormat,
-                    formatTextN(R"(invalid library manifest format "%1": %2)", descPath, error2),
-                };
-                return false;
-            }
-            if (!root.isObject()) {
-                *error = {
-                    Error::InvalidFormat,
-                    formatTextN(R"(invalid library manifest format "%1")", descPath),
-                };
-                return false;
-            }
-            obj = root.toObject();
+        if (!readDesc(dir, &obj, error)) {
+            return false;
         }
+
+        auto canonicalDir = fs::canonical(dir);
 
         // id
         {
@@ -222,15 +198,41 @@ namespace dsinfer {
                     if (it2 == regs.end()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            R"(unknown contribute "%1")",
+                            formatTextN(R"(unknown contribute "%1")", pair.first),
                         };
                         goto out_failed;
                     }
 
                     const auto &reg = it2->second;
-                    auto contribute = reg->parseSpec(fs::canonical(dir), pair.second, error);
-                    if (!contribute) {
+                    if (!pair.second.isArray()) {
+                        *error = {
+                            Error::InvalidFormat,
+                            formatTextN(
+                                R"(contribute "%1" field has invalid value in library manifest)",
+                                pair.first),
+                        };
                         goto out_failed;
+                    }
+
+                    std::unordered_set<std::string> idSet;
+                    for (const auto &item : pair.second.toArray()) {
+                        auto contribute = reg->parseSpec(canonicalDir, item, error);
+                        if (!contribute) {
+                            goto out_failed;
+                        }
+                        contributes_.push_back(contribute);
+
+                        // Check id
+                        const auto &contributeId = contribute->id();
+                        if (idSet.count(contributeId)) {
+                            *error = {
+                                Error::InvalidFormat,
+                                formatTextN(R"(contribute "%1" field has duplicated id "%2")",
+                                            pair.first, contributeId),
+                            };
+                            goto out_failed;
+                        }
+                        idSet.emplace(contributeId);
                     }
                 }
 
@@ -240,24 +242,134 @@ namespace dsinfer {
                 deleteAll(contributes_);
                 return false;
             } while (false);
-
-            // Change to loaded state
-//            for (const auto &item :)
-
         }
 
-        id = id_;
+        path = canonicalDir;
+        id = std::move(id_);
         version = version_;
         compatVersion = compatVersion_;
-        vendor = vendor_;
-        copyright = copyright_;
-        description = description_;
-        url = url_;
-        dependencies = dependencies_;
+        vendor = std::move(vendor_);
+        copyright = std::move(copyright_);
+        description = std::move(description_);
+        url = std::move(url_);
+        dependencies = std::move(dependencies_);
+        *outContributes = std::move(contributes_);
         return true;
     }
 
+    bool LibrarySpec::Impl::readDesc(const std::filesystem::path &dir, JsonObject *out,
+                                     dsinfer::Error *error) {
+        const auto &descPath = dir / _TSTR("desc.json");
+        std::ifstream file(descPath);
+        if (!file.is_open()) {
+            *error = {
+                Error::FileNotFound,
+                formatTextN(R"(failed to open library manifest "%1")", descPath),
+            };
+            return false;
+        }
+
+        std::stringstream ss;
+        ss << file.rdbuf();
+
+        std::string error2;
+        auto root = JsonValue::fromJson(ss.str(), &error2);
+        if (!error2.empty()) {
+            *error = {
+                Error::InvalidFormat,
+                formatTextN(R"(invalid library manifest format "%1": %2)", descPath, error2),
+            };
+            return false;
+        }
+        if (!root.isObject()) {
+            *error = {
+                Error::InvalidFormat,
+                formatTextN(R"(invalid library manifest format "%1")", descPath),
+            };
+            return false;
+        }
+        *out = root.toObject();
+        return true;
+    }
+
+    std::filesystem::path
+        LibrarySpec::Impl::searchDependency(const std::vector<std::filesystem::path> &paths,
+                                            const LibraryDependency &dep) {
+        try {
+            for (const auto &path : paths) {
+                for (const auto &entry : fs::directory_iterator(path)) {
+                    const auto filename = entry.path().filename();
+                    if (!entry.is_directory()) {
+                        continue;
+                    }
+
+                    JsonObject obj;
+                    Error error;
+                    if (!readDesc(entry.path(), &obj, &error)) {
+                        continue;
+                    }
+
+                    // Search id, version, compatVersion
+                    std::string id_;
+                    VersionNumber version_;
+                    VersionNumber compatVersion_;
+
+                    // id
+                    {
+                        auto it = obj.find("id");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        id_ = it->second.toString();
+                        if (id_.empty()) {
+                            continue;
+                        }
+                    }
+                    // version
+                    {
+                        auto it = obj.find("version");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        version_ = VersionNumber::fromString(it->second.toString());
+                    }
+                    // compatVersion
+                    {
+                        auto it = obj.find("compatVersion");
+                        if (it != obj.end()) {
+                            compatVersion_ = VersionNumber::fromString(it->second.toString());
+                        } else {
+                            compatVersion_ = version_;
+                        }
+                    }
+
+                    // Check
+                    if (id_ != dep.id) {
+                        continue;
+                    }
+                    if (compatVersion_ > dep.version) {
+                        continue;
+                    }
+                    return fs::canonical(entry.path());
+                }
+            }
+        } catch (...) {
+        }
+        return {};
+    }
+
     LibrarySpec::~LibrarySpec() = default;
+
+    LibrarySpec::LibrarySpec(LibrarySpec &&other) noexcept {
+        std::swap(_impl, other._impl);
+    }
+
+    LibrarySpec &LibrarySpec::operator=(LibrarySpec &&other) noexcept {
+        if (this == &other)
+            return *this;
+        std::swap(_impl, other._impl);
+        return *this;
+    }
 
     std::filesystem::path LibrarySpec::path() const {
         __dsinfer_impl_t;
@@ -299,18 +411,35 @@ namespace dsinfer {
         return impl.url;
     }
 
-    const std::vector<ContributeSpec *> &LibrarySpec::contributes(int type) const {
+    std::vector<ContributeSpec *> LibrarySpec::contributes(int type) const {
         __dsinfer_impl_t;
         auto it = impl.contributes.find(type);
         if (it == impl.contributes.end()) {
-            static std::vector<ContributeSpec *> _empty;
-            return _empty;
+            return {};
         }
-        return it->second;
+
+        std::vector<ContributeSpec *> res;
+        const auto &map2 = it->second;
+        res.reserve(map2.size());
+        for (const auto &pair : std::as_const(map2)) {
+            res.push_back(pair.second);
+        }
+        return res;
     }
 
     ContributeSpec *LibrarySpec::contribute(int type, const std::string &id) const {
-        return nullptr;
+        __dsinfer_impl_t;
+        auto it = impl.contributes.find(type);
+        if (it == impl.contributes.end()) {
+            return nullptr;
+        }
+
+        const auto &map2 = it->second;
+        auto it2 = map2.find(id);
+        if (it2 == map2.end()) {
+            return nullptr;
+        }
+        return it2->second;
     }
 
     const std::vector<LibraryDependency> &LibrarySpec::dependencies() const {
@@ -318,19 +447,22 @@ namespace dsinfer {
         return impl.dependencies;
     }
 
-    bool LibrarySpec::hasError() const {
-        return false;
+    Error LibrarySpec::error() const {
+        __dsinfer_impl_t;
+        return impl.err;
     }
 
-    std::string LibrarySpec::errorMessage() const {
-        return {};
+    bool LibrarySpec::isLoaded() const {
+        __dsinfer_impl_t;
+        return impl.loaded;
     }
 
     Environment *LibrarySpec::env() const {
-        return nullptr;
+        __dsinfer_impl_t;
+        return impl.env;
     }
 
-    LibrarySpec::LibrarySpec(Environment *env) : _impl(new Impl(env)) {
+    LibrarySpec::LibrarySpec(Environment *env) : _impl(new Impl(this, env)) {
     }
 
 }

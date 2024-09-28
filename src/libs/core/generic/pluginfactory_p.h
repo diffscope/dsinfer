@@ -1,11 +1,12 @@
 #ifndef PLUGINFACTORY_P_H
 #define PLUGINFACTORY_P_H
 
-#include <unordered_map>
 #include <set>
 #include <shared_mutex>
+#include <unordered_map>
 
 #include <dsinfer/pluginfactory.h>
+#include <dsinfer/sharedlibrary.h>
 
 namespace dsinfer {
 
@@ -22,11 +23,10 @@ namespace dsinfer {
 
         std::unordered_map<std::string, std::vector<std::filesystem::path>> pluginPaths;
         std::vector<Plugin *> staticPlugins;
+        mutable std::unordered_map<std::filesystem::path, SharedLibrary *> libraryInstances;
         mutable std::set<std::string> pluginsDirty;
         mutable std::unordered_map<std::string, std::unordered_map<std::string, Plugin *>>
             allPlugins;
-        mutable std::unordered_map<std::filesystem::path, std::pair<std::string, std::string>>
-            pluginCache;
         mutable std::shared_mutex plugins_mtx;
     };
 

@@ -18,11 +18,18 @@ namespace dsinfer {
         int type;
         Environment *env;
 
+        std::list<ContributeSpec *> contributes;
+        std::unordered_map<
+            std::string,
+            std::unordered_map<VersionNumber,
+                               std::unordered_map<std::string, decltype(contributes)::iterator>>>
+            indexes;
+
         inline std::shared_mutex &env_mtx() const {
             return static_cast<Environment::Impl *>(env->_impl.get())->env_mtx;
         }
 
-        static void setSpecState(ContributeSpec *spec, ContributeSpec::State state);
+        std::vector<ContributeSpec *> findContributes(const ContributeIdentifier &identifier) const;
     };
 
 }

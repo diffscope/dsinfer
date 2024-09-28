@@ -20,12 +20,12 @@ namespace dsinfer {
         return false;
     }
 
-    bool AcousticInterpreter::validate(const InferenceSpec *spec, const JsonObject &importOptions,
+    bool AcousticInterpreter::validate(const InferenceSpec *spec, const JsonValue &importOptions,
                                        std::string *message) const {
         return false;
     }
 
-    Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
+    Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonValue &options,
                                            Error *error) const {
         switch (spec->apiLevel()) {
             case 1:

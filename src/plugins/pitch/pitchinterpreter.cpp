@@ -18,12 +18,12 @@ namespace dsinfer {
         return false;
     }
 
-    bool PitchInterpreter::validate(const InferenceSpec *spec, const JsonObject &importOptions,
+    bool PitchInterpreter::validate(const InferenceSpec *spec, const JsonValue &importOptions,
                                     std::string *message) const {
         return false;
     }
 
-    Inference *PitchInterpreter::create(const InferenceSpec *spec, const JsonObject &options,
+    Inference *PitchInterpreter::create(const InferenceSpec *spec, const JsonValue &options,
                                         Error *error) const {
         return nullptr;
     }

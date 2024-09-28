@@ -1,6 +1,6 @@
 #include "sharedlibrary.h"
 
-#include <tuple>
+#include <cctype>
 
 #ifdef _WIN32
 #  include <Windows.h>
@@ -12,12 +12,14 @@
 #  include <string.h>
 #endif
 
+namespace fs = std::filesystem;
+
 namespace dsinfer {
 
     class SharedLibrary::Impl {
     public:
         void *hDll = nullptr;
-        std::filesystem::path path;
+        fs::path path;
 
         virtual ~Impl();
 
@@ -117,7 +119,7 @@ namespace dsinfer {
     }
 
     bool SharedLibrary::Impl::open(int hints) {
-        auto absPath = std::filesystem::absolute(path);
+        auto absPath = fs::absolute(path);
 
         auto handle =
 #ifdef _WIN32
@@ -194,9 +196,10 @@ namespace dsinfer {
         return *this;
     }
 
-    bool SharedLibrary::open(const std::filesystem::path &path, int hints) {
+    bool SharedLibrary::open(const fs::path &path, int hints) {
         _impl->path = path;
         if (_impl->open(hints)) {
+            _impl->path = fs::canonical(fs::absolute(path));
             return true;
         }
         _impl->path.clear();
@@ -215,7 +218,7 @@ namespace dsinfer {
         return _impl->hDll != nullptr;
     }
 
-    std::filesystem::path SharedLibrary::path() const {
+    fs::path SharedLibrary::path() const {
         return _impl->path;
     }
 
@@ -229,6 +232,53 @@ namespace dsinfer {
 
     std::string SharedLibrary::lastError() const {
         return _impl->sysErrorMessage(false);
+    }
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    static bool checkVersionSuffix(const std::string_view &suffix) {
+        size_t start = 0;
+        while (start < suffix.size()) {
+            size_t dotPos = suffix.find('.', start);
+            std::string_view part;
+            if (dotPos == std::string::npos) {
+                part = suffix.substr(start);
+                start = suffix.size();
+            } else {
+                part = suffix.substr(start, dotPos - start);
+                start = dotPos + 1;
+            }
+            if (!std::all_of(part.begin(), part.end(), ::isdigit)) {
+                return false;
+            }
+        }
+        return true;
+    }
+#endif
+
+    bool SharedLibrary::isLibrary(const fs::path &path) {
+        auto fileName = path.string();
+#if defined(_WIN32)
+        return fileName.size() >= 4 &&
+               std::equal(fileName.end() - 4, fileName.end(), L".dll", [](wchar_t a, wchar_t b) {
+                   return ::tolower(a) == ::tolower(b); //
+               });
+#elif defined(__APPLE__)
+        return fileName.size() >= 6 &&
+               std::equal(fileName.end() - 6, fileName.end(), L".dylib", [](char a, char b) {
+                   return ::tolower(a) == ::tolower(b); //
+               });
+#else
+        size_t soPos;
+        if (fileName.size() >= 3 && (soPos = fileName.rfind(".so")) != std::string::npos) {
+            // 检查 .so 后是否有版本号部分
+            std::string_view suffix = std::string_view(fileName).substr(soPos + 3);
+            if (suffix.empty()) {
+                return true; // 仅有 .so，无版本号
+            }
+            return checkVersionSuffix(suffix); // 确保后缀全为数字
+        }
+        return false;
+#endif
     }
 
 }

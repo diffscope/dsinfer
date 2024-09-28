@@ -12,10 +12,8 @@ namespace dsinfer {
 
     class SingerImport {
     public:
-        std::string libraryId;
-        std::string inferenceId;
-
-        JsonObject options;
+        ContributeIdentifier inference;
+        JsonValue options;
     };
 
     class DSINFER_EXPORT SingerSpec : public ContributeSpec {
@@ -33,7 +31,7 @@ namespace dsinfer {
         std::filesystem::path demoAudio() const;
 
         const std::vector<SingerImport> &imports() const;
-        
+
         JsonObject configuration() const;
 
     public:
@@ -41,7 +39,6 @@ namespace dsinfer {
 
     protected:
         class Impl;
-
         SingerSpec();
 
         friend class SingerRegistry;

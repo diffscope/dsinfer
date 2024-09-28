@@ -26,6 +26,9 @@ namespace dsinfer {
     public:
         ~LibrarySpec();
 
+        LibrarySpec(LibrarySpec &&other) noexcept;
+        LibrarySpec &operator=(LibrarySpec &&other) noexcept;
+
     public:
         std::filesystem::path path() const;
 
@@ -39,14 +42,14 @@ namespace dsinfer {
         std::string copyright() const;
         std::string url() const;
 
-        const std::vector<ContributeSpec *> &contributes(int type) const;
+        std::vector<ContributeSpec *> contributes(int type) const;
         ContributeSpec *contribute(int type, const std::string &id) const;
 
         const std::vector<LibraryDependency> &dependencies() const;
 
     public:
-        bool hasError() const;
-        std::string errorMessage() const;
+        Error error() const;
+        bool isLoaded() const;
 
         Environment *env() const;
 

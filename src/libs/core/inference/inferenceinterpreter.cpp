@@ -10,7 +10,7 @@ namespace dsinfer {
         return false;
     }
 
-    bool InferenceInterpreter::validate(const InferenceSpec *spec, const JsonObject &importOptions,
+    bool InferenceInterpreter::validate(const InferenceSpec *spec, const JsonValue &importOptions,
                                         std::string *message) const {
         return false;
     }

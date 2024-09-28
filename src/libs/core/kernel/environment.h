@@ -27,9 +27,9 @@ namespace dsinfer {
         const std::vector<std::filesystem::path> &libraryPaths() const;
 
     public:
-        LibrarySpec *openLibrary(const std::filesystem::path &path, Error *error);
-        void closeLibrary(LibrarySpec *lib);
-        LibrarySpec *findLibrary(const std::string &id, const VersionNumber &version = {}) const;
+        LibrarySpec *openLibrary(const std::filesystem::path &path, bool noLoad, Error *error);
+        bool closeLibrary(LibrarySpec *spec);
+        LibrarySpec *findLibrary(const std::string &id, const VersionNumber &version) const;
         std::vector<LibrarySpec *> findLibraries(const std::string &id) const;
         std::vector<LibrarySpec *> libraries() const;
 

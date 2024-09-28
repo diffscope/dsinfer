@@ -3,11 +3,53 @@
 
 #include <string>
 #include <filesystem>
+#include <utility>
 
 #include <dsinfer/jsonvalue.h>
 #include <dsinfer/libraryspec.h>
 
 namespace dsinfer {
+
+    class DSINFER_EXPORT ContributeIdentifier {
+    public:
+        inline ContributeIdentifier(std::string parent, const VersionNumber &version,
+                                    std::string id)
+            : m_library(std::move(parent)), m_version(version), m_id(std::move(id)) {
+        }
+
+        inline ContributeIdentifier(std::string parent, std::string id)
+            : m_library(std::move(parent)), m_id(std::move(id)) {
+        }
+
+        inline ContributeIdentifier(std::string id) : m_id(std::move(id)) {
+        }
+
+        inline ContributeIdentifier() = default;
+
+        inline std::string library() const {
+            return m_library;
+        }
+
+        inline VersionNumber version() const {
+            return m_version;
+        }
+
+        inline std::string id() const {
+            return m_id;
+        }
+
+        inline bool isEmpty() const {
+            return m_id.empty();
+        }
+
+        std::string toString() const;
+        static ContributeIdentifier fromString(const std::string &token);
+
+    protected:
+        std::string m_library;
+        VersionNumber m_version;
+        std::string m_id;
+    };
 
     class LibrarySpec;
 
@@ -22,8 +64,9 @@ namespace dsinfer {
 
         enum State {
             Invalid,
-            Loaded,
+            Initialized,
             Ready,
+            Finished,
             Deleted,
         };
 
@@ -52,6 +95,7 @@ namespace dsinfer {
         explicit ContributeSpec(Impl &impl);
 
         friend class ContributeRegistry;
+        friend class Environment;
     };
 
     template <class T>

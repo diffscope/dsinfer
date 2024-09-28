@@ -36,6 +36,8 @@ namespace dsinfer {
 
         std::string lastError() const;
 
+        static bool isLibrary(const std::filesystem::path &path);
+
     protected:
         class Impl;
         std::unique_ptr<Impl> _impl;

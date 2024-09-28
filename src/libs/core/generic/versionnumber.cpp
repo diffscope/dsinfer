@@ -3,6 +3,8 @@
 #include <vector>
 #include <sstream>
 
+#include "algorithms.h"
+
 namespace dsinfer {
 
     VersionNumber::VersionNumber() {
@@ -34,8 +36,19 @@ namespace dsinfer {
 
 
     std::string VersionNumber::toString() const {
-        return std::to_string(major()) + "." + std::to_string(minor()) + "." +
-               std::to_string(patch()) + "." + std::to_string(tweak());
+        if (tweak() != 0) {
+            return std::to_string(major()) + "." + std::to_string(minor()) + "." +
+                   std::to_string(patch()) + "." + std::to_string(tweak());
+        }
+        if (patch() != 0) {
+            return std::to_string(major()) + "." + std::to_string(minor()) + "." +
+                   std::to_string(patch());
+        }
+        return std::to_string(major()) + "." + std::to_string(minor());
+    }
+
+    bool VersionNumber::isEmpty() const {
+        return major() == 0 && minor() == 0 && patch() == 0 && tweak() == 0;
     }
 
     bool VersionNumber::operator==(const VersionNumber &rhs) const {
@@ -86,5 +99,19 @@ namespace dsinfer {
     bool VersionNumber::operator>=(const VersionNumber &rhs) const {
         return !(*this < rhs);
     }
+
+}
+
+namespace std {
+
+    size_t hash<dsinfer::VersionNumber>::operator()(const dsinfer::VersionNumber &key) const {
+        size_t seed = typeid(key).hash_code();
+        seed = dsinfer::hash(key.major(), seed);
+        seed = dsinfer::hash(key.minor(), seed);
+        seed = dsinfer::hash(key.patch(), seed);
+        seed = dsinfer::hash(key.tweak(), seed);
+        return seed;
+    }
+
 
 }

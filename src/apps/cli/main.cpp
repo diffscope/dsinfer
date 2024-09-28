@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     inf_reg->setDriver(driver);
 
     // Load library
-    auto lib1 = env.openLibrary(libPath / "zhibin-0.5.1.0", &error);
+    auto lib1 = env.openLibrary(libPath / "zhibin-0.5.1.0", false, &error);
     if (!lib1) {
         printf("Error: %s\n", error.what());
         return -1;

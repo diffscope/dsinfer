@@ -12,9 +12,7 @@ namespace dsinfer {
         ~InferenceRegistry();
 
     public:
-        InferenceSpec *findInference(const std::string &id,
-                                     const VersionNumber &version = {}) const;
-        std::vector<InferenceSpec *> findInferences(const std::string &id) const;
+        std::vector<InferenceSpec *> findInferences(const ContributeIdentifier &identifier) const;
         std::vector<InferenceSpec *> inferences() const;
 
         InferenceDriver *driver() const;
@@ -29,7 +27,7 @@ namespace dsinfer {
 
     protected:
         class Impl;
-        InferenceRegistry(Environment *env);
+        explicit InferenceRegistry(Environment *env);
 
         friend class Environment;
     };

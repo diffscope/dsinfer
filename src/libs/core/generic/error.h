@@ -15,6 +15,7 @@ namespace dsinfer {
             InvalidFormat,
             FileNotFound,
             FeatureNotSupported,
+            LibraryNotFound,
         };
 
         inline Error() : m_type(NoError) {

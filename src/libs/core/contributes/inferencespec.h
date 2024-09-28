@@ -28,10 +28,10 @@ namespace dsinfer {
 
     public:
         class Inference *create(const JsonObject &options, Error *error) const;
+        bool validate(const JsonValue &options, std::string *error) const;
 
     protected:
         class Impl;
-
         InferenceSpec();
 
         friend class InferenceRegistry;

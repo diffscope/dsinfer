@@ -19,7 +19,7 @@ namespace dsinfer {
         virtual std::string specKey() const = 0;
         virtual ContributeSpec *parseSpec(const std::filesystem::path &basePath,
                                           const JsonValue &config, Error *error) const = 0;
-        virtual bool loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error) = 0;
+        virtual bool loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error);
 
     public:
         template <class T>
