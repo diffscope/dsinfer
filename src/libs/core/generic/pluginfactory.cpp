@@ -8,7 +8,19 @@ namespace dsinfer {
     PluginFactory::Impl::Impl(PluginFactory *decl) : _decl(decl) {
     }
 
-    PluginFactory::Impl::~Impl() = default;
+    PluginFactory::Impl::~Impl() {
+        // Remove all plugins
+        for (const auto &plugins : std::as_const(allPlugins)) {
+            for (const auto &plugin : plugins.second) {
+                staticPlugins.erase(plugin.second);
+                delete plugin.second;
+            }
+        }
+        // Unload all libraries
+        for (const auto &item : std::as_const(libraryInstances)) {
+            delete item.second;
+        }
+    }
 
     void PluginFactory::Impl::scanPlugins(const char *iid) const {
         auto &plugins = allPlugins[iid];
@@ -62,14 +74,14 @@ namespace dsinfer {
     void PluginFactory::addStaticPlugin(Plugin *plugin) {
         __dsinfer_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.plugins_mtx);
-        impl.staticPlugins.push_back(plugin);
+        impl.staticPlugins.emplace(plugin);
         impl.pluginsDirty.insert(plugin->iid());
     }
 
     std::vector<Plugin *> PluginFactory::staticPlugins() const {
         __dsinfer_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.plugins_mtx);
-        return impl.staticPlugins;
+        return {impl.staticPlugins.begin(), impl.staticPlugins.end()};
     }
 
     void PluginFactory::addPluginPath(const char *iid, const std::filesystem::path &path) {

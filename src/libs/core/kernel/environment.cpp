@@ -62,17 +62,19 @@ namespace dsinfer {
         return impl.libraryPaths;
     }
 
+    static fs::path getCanonicalPath(const fs::path &path) {
+        try {
+            return fs::canonical(path);
+        } catch (...) {
+        }
+        return fs::path();
+    }
+
     LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, bool noLoad,
                                           Error *error) {
         __dsinfer_impl_t;
 
-        auto canonicalPath = [](const fs::path &path) {
-            try {
-                return fs::canonical(path);
-            } catch (...) {
-                return fs::path();
-            }
-        }(path);
+        auto canonicalPath = getCanonicalPath(path);
         if (canonicalPath.empty()) {
             *error = {
                 Error::FileNotFound,
@@ -126,7 +128,9 @@ namespace dsinfer {
             Error error1;
             std::unordered_set<fs::path> dependencyPaths{spec->path()};
             for (const auto &dep : std::as_const(spec->dependencies())) {
+                std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
                 auto depPath = LibrarySpec::Impl::searchDependency(impl.libraryPaths, dep);
+                lock.unlock();
                 if (depPath.empty()) {
                     error1 = {
                         Error::LibraryNotFound,
