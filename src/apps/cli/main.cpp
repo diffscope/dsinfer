@@ -9,11 +9,16 @@
 #include <syscmdline/parser.h>
 #include <syscmdline/system.h>
 
+#include "loadconfig.h"
+#include "statusconfig.h"
+
 namespace fs = std::filesystem;
 
 namespace SCL = SysCmdLine;
 
 namespace DS = dsinfer;
+
+// class
 
 static int cmd_stat(const SCL::ParseResult &result) {
     return 0;
@@ -28,6 +33,10 @@ static int cmd_install(const SCL::ParseResult &result) {
 }
 
 static int cmd_remove(const SCL::ParseResult &result) {
+    return 0;
+}
+
+static int cmd_autoRemove(const SCL::ParseResult &result) {
     return 0;
 }
 
@@ -124,6 +133,9 @@ int main(int argc, char *argv[]) {
         command.addArguments({
             SCL::Argument("packages", "Package paths").multi(),
         });
+        command.addOptions({
+            SCL::Option("--path", R"(Override default package path)").arg(SCL::Argument("path")),
+        });
         command.setHandler(cmd_install);
         return command;
     }();
@@ -132,11 +144,34 @@ int main(int argc, char *argv[]) {
         command.addArguments({
             SCL::Argument("packages", "Package paths").multi(),
         });
+        command.addOptions({
+            SCL::Option("--path", R"(Override default package path)").arg(SCL::Argument("path")),
+        });
         command.setHandler(cmd_remove);
+        return command;
+    }();
+    SCL::Command autoRemoveCommand = [] {
+        SCL::Command command("autoremove", "Remove unused packages automatically");
+        command.addArguments({
+            SCL::Argument("packages", "Package paths").multi(),
+        });
+        command.addOptions({
+            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+        });
+        command.setHandler(cmd_autoRemove);
         return command;
     }();
     SCL::Command execCommand = [] {
         SCL::Command command("exec", "Execute an inference task");
+        command.addArguments({
+            SCL::Argument("singer", "Singer ID"),
+            SCL::Argument("input", "Input arguments"),
+        });
+        command.addOptions({
+            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+            SCL::Option("--driver", R"(Override default driver)").arg("id"),
+            SCL::Option("--init", R"(Override default driver initialzing arguments)").arg("arg"),
+        });
         command.setHandler(cmd_exec);
         return command;
     }();
@@ -147,6 +182,7 @@ int main(int argc, char *argv[]) {
         listCommand,
         installCommand,
         removeCommand,
+        autoRemoveCommand,
         execCommand,
     });
     rootCommand.addVersionOption(TOOL_VERSION);
@@ -174,8 +210,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef _WIN32
         if (typeid(e) == typeid(fs::filesystem_error)) {
-            auto err = static_cast<const fs::filesystem_error &>(e);
-            msg = DS::ansiToUtf8(err.what());
+            msg = DS::ansiToUtf8(e.what());
         }
 #endif
 

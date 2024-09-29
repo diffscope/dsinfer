@@ -8,7 +8,7 @@ namespace dsinfer {
     }
 
     const char *OnnxDriverPlugin::key() const {
-        return "org.DiffSinger.InferenceDriver.OnnxDriver";
+        return "com.diffsinger.InferenceDriver.OnnxDriver";
     }
 
     InferenceDriver *OnnxDriverPlugin::create() const {

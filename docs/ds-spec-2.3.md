@@ -42,12 +42,12 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
         "inferences": [
             {
                 "id": "pitch",
-                "class": "org.DiffSinger.Inference.PitchInference",
+                "class": "com.diffsinger.InferenceInterpreter.PitchInference",
                 "configuration": "./inferences/pitch.json"
             },
             {
                 "id": "variance",
-                "class": "org.DiffSinger.VarianceInference",
+                "class": "com.diffsinger.InferenceInterpreter.VarianceInference",
                 "configuration": "./inferences/variance.json"
             }
         ],
@@ -269,7 +269,7 @@ dsinfer-cli exec <singer> [--arg <key> <value>] [--paths <paths>]
 
 创建派生于`InferenceInterpreter`的解释器类。
 
-- `key`：返回对应的推理参数类型的`class`，如`org.DiffSinger.PitchInference`
+- `key`：返回对应的推理参数类型的`class`，如`com.diffsinger.InferenceInterpreter.PitchInference`
     ```c++
     const char *key() const override;
     ```

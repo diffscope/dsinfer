@@ -7,7 +7,7 @@ namespace dsinfer {
     PitchInterpreter::PitchInterpreter() = default;
 
     const char *PitchInterpreter::key() const {
-        return "org.DiffSinger.InferenceInterpreter.PitchPrediction";
+        return "com.diffsinger.InferenceInterpreter.PitchPrediction";
     }
 
     int PitchInterpreter::apiLevel() const {

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_set>
+#include <regex>
 
 #include "contributeregistry.h"
 #include "contributespec.h"
@@ -28,6 +29,25 @@ namespace dsinfer {
     }
 
     static LibraryDependency readDependency(const JsonValue &val) {
+        if (val.isString()) {
+            const auto &token = val.toString();
+
+            // Regex to match strictly the id[version] format
+            static std::regex pattern(R"(([^/\[\]]+)\[([^\[\]]+)\])");
+            std::smatch matches;
+            if (std::regex_match(token, matches, pattern)) {
+                std::string id = matches[1].str();      // id part
+                std::string version = matches[2].str(); // version part
+                if (id.empty()) {
+                    return {};
+                }
+                LibraryDependency res(true);
+                res.id = std::move(id);
+                res.version = VersionNumber::fromString(version);
+            }
+            return {};
+        }
+
         if (!val.isObject()) {
             return {};
         }
@@ -57,7 +77,7 @@ namespace dsinfer {
         }
 
         LibraryDependency res(required);
-        res.id = id;
+        res.id = std::move(id);
         res.version = version;
         return res;
     }

@@ -9,7 +9,7 @@ namespace dsinfer {
     AcousticInterpreter::AcousticInterpreter() = default;
 
     const char *AcousticInterpreter::key() const {
-        return "org.DiffSinger.InferenceInterpreter.AcousticPrediction";
+        return "com.diffsinger.InferenceInterpreter.AcousticPrediction";
     }
 
     int AcousticInterpreter::apiLevel() const {
