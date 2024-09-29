@@ -8,43 +8,43 @@ namespace dsinfer {
     OnnxDriver::~OnnxDriver() {
     }
 
-    bool OnnxDriver::initialize(const JsonObject &args, Error *error) const {
+    bool OnnxDriver::initialize(const JsonObject &args, Error *error) {
         return false;
     }
 
     int64_t OnnxDriver::sessionCreate(const std::filesystem::path &path, const JsonObject &args,
-                                      Error *error) const {
+                                      Error *error) {
         return 0;
     }
 
-    bool OnnxDriver::sessionDestroy(int64_t handle, Error *error) const {
+    bool OnnxDriver::sessionDestroy(int64_t handle, Error *error) {
         return false;
     }
 
-    bool OnnxDriver::sessionRunning(int64_t handle) const {
+    bool OnnxDriver::sessionRunning(int64_t handle) {
         return false;
     }
 
-    int64_t OnnxDriver::taskCreate() const {
+    int64_t OnnxDriver::taskCreate() {
         return 0;
     }
 
-    void OnnxDriver::taskDestroy(int64_t handle) const {
+    void OnnxDriver::taskDestroy(int64_t handle) {
     }
 
-    bool OnnxDriver::taskStart(int64_t handle, const JsonValue &input, Error *error) const {
+    bool OnnxDriver::taskStart(int64_t handle, const JsonValue &input, Error *error) {
         return false;
     }
 
-    bool OnnxDriver::taskStop(int64_t handle, Error *error) const {
+    bool OnnxDriver::taskStop(int64_t handle, Error *error) {
         return false;
     }
 
-    int OnnxDriver::taskState(int64_t handle) const {
+    int OnnxDriver::taskState(int64_t handle) {
         return 0;
     }
 
-    bool OnnxDriver::taskResult(int64_t handle, JsonValue *result) const {
+    bool OnnxDriver::taskResult(int64_t handle, JsonValue *result) {
         return false;
     }
 
