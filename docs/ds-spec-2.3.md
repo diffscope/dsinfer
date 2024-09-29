@@ -75,6 +75,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
     + `vender`：提供方
     + `copyright`：版权信息
     + `description`：介绍文字
+    + `readme`：放置介绍、许可证等信息的文本
     + `url`：网站
     + `contributes`：功能贡献列表，主要包含子模块
         + `inferences`：推理模块
@@ -162,7 +163,13 @@ Inference 模块负责执行某一项参数的推理任务，承担了最底层�
 }
 ```
 + 必选字段
-    + `name`: 推理模块名称
+    + `name`: 推理模块名称，可为字符串或键值对
+        ```json
+        {
+            "_": "Zhibin - Variance",
+            "zh_CN": "挚彬 - Variance"
+        }
+        ```
     + `level`: 推理解释器应选择的 API 版本
 + 可选字段
     + `schema`: 输出参数的限制条件
@@ -198,7 +205,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 }
 ```
 + 必选字段
-    + `name`: 歌手名称
+    + `name`: 歌手名称，同推理模块`name`字段
     + `imports`：歌手依赖的推理模块
         + `id`：依赖的推理模块 ID，如果是别的库的那么使用`lib[version]/id`的形式，`lib`与`version`可以省略
         + `options`：输出参数，需要符合对应的 API 版本以及推理模块的`schema`的限制

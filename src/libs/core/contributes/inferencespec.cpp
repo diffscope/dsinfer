@@ -17,7 +17,7 @@ namespace dsinfer {
         std::string id_;
         std::string className_;
 
-        std::string name_;
+        DisplayText name_;
         int apiLevel_;
 
         JsonObject schema_;
@@ -132,8 +132,8 @@ namespace dsinfer {
                 };
                 return false;
             }
-            name_ = it->second.toString();
-            if (name_.empty()) {
+            name_ = it->second;
+            if (name_.isEmpty()) {
                 *error = {
                     Error::InvalidFormat,
                     R"("name" field has invalid value in inference manifest)",
@@ -211,7 +211,7 @@ namespace dsinfer {
         return impl.className;
     }
 
-    std::string InferenceSpec::name() const {
+    DisplayText InferenceSpec::name() const {
         __dsinfer_impl_t;
         return impl.name;
     }

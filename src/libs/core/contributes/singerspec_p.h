@@ -17,7 +17,7 @@ namespace dsinfer {
 
         std::filesystem::path path;
 
-        std::string name;
+        DisplayText name;
         std::string model;
 
         std::filesystem::path avatar;

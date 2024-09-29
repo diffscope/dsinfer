@@ -39,9 +39,13 @@ namespace dsinfer {
                                std::unordered_map<VersionNumber, decltype(libraries)::iterator>>
                 idIndexes;
             std::unordered_map<LibrarySpec *, decltype(libraries)::iterator> pointerIndexes;
+
         };
         LibraryMap loadedLibraryMap;
         std::unordered_set<LibrarySpec *> resourceLibraries;
+
+        // temp
+        std::unordered_map<std::string, std::unordered_set<VersionNumber>> pendingLibraries;
 
         mutable std::shared_mutex env_mtx;
     };

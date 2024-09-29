@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include <dsinfer/displaytext.h>
 #include <dsinfer/contributespec.h>
 #include <dsinfer/inference.h>
 
@@ -24,7 +25,7 @@ namespace dsinfer {
         std::filesystem::path path() const;
 
         std::string model() const;
-        std::string name() const;
+        DisplayText name() const;
 
         std::filesystem::path avatar() const;
         std::filesystem::path background() const;

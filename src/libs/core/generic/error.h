@@ -14,6 +14,7 @@ namespace dsinfer {
             NoError = 0,
             InvalidFormat,
             FileNotFound,
+            FileDuplicated,
             FeatureNotSupported,
             LibraryNotFound,
         };

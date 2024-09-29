@@ -67,7 +67,7 @@ namespace dsinfer {
             return fs::canonical(path);
         } catch (...) {
         }
-        return fs::path();
+        return {};
     }
 
     LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, bool noLoad,
@@ -117,6 +117,54 @@ namespace dsinfer {
             return spec;
         }
 
+        // Check duplication
+        const auto &removePending = [&impl, spec] {
+            auto it = impl.pendingLibraries.find(spec->id());
+            auto &versionSet = it->second;
+            versionSet.erase(spec->version());
+            if (versionSet.empty()) {
+                impl.pendingLibraries.erase(it);
+            }
+        };
+        do {
+            std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+            auto &libMap = impl.loadedLibraryMap;
+
+            // Check loaded libraries
+            {
+                auto it = libMap.idIndexes.find(spec->id());
+                if (it != libMap.idIndexes.end()) {
+                    const auto &versionSet = it->second;
+                    if (versionSet.count(spec->version())) {
+                        goto out_dup;
+                    }
+                }
+            }
+
+            // Check pending list
+            {
+                auto it = impl.pendingLibraries.find(spec->id());
+                if (it != impl.pendingLibraries.end()) {
+                    const auto &versionSet = it->second;
+                    if (versionSet.count(spec->version())) {
+                        goto out_dup;
+                    }
+                }
+            }
+
+            impl.pendingLibraries[spec->id()].insert(spec->version());
+            break;
+
+        out_dup:
+            spec_d->err = {
+                Error::FileDuplicated,
+                formatTextN(R"(another library with same identifier "%1[%2]" is loaded)",
+                            spec->id(), spec->version().toString()),
+            };
+            impl.resourceLibraries.insert(spec);
+            return spec;
+        } while (false);
+
         // Load dependencies
         std::vector<LibrarySpec *> dependencies;
         auto closeDependencies = [&dependencies, this]() {
@@ -151,7 +199,7 @@ namespace dsinfer {
                 Error error2;
                 auto depLib = openLibrary(depPath, true, &error2);
                 if (!depLib) {
-                    *error = {
+                    error1 = {
                         Error::LibraryNotFound,
                         formatTextN("failed to load dependency \"%1\": %2", depPath,
                                     error2.message()),
@@ -169,6 +217,7 @@ namespace dsinfer {
             spec_d->err = error1;
 
             std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+            removePending();
             impl.resourceLibraries.insert(spec);
             return spec;
         } while (false);
@@ -203,6 +252,7 @@ namespace dsinfer {
                 spec_d->err = error1;
 
                 std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+                removePending();
                 impl.resourceLibraries.insert(spec);
                 return spec;
             }
@@ -248,6 +298,7 @@ namespace dsinfer {
                 spec_d->err = error1;
 
                 std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+                removePending();
                 impl.resourceLibraries.insert(spec);
                 return spec;
             }
@@ -264,6 +315,7 @@ namespace dsinfer {
             lib.linked = std::move(dependencies);
 
             std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+            removePending();
             auto &libMap = impl.loadedLibraryMap;
             auto it = libMap.libraries.insert(libMap.libraries.end(), lib);
             libMap.pathIndexes[spec->path()] = it;

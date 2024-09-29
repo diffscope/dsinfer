@@ -20,7 +20,7 @@ namespace dsinfer {
         std::string id;
         std::string className;
 
-        std::string name;
+        DisplayText name;
         int apiLevel = 0;
 
         JsonObject schema;

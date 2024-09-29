@@ -39,7 +39,7 @@ namespace dsinfer {
         std::string id_;
         std::string model_;
 
-        std::string name_;
+        DisplayText name_;
 
         fs::path avatar_;
         fs::path background_;
@@ -156,8 +156,8 @@ namespace dsinfer {
                 };
                 return false;
             }
-            name_ = it->second.toString();
-            if (name_.empty()) {
+            name_ = it->second;
+            if (name_.isEmpty()) {
                 *error = {
                     Error::InvalidFormat,
                     R"("name" field has invalid value in singer manifest)",
@@ -250,7 +250,7 @@ namespace dsinfer {
         return impl.model;
     }
 
-    std::string SingerSpec::name() const {
+    DisplayText SingerSpec::name() const {
         __dsinfer_impl_t;
         return impl.name;
     }
