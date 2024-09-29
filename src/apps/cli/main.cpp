@@ -18,8 +18,6 @@ namespace SCL = SysCmdLine;
 
 namespace DS = dsinfer;
 
-// class
-
 static int cmd_stat(const SCL::ParseResult &result) {
     return 0;
 }
@@ -45,7 +43,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
 
     // // Configure environment
     // DS::Environment env;
-    // env.addPluginPath("org.OpenVPI.InferenceInterpreter", fs::current_path().parent_path() /
+    // env.addPluginPath("com.diffsinger.InferenceInterpreter", fs::current_path().parent_path() /
     // "lib" /
     //                                                           "plugins" / "dsinfer" /
     //                                                           "inferenceinterpreters");
@@ -115,7 +113,10 @@ int main(int argc, char *argv[]) {
     SCL::Command statCommand = [] {
         SCL::Command command("stat", "Display package status");
         command.addArguments({
-            SCL::Argument("package", "Package path"),
+            SCL::Argument("package", "Package identifier, format: id[version]"),
+        });
+        command.addOptions({
+            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
         });
         command.setHandler(cmd_stat);
         return command;
@@ -164,7 +165,7 @@ int main(int argc, char *argv[]) {
     SCL::Command execCommand = [] {
         SCL::Command command("exec", "Execute an inference task");
         command.addArguments({
-            SCL::Argument("singer", "Singer ID"),
+            SCL::Argument("singer", "Singer identifier, format: id[version]/sid"),
             SCL::Argument("input", "Input arguments"),
         });
         command.addOptions({

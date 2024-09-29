@@ -13,7 +13,7 @@ namespace dsinfer {
         ~InferenceInterpreter();
 
         const char *iid() const override {
-            return "org.OpenVPI.InferenceInterpreter";
+            return "com.diffsinger.InferenceInterpreter";
         }
 
     public:

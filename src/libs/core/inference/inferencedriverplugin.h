@@ -12,7 +12,7 @@ namespace dsinfer {
         ~InferenceDriverPlugin();
 
         const char *iid() const override {
-            return "org.OpenVPI.InferenceDriver";
+            return "com.diffsinger.InferenceDriver";
         }
 
     public:
