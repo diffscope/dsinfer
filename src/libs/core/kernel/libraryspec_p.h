@@ -36,9 +36,9 @@ namespace dsinfer {
         VersionNumber version;
         VersionNumber compatVersion;
 
-        std::string description;
-        std::string vendor;
-        std::string copyright;
+        DisplayText description;
+        DisplayText vendor;
+        DisplayText copyright;
         std::filesystem::path readme;
         std::string url;
 

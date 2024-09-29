@@ -149,20 +149,8 @@ namespace dsinfer {
         // name
         {
             auto it = configObj.find("name");
-            if (it == configObj.end()) {
-                *error = {
-                    Error::InvalidFormat,
-                    R"(missing "name" field in singer manifest)",
-                };
-                return false;
-            }
-            name_ = it->second;
-            if (name_.isEmpty()) {
-                *error = {
-                    Error::InvalidFormat,
-                    R"("name" field has invalid value in singer manifest)",
-                };
-                return false;
+            if (it != configObj.end()) {
+                name_ = it->second;
             }
         }
         // avatar

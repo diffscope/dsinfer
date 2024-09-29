@@ -125,20 +125,8 @@ namespace dsinfer {
         // name
         {
             auto it = configObj.find("name");
-            if (it == configObj.end()) {
-                *error = {
-                    Error::InvalidFormat,
-                    R"(missing "name" field in inference manifest)",
-                };
-                return false;
-            }
-            name_ = it->second;
-            if (name_.isEmpty()) {
-                *error = {
-                    Error::InvalidFormat,
-                    R"("name" field has invalid value in inference manifest)",
-                };
-                return false;
+            if (it != configObj.end()) {
+                name_ = it->second;
             }
         }
         // level

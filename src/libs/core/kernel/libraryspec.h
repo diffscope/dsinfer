@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include <dsinfer/displaytext.h>
 #include <dsinfer/versionnumber.h>
 #include <dsinfer/environment.h>
 
@@ -37,9 +38,9 @@ namespace dsinfer {
         VersionNumber version() const;
         VersionNumber compatVersion() const;
 
-        std::string description() const;
-        std::string vendor() const;
-        std::string copyright() const;
+        DisplayText description() const;
+        DisplayText vendor() const;
+        DisplayText copyright() const;
         std::filesystem::path readme() const;
         std::string url() const;
 

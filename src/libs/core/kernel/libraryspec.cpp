@@ -70,9 +70,9 @@ namespace dsinfer {
         std::string id_;
         VersionNumber version_;
         VersionNumber compatVersion_;
-        std::string vendor_;
-        std::string copyright_;
-        std::string description_;
+        DisplayText vendor_;
+        DisplayText copyright_;
+        DisplayText description_;
         fs::path readme_;
         std::string url_;
         std::vector<LibraryDependency> dependencies_;
@@ -131,21 +131,21 @@ namespace dsinfer {
         {
             auto it = obj.find("vendor");
             if (it != obj.end()) {
-                vendor_ = it->second.toString();
+                vendor_ = it->second;
             }
         }
         // copyright
         {
             auto it = obj.find("copyright");
             if (it != obj.end()) {
-                copyright_ = it->second.toString();
+                copyright_ = it->second;
             }
         }
         // description
         {
             auto it = obj.find("description");
             if (it != obj.end()) {
-                description_ = it->second.toString();
+                description_ = it->second;
             }
         }
         // readme
@@ -400,17 +400,17 @@ namespace dsinfer {
         return impl.compatVersion;
     }
 
-    std::string LibrarySpec::description() const {
+    DisplayText LibrarySpec::description() const {
         __dsinfer_impl_t;
         return impl.description;
     }
 
-    std::string LibrarySpec::vendor() const {
+    DisplayText LibrarySpec::vendor() const {
         __dsinfer_impl_t;
         return impl.vendor;
     }
 
-    std::string LibrarySpec::copyright() const {
+    DisplayText LibrarySpec::copyright() const {
         __dsinfer_impl_t;
         return impl.copyright;
     }
