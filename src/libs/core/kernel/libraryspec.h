@@ -40,6 +40,7 @@ namespace dsinfer {
         std::string description() const;
         std::string vendor() const;
         std::string copyright() const;
+        std::filesystem::path readme() const;
         std::string url() const;
 
         std::vector<ContributeSpec *> contributes(int type) const;

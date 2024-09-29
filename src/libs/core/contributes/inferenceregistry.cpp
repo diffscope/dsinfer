@@ -7,6 +7,7 @@
 #include "contributeregistry_p.h"
 #include "environment_p.h"
 #include "format.h"
+#include "inferencedriverplugin.h"
 
 namespace dsinfer {
 
@@ -66,6 +67,14 @@ namespace dsinfer {
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
         delete impl.driver;
         impl.driver = driver;
+    }
+
+    InferenceDriver *InferenceRegistry::createDriver(const char *key) const {
+        auto plugin = env()->plugin<InferenceDriverPlugin>(key);
+        if (!plugin) {
+            return nullptr;
+        }
+        return plugin->create();
     }
 
     std::string InferenceRegistry::specKey() const {

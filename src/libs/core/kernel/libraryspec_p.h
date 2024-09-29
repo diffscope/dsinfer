@@ -39,6 +39,7 @@ namespace dsinfer {
         std::string description;
         std::string vendor;
         std::string copyright;
+        std::filesystem::path readme;
         std::string url;
 
         std::map<int, std::map<std::string, ContributeSpec *>> contributes;

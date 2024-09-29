@@ -73,6 +73,7 @@ namespace dsinfer {
         std::string vendor_;
         std::string copyright_;
         std::string description_;
+        fs::path readme_;
         std::string url_;
         std::vector<LibraryDependency> dependencies_;
 
@@ -145,6 +146,13 @@ namespace dsinfer {
             auto it = obj.find("description");
             if (it != obj.end()) {
                 description_ = it->second.toString();
+            }
+        }
+        // readme
+        {
+            auto it = obj.find("readme");
+            if (it != obj.end()) {
+                readme_ = pathFromString(it->second.toString());
             }
         }
         // url
@@ -251,6 +259,7 @@ namespace dsinfer {
         vendor = std::move(vendor_);
         copyright = std::move(copyright_);
         description = std::move(description_);
+        readme = std::move(readme_);
         url = std::move(url_);
         dependencies = std::move(dependencies_);
         *outContributes = std::move(contributes_);
@@ -404,6 +413,11 @@ namespace dsinfer {
     std::string LibrarySpec::copyright() const {
         __dsinfer_impl_t;
         return impl.copyright;
+    }
+
+    std::filesystem::path LibrarySpec::readme() const {
+        __dsinfer_impl_t;
+        return impl.readme;
     }
 
     std::string LibrarySpec::url() const {

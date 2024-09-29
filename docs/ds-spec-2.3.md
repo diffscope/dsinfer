@@ -36,6 +36,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
     "vendor": "someone",
     "copyright": "Copyright (C) someone",
     "description": "Some library",
+    "readme": "assets/readme.txt",
     "url": "https://www.dummy.cn",
     "contributes": {
         "inferences": [

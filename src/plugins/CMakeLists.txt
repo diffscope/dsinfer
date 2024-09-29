@@ -1,3 +1,3 @@
-add_subdirectory(acoustic)
+add_subdirectory(inferencedrivers)
 
-add_subdirectory(pitch)
+add_subdirectory(inferenceinterpreters)

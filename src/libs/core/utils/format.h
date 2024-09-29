@@ -2,7 +2,6 @@
 #define FORMAT_H
 
 #include <string>
-#include <typeinfo>
 #include <vector>
 #include <filesystem>
 #include <sstream>
@@ -14,6 +13,10 @@ namespace dsinfer {
     DSINFER_EXPORT std::string wideToUtf8(const wchar_t *s, int size = -1);
 
     DSINFER_EXPORT std::wstring utf8ToWide(const char *s, int size = -1);
+
+#ifdef _WIN32
+    DSINFER_EXPORT std::string ansiToUtf8(const char *s, int size = -1);
+#endif
 
     template <class T>
     std::string anyToString(T &&t) {

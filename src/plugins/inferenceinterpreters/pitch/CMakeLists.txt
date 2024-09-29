@@ -5,7 +5,7 @@ project(pitch
 
 file(GLOB_RECURSE _src *.h *.cpp)
 
-dsinfer_add_plugin(${PROJECT_NAME} inferenceinterpreters
+dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
     SOURCES ${_src}
     FEATURES cxx_std_17
     LINKS dsinfer

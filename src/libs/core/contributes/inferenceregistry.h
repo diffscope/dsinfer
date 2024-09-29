@@ -19,6 +19,8 @@ namespace dsinfer {
         InferenceDriver *takeDriver();
         void setDriver(InferenceDriver *driver);
 
+        InferenceDriver *createDriver(const char *key) const;
+
     protected:
         std::string specKey() const override;
         ContributeSpec *parseSpec(const std::filesystem::path &basePath, const JsonValue &config,

@@ -10,7 +10,7 @@ namespace dsinfer {
     class DSINFER_EXPORT InferenceInterpreter : public Plugin {
     public:
         InferenceInterpreter();
-        virtual ~InferenceInterpreter();
+        ~InferenceInterpreter();
 
         const char *iid() const override {
             return "org.OpenVPI.InferenceInterpreter";
