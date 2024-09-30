@@ -5,7 +5,6 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_set>
-#include <regex>
 
 #include "contributeregistry.h"
 #include "contributespec.h"
@@ -30,20 +29,13 @@ namespace dsinfer {
 
     static LibraryDependency readDependency(const JsonValue &val) {
         if (val.isString()) {
-            const auto &token = val.toString();
-
-            // Regex to match strictly the id[version] format
-            static std::regex pattern(R"(([^/\[\]]+)\[([^\[\]]+)\])");
-            std::smatch matches;
-            if (std::regex_match(token, matches, pattern)) {
-                std::string id = matches[1].str();      // id part
-                std::string version = matches[2].str(); // version part
-                if (id.empty()) {
-                    return {};
-                }
-                LibraryDependency res(true);
-                res.id = std::move(id);
-                res.version = VersionNumber::fromString(version);
+            auto identifier = ContributeIdentifier::fromString(val.toString());
+            if (!identifier.library().empty() && !identifier.version().isEmpty() &&
+                identifier.id().empty()) {
+                LibraryDependency res;
+                res.id = identifier.library();
+                res.version = identifier.version();
+                return res;
             }
             return {};
         }
@@ -199,7 +191,9 @@ namespace dsinfer {
                     if (dep.id.empty()) {
                         *error = {
                             Error::InvalidFormat,
-                            R"(unknown data in "dependencies" field in library manifest)",
+                            formatTextN(
+                                R"(unknown data in "dependencies" field entry %1 in library manifest)",
+                                dependencies_.size()),
                         };
                         return false;
                     }
@@ -222,11 +216,12 @@ namespace dsinfer {
 
             do {
                 for (const auto &pair : it->second.toObject()) {
-                    auto it2 = regs.find(pair.first);
+                    const auto &contributeKey = pair.first;
+                    auto it2 = regs.find(contributeKey);
                     if (it2 == regs.end()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            formatTextN(R"(unknown contribute "%1")", pair.first),
+                            formatTextN(R"(unknown contribute "%1")", contributeKey),
                         };
                         goto out_failed;
                     }
@@ -237,7 +232,7 @@ namespace dsinfer {
                             Error::InvalidFormat,
                             formatTextN(
                                 R"(contribute "%1" field has invalid value in library manifest)",
-                                pair.first),
+                                contributeKey),
                         };
                         goto out_failed;
                     }
@@ -255,7 +250,7 @@ namespace dsinfer {
                         if (idSet.count(contributeId)) {
                             *error = {
                                 Error::InvalidFormat,
-                                formatTextN(R"(contribute "%1" field has duplicated id "%2")",
+                                formatTextN(R"(contribute "%1" object has duplicated id "%2")",
                                             pair.first, contributeId),
                             };
                             goto out_failed;
@@ -319,72 +314,6 @@ namespace dsinfer {
         }
         *out = root.toObject();
         return true;
-    }
-
-    std::filesystem::path
-        LibrarySpec::Impl::searchDependency(const std::vector<std::filesystem::path> &paths,
-                                            const LibraryDependency &dep) {
-        try {
-            for (const auto &path : paths) {
-                for (const auto &entry : fs::directory_iterator(path)) {
-                    const auto filename = entry.path().filename();
-                    if (!entry.is_directory()) {
-                        continue;
-                    }
-
-                    JsonObject obj;
-                    Error error;
-                    if (!readDesc(entry.path(), &obj, &error)) {
-                        continue;
-                    }
-
-                    // Search id, version, compatVersion
-                    std::string id_;
-                    VersionNumber version_;
-                    VersionNumber compatVersion_;
-
-                    // id
-                    {
-                        auto it = obj.find("id");
-                        if (it == obj.end()) {
-                            continue;
-                        }
-                        id_ = it->second.toString();
-                        if (id_.empty()) {
-                            continue;
-                        }
-                    }
-                    // version
-                    {
-                        auto it = obj.find("version");
-                        if (it == obj.end()) {
-                            continue;
-                        }
-                        version_ = VersionNumber::fromString(it->second.toString());
-                    }
-                    // compatVersion
-                    {
-                        auto it = obj.find("compatVersion");
-                        if (it != obj.end()) {
-                            compatVersion_ = VersionNumber::fromString(it->second.toString());
-                        } else {
-                            compatVersion_ = version_;
-                        }
-                    }
-
-                    // Check
-                    if (id_ != dep.id) {
-                        continue;
-                    }
-                    if (compatVersion_ > dep.version) {
-                        continue;
-                    }
-                    return fs::canonical(entry.path());
-                }
-            }
-        } catch (...) {
-        }
-        return {};
     }
 
     LibrarySpec::~LibrarySpec() = default;
@@ -494,6 +423,79 @@ namespace dsinfer {
     Environment *LibrarySpec::env() const {
         __dsinfer_impl_t;
         return impl.env;
+    }
+
+    std::filesystem::path
+        LibrarySpec::searchLibrary(const std::vector<std::filesystem::path> &paths,
+                                   const std::string &id, const VersionNumber &version,
+                                   bool precise) {
+        try {
+            for (const auto &path : paths) {
+                for (const auto &entry : fs::directory_iterator(path)) {
+                    const auto filename = entry.path().filename();
+                    if (!entry.is_directory()) {
+                        continue;
+                    }
+
+                    JsonObject obj;
+                    Error error;
+                    if (!Impl::readDesc(entry.path(), &obj, &error)) {
+                        continue;
+                    }
+
+                    // Search id, version, compatVersion
+                    std::string id_;
+                    VersionNumber version_;
+                    VersionNumber compatVersion_;
+
+                    // id
+                    {
+                        auto it = obj.find("id");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        id_ = it->second.toString();
+                        if (id_.empty()) {
+                            continue;
+                        }
+                    }
+                    // version
+                    {
+                        auto it = obj.find("version");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        version_ = VersionNumber::fromString(it->second.toString());
+                    }
+                    // compatVersion
+                    {
+                        auto it = obj.find("compatVersion");
+                        if (it != obj.end()) {
+                            compatVersion_ = VersionNumber::fromString(it->second.toString());
+                        } else {
+                            compatVersion_ = version_;
+                        }
+                    }
+
+                    // Check
+                    if (id_ != id) {
+                        continue;
+                    }
+                    if (precise) {
+                        if (version_ != version) {
+                            continue;
+                        }
+                    } else {
+                        if (compatVersion_ > version) {
+                            continue;
+                        }
+                    }
+                    return fs::canonical(entry.path());
+                }
+            }
+        } catch (...) {
+        }
+        return {};
     }
 
     LibrarySpec::LibrarySpec(Environment *env) : _impl(new Impl(this, env)) {

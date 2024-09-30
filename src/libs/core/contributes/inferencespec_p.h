@@ -17,7 +17,6 @@ namespace dsinfer {
 
         std::filesystem::path path;
 
-        std::string id;
         std::string className;
 
         DisplayText name;

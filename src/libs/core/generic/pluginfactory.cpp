@@ -9,13 +9,6 @@ namespace dsinfer {
     }
 
     PluginFactory::Impl::~Impl() {
-        // Remove all plugins
-        for (const auto &plugins : std::as_const(allPlugins)) {
-            for (const auto &plugin : plugins.second) {
-                staticPlugins.erase(plugin.second);
-                delete plugin.second;
-            }
-        }
         // Unload all libraries
         for (const auto &item : std::as_const(libraryInstances)) {
             delete item.second;
@@ -86,8 +79,11 @@ namespace dsinfer {
 
     void PluginFactory::addPluginPath(const char *iid, const std::filesystem::path &path) {
         __dsinfer_impl_t;
+        if (!fs::is_directory(path)) {
+            return;
+        }
         std::unique_lock<std::shared_mutex> lock(impl.plugins_mtx);
-        impl.pluginPaths[iid].push_back(path);
+        impl.pluginPaths[iid].push_back(fs::canonical(path));
         impl.pluginsDirty.insert(iid);
     }
 
@@ -98,7 +94,14 @@ namespace dsinfer {
         if (paths.empty()) {
             impl.pluginPaths.erase(iid);
         } else {
-            impl.pluginPaths[iid] = paths;
+            std::vector<fs::path> realPaths;
+            realPaths.reserve(paths.size());
+            for (const auto &path : paths) {
+                if (fs::is_directory(path)) {
+                    realPaths.push_back(fs::canonical(path));
+                }
+            }
+            impl.pluginPaths[iid] = realPaths;
         }
         impl.pluginsDirty.insert(iid);
     }

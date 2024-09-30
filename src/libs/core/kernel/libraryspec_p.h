@@ -24,10 +24,6 @@ namespace dsinfer {
 
         static bool readDesc(const std::filesystem::path &dir, JsonObject *out, Error *error);
 
-        static std::filesystem::path
-            searchDependency(const std::vector<std::filesystem::path> &paths,
-                             const LibraryDependency &dep);
-
         Environment *env;
 
         std::filesystem::path path;

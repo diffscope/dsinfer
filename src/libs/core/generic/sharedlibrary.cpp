@@ -256,13 +256,14 @@ namespace dsinfer {
 #endif
 
     bool SharedLibrary::isLibrary(const fs::path &path) {
-        auto fileName = path.string();
 #if defined(_WIN32)
+        auto fileName = path.wstring();
         return fileName.size() >= 4 &&
                std::equal(fileName.end() - 4, fileName.end(), L".dll", [](wchar_t a, wchar_t b) {
                    return ::tolower(a) == ::tolower(b); //
                });
 #elif defined(__APPLE__)
+        auto fileName = path.string();
         return fileName.size() >= 6 &&
                std::equal(fileName.end() - 6, fileName.end(), L".dylib", [](char a, char b) {
                    return ::tolower(a) == ::tolower(b); //

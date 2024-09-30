@@ -177,9 +177,13 @@ namespace dsinfer {
             std::unordered_set<fs::path> dependencyPaths{spec->path()};
             for (const auto &dep : std::as_const(spec->dependencies())) {
                 std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
-                auto depPath = LibrarySpec::Impl::searchDependency(impl.libraryPaths, dep);
+                auto depPath =
+                    LibrarySpec::searchLibrary(impl.libraryPaths, dep.id, dep.version, false);
                 lock.unlock();
                 if (depPath.empty()) {
+                    if (!dep.required) {
+                        continue;
+                    }
                     error1 = {
                         Error::LibraryNotFound,
                         formatTextN("specified library \"%1[%2]\" not found", dep.id,
@@ -199,6 +203,9 @@ namespace dsinfer {
                 Error error2;
                 auto depLib = openLibrary(depPath, true, &error2);
                 if (!depLib) {
+                    if (!dep.required) {
+                        continue;
+                    }
                     error1 = {
                         Error::LibraryNotFound,
                         formatTextN("failed to load dependency \"%1\": %2", depPath,
@@ -232,7 +239,9 @@ namespace dsinfer {
                 const auto &type = contribute->type();
                 const auto &reg = impl.registries[type];
                 if (!reg->loadSpec(contribute, ContributeSpec::Initialized, &error1)) {
+                    i--;
                     failed = true;
+                    break;
                 }
                 contribute->_impl->state = ContributeSpec::Initialized;
             }
@@ -268,7 +277,9 @@ namespace dsinfer {
                 const auto &type = contribute->type();
                 const auto &reg = impl.registries[type];
                 if (!reg->loadSpec(contribute, ContributeSpec::Ready, &error1)) {
+                    i--;
                     failed = true;
+                    break;
                 }
                 contribute->_impl->state = ContributeSpec::Ready;
             }

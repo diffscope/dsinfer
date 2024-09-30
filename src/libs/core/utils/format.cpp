@@ -4,6 +4,8 @@
 #  include <windows.h>
 #endif
 
+namespace fs = std::filesystem;
+
 namespace dsinfer {
 
     std::string wideToUtf8(const wchar_t *s, int size) {
@@ -68,8 +70,7 @@ namespace dsinfer {
         }
         std::wstring utf16Str;
         utf16Str.resize(utf16Length);
-        ::MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, s, size, utf16Str.data(),
-                              utf16Length);
+        ::MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, s, size, utf16Str.data(), utf16Length);
         return wideToUtf8(utf16Str.data(), int(utf16Str.size()));
     }
 
@@ -81,6 +82,22 @@ namespace dsinfer {
             while (pos != std::string::npos) {
                 result.replace(pos, placeholder.length(), args[i]);
                 pos = result.find(placeholder, pos + args[i].size());
+            }
+        }
+        return result;
+    }
+
+    std::filesystem::path cleanPath(const std::filesystem::path &path) {
+        fs::path result;
+        for (const auto &part : path) {
+            if (part == _TSTR("..")) {
+                if (!result.empty() && result.filename() != _TSTR("..")) {
+                    result = result.parent_path();
+                } else {
+                    result /= part;
+                }
+            } else if (part != _TSTR(".")) {
+                result /= part;
             }
         }
         return result;

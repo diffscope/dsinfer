@@ -55,6 +55,12 @@ namespace dsinfer {
 
         Environment *env() const;
 
+    public:
+        static std::filesystem::path searchLibrary(const std::vector<std::filesystem::path> &paths,
+                                                   const std::string &id,
+                                                   const VersionNumber &version,
+                                                   bool precise = true);
+
     protected:
         class Impl;
         std::unique_ptr<Impl> _impl;

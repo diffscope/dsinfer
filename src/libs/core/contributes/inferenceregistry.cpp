@@ -105,9 +105,6 @@ namespace dsinfer {
         __dsinfer_impl_t;
         switch (state) {
             case ContributeSpec::Initialized: {
-                return ContributeRegistry::loadSpec(spec, state, error);
-            }
-            case ContributeSpec::Ready: {
                 auto inferenceSpec = static_cast<InferenceSpec *>(spec);
                 // Search interpreter
                 auto interp =
@@ -132,8 +129,9 @@ namespace dsinfer {
                 }
                 auto spec_d = static_cast<InferenceSpec::Impl *>(inferenceSpec->_impl.get());
                 spec_d->interp = interp;
-                return true;
+                return ContributeRegistry::loadSpec(spec, state, error);
             }
+            case ContributeSpec::Ready:
             case ContributeSpec::Finished: {
                 return true;
             }

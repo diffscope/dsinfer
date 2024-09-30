@@ -32,6 +32,10 @@ namespace dsinfer {
             return m_type;
         }
 
+        inline bool ok() const {
+            return m_type == NoError;
+        }
+
         inline std::string message() const {
             return m_msg;
         }

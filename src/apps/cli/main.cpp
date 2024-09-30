@@ -18,7 +18,131 @@ namespace SCL = SysCmdLine;
 
 namespace DS = dsinfer;
 
+struct Context {
+    fs::path appDir;
+    fs::path defaultPluginDir;
+    fs::path loadConfigPath;
+
+    DS::Environment env;
+    LoadConfig loadConfig;
+    StatusConfig statusConfig;
+
+    Context() {
+        // Get basic directories
+        appDir = DS::pathFromString(SCL::appDirectory());
+        defaultPluginDir =
+            appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
+
+        fs::path homeDir =
+#ifdef WIN32
+            _wgetenv(L"USERPROFILE")
+#else
+            getenv("HOME")
+#endif
+            ;
+        loadConfigPath = homeDir / _TSTR(".diffsinger") / _TSTR("dsinfer.json");
+
+        // Set default plugin directories
+        env.addPluginPath("com.diffsinger.InferenceDriver",
+                          defaultPluginDir / _TSTR("inferencedrivers"));
+        env.addPluginPath("com.diffsinger.InferenceInterpreter",
+                          defaultPluginDir / _TSTR("inferenceinterpreters"));
+
+        // Load config
+        std::ignore = loadConfig.load(loadConfigPath);
+
+        // Add paths
+        for (const auto &item : std::as_const(loadConfig.paths)) {
+            env.addLibraryPath(item);
+        }
+    }
+};
+
+static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
+    std::vector<std::filesystem::path> paths;
+    auto pathsResult = result.option("--paths").values();
+    for (const auto &item : std::as_const(pathsResult)) {
+        auto path = fs::absolute(DS::pathFromString(item.toString()));
+        if (!fs::is_directory(path)) {
+            continue;
+        }
+        path = fs::canonical(path);
+        paths.emplace_back(path);
+    }
+    return paths;
+}
+
 static int cmd_stat(const SCL::ParseResult &result) {
+    auto paths = getCmdPaths(result);
+    const auto &pkgIdStr = result.value(0).toString();
+
+    std::string pkgId;
+    DS::VersionNumber pkgVersion;
+    {
+        auto identifier = DS::ContributeIdentifier::fromString(pkgIdStr);
+        if (!identifier.library().empty() && !identifier.version().isEmpty() &&
+            identifier.id().empty()) {
+            pkgId = identifier.library();
+            pkgVersion = identifier.version();
+        } else {
+            throw std::runtime_error(
+                DS::formatTextN("invalid package identifier \"%1\"", pkgIdStr));
+        }
+    }
+
+    Context ctx;
+    auto &env = ctx.env;
+    for (const auto &item : paths) {
+        env.addLibraryPath(item);
+    }
+    paths = env.libraryPaths();
+
+    // Search package
+    fs::path pkgPath;
+    for (const auto &path : std::as_const(paths)) {
+        auto statusConfigPath = path / _TSTR("status.json");
+        StatusConfig sc;
+        if (!sc.load(statusConfigPath)) {
+            continue;
+        }
+
+        for (const auto &pkg : std::as_const(sc.packages)) {
+            if (pkg.id == pkgId && pkg.version == pkgVersion) {
+                pkgPath = path / pkg.path;
+                break;
+            }
+        }
+
+        if (!pkgPath.empty()) {
+            break;
+        }
+    }
+    if (pkgPath.empty()) {
+        throw std::runtime_error(DS::formatTextN("package \"%1\" not found", pkgIdStr));
+    }
+
+    // Try to load
+    DS::LibrarySpec *lib;
+    {
+        DS::Error error;
+        lib = env.openLibrary(pkgPath, false, &error);
+        if (!lib) {
+            throw std::runtime_error(
+                DS::formatTextN("failed to open package \"%1\": %2", pkgPath, error.message()));
+        }
+    }
+
+    SCL::u8printf("ID: %s\n", lib->id().data());
+    SCL::u8printf("Version: %s\n", lib->version().toString().data());
+    SCL::u8printf("Vendor: %s\n", lib->vendor().text().data());
+    SCL::u8printf("Description: %s\n", lib->description().text().data());
+
+    if (auto error = lib->error(); !error.ok()) {
+        SCL::u8printf("\n");
+        SCL::u8debug(SCL::MT_Warning, false, "Load failed: %s\n", error.what());
+    }
+
+    std::ignore = env.closeLibrary(lib);
     return 0;
 }
 
@@ -39,6 +163,15 @@ static int cmd_autoRemove(const SCL::ParseResult &result) {
 }
 
 static int cmd_exec(const SCL::ParseResult &result) {
+    //    auto driver = inferenceReg->createDriver(ctx.loadConfig.driver.id.data());
+    //    if (!driver) {
+    //        throw std::runtime_error(
+    //            DS::formatTextN("failed to load driver \"%1\"", ctx.loadConfig.driver.id));
+    //    }
+    //    SCL::u8printf("driver: %p\n", driver);
+
+
+
     // DS::Error error;
 
     // // Configure environment

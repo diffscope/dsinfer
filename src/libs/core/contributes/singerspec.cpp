@@ -23,7 +23,7 @@ namespace dsinfer {
         if (it == obj.end()) {
             return {};
         }
-        auto inference = ContributeIdentifier::fromString(val.toString());
+        auto inference = ContributeIdentifier::fromString(it->second.toString());
         SingerImport res;
         res.inference = inference;
         it = obj.find("options");
@@ -191,7 +191,9 @@ namespace dsinfer {
                     if (singerImport.inference.id().empty()) {
                         *error = {
                             Error::InvalidFormat,
-                            R"(unknown data in "imports" field in singer manifest)",
+                            formatTextN(
+                                R"(unknown data in "imports" field entry %1 in singer manifest)",
+                                imports_.size()),
                         };
                         return false;
                     }
@@ -223,7 +225,7 @@ namespace dsinfer {
         demoAudio = std::move(demoAudio_);
         imports = std::move(imports_);
         configuration = std::move(configuration_);
-        return false;
+        return true;
     }
 
     SingerSpec::~SingerSpec() = default;
