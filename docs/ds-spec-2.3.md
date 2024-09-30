@@ -232,34 +232,43 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 ### 功能贡献
 
 - 校验
+- 显示安装的包
 - 安装
+- 卸载
+- 自动卸载
 - 命令行推理
+- 打包
 
-#### 校验
-
-```sh
-dsinfer-cli stat <package>
+用户需要先在特定目录（`$HOME/.diffinger`）创建一个名为`dsinfer.json`的配置文件，指定默认安装路径与默认推理驱动极其初始化参数。
+```json
+{
+    "paths": [
+        "/home/user/.diffinger/packages"
+    ],
+    "driver": {
+        "id": "com.diffsinger.InferenceDriver.OnnxDriver",
+        "init": {
+            "ep": "dml"
+        }
+    }
+}
 ```
 
-如果是正确的包，则打印信息，否则报错。
-
-#### 安装
-
-```sh
-dsinfer-cli install <package> [--path <path>]
+在一个目录中安装了包后，`dsinfer-cli`会留下一个记忆文件`status.json`。
+```json
+{
+    "packages": [
+        {
+            "id": "zhibin[5.1]",
+            "path": "junninghua-5.1",
+            "contributes": [
+                "singers",
+                "inferences"
+            ]
+        }
+    ]
+}
 ```
-
-用户需要先在特定目录（如`/.config/dsinfer`）创建一个名为`config.json`的配置文件，指定默认安装路径（如`/.config/dsinfer/packages`）。
-
-安装成功后，安装工具将会执行校验、解压等操作，将其解压在安装路径的子目录中，并生成记忆文件，记录安装的包名和其功能信息。
-
-#### 命令行推理
-
-```sh
-dsinfer-cli exec <singer> [--arg <key> <value>] [--paths <paths>]
-```
-
-推理工具将会在所有搜索路径中搜索含有歌手的包，将其元数据全部加载，并执行推理任务。
 
 ### 推理插件开发
 
@@ -269,43 +278,17 @@ dsinfer-cli exec <singer> [--arg <key> <value>] [--paths <paths>]
 
 创建派生于`InferenceInterpreter`的解释器类。
 
+- `apiLevel`：返回解释器支持的最高 api 等级
 - `key`：返回对应的推理参数类型的`class`，如`com.diffsinger.InferenceInterpreter.PitchInference`
-    ```c++
-    const char *key() const override;
-    ```
 - `validate`：校验推理模块是否符合规范，以及使用某个推理模块的歌手模块是否指定了正确的参数
-    ```c++
-    bool validate(const InferenceSpec *spec, std::string *message) const override;
-    bool validate(const InferenceSpec *spec, const JsonObject &importOptions,
-                  std::string *message) const override;
-    ```
 - `create`：创建对应的推理任务类
-    ```c++
-    Inference *create(const InferenceSpec *spec, const JsonObject &options,
-                      Error *error) const override;
-    ```
 
 #### 推理任务
 
 创建派生于`Inference`的推理任务类。
 
 - `initialize`：初始化推理任务，应当加载需要用到的模型
-    ```c++
-    bool initialize(const JsonObject &args, Error *error) override;
-    ```
 - `start`：开始推理任务，应当对输入的参数进行预处理，并构建推理图（异步）
-    ```c++
-    bool start(const JsonValue &input, Error *error) override;
-    ```
 - `stop`：立即停止推理任务（同步）
-    ```c++
-    bool stop() override;
-    ```
 - `state`：推理任务状态
-    ```c++
-    State state() const override;
-    ```
 - `result`：推理结果
-    ```c++
-    JsonValue result() const override;
-    ```

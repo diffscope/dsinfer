@@ -364,7 +364,7 @@ int main(int argc, char *argv[]) {
         packCommand,
     });
     rootCommand.addVersionOption(TOOL_VERSION);
-    rootCommand.addHelpOption(true, true);
+    rootCommand.addHelpOption(false, true);
     rootCommand.setHandler([](const SCL::ParseResult &result) -> int {
         result.showHelpText();
         return 0;
