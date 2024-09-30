@@ -103,7 +103,7 @@ namespace dsinfer {
                         *error = {
                             Error::InvalidFormat,
                             formatTextN(
-                                R"(required inference "%1" of singer "%2" validate failed: %3)",
+                                R"(inference "%1" of singer "%2" validate failed: %3)",
                                 imp.inference.toString(), singerSpec->id(), errMsg),
                         };
                     }

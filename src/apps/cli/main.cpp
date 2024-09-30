@@ -147,6 +147,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
 }
 
 static int cmd_list(const SCL::ParseResult &result) {
+
     return 0;
 }
 

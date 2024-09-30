@@ -112,8 +112,8 @@ namespace dsinfer {
                 if (!interp) {
                     *error = {
                         Error::FeatureNotSupported,
-                        formatTextN(R"(inference interpreter "%1" not found)",
-                                    inferenceSpec->className()),
+                        formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
+                                    inferenceSpec->className(), inferenceSpec->id()),
                     };
                     return false;
                 }
@@ -122,8 +122,8 @@ namespace dsinfer {
                 if (!interp->validate(inferenceSpec, &errMsg)) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(inference "%1" validate failed: %2)",
-                                    inferenceSpec->className(), errMsg),
+                        formatTextN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
+                                    errMsg),
                     };
                     return false;
                 }

@@ -37,7 +37,7 @@ namespace dsinfer {
         }
         *error = {
             Error::FeatureNotSupported,
-            formatTextN("Acoustic api level %1 not supported", spec->apiLevel()),
+            formatTextN("acoustic api level %1 not supported", spec->apiLevel()),
         };
         return nullptr;
     }

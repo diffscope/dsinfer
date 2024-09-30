@@ -129,6 +129,13 @@ namespace dsinfer {
                 return false;
             }
             version_ = VersionNumber::fromString(it->second.toString());
+            if (version_.isEmpty()) {
+                *error = {
+                    Error::InvalidFormat,
+                    R"(library version cannot be empty)",
+                };
+                return false;
+            }
         }
         // compatVersion
         {

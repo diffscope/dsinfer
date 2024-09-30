@@ -152,6 +152,9 @@ namespace dsinfer {
             if (it != configObj.end()) {
                 name_ = it->second;
             }
+            if (name_.isEmpty()) {
+                name_ = id_;
+            }
         }
         // avatar
         {

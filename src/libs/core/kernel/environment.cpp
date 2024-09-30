@@ -75,10 +75,10 @@ namespace dsinfer {
         __dsinfer_impl_t;
 
         auto canonicalPath = getCanonicalPath(path);
-        if (canonicalPath.empty()) {
+        if (canonicalPath.empty() || !fs::is_directory(canonicalPath)) {
             *error = {
                 Error::FileNotFound,
-                formatTextN("invalid library path \"%1\"", path),
+                formatTextN(R"(invalid library path "%1")", path),
             };
             return nullptr;
         }
@@ -158,8 +158,8 @@ namespace dsinfer {
         out_dup:
             spec_d->err = {
                 Error::FileDuplicated,
-                formatTextN(R"(another library with same identifier "%1[%2]" is loaded)",
-                            spec->id(), spec->version().toString()),
+                formatTextN(R"(duplicated library "%1[%2]" has been loaded)", spec->id(),
+                            spec->version().toString()),
             };
             impl.resourceLibraries.insert(spec);
             return spec;
@@ -186,7 +186,7 @@ namespace dsinfer {
                     }
                     error1 = {
                         Error::LibraryNotFound,
-                        formatTextN("specified library \"%1[%2]\" not found", dep.id,
+                        formatTextN(R"(required library "%1[%2]" not found)", dep.id,
                                     dep.version.toString()),
                     };
                     goto out_deps;
@@ -208,8 +208,8 @@ namespace dsinfer {
                     }
                     error1 = {
                         Error::LibraryNotFound,
-                        formatTextN("failed to load dependency \"%1\": %2", depPath,
-                                    error2.message()),
+                        formatTextN(R"(failed to load dependency "%1[%2]" in "%3": %4)", dep.id,
+                                    dep.version.toString(), depPath, error2.message()),
                     };
                     goto out_deps;
                 }
