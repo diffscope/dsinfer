@@ -11,9 +11,9 @@ namespace dsinfer {
         ~OnnxDriver();
 
     public:
-        bool initialize(const JsonObject &args, Error *error) override;
+        bool initialize(const JsonValue &args, Error *error) override;
 
-        int64_t sessionCreate(const std::filesystem::path &path, const JsonObject &args,
+        int64_t sessionCreate(const std::filesystem::path &path, const JsonValue &args,
                               Error *error) override;
         bool sessionDestroy(int64_t handle, Error *error) override;
         bool sessionRunning(int64_t handle) override;

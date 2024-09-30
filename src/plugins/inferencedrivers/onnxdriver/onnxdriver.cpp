@@ -8,11 +8,11 @@ namespace dsinfer {
     OnnxDriver::~OnnxDriver() {
     }
 
-    bool OnnxDriver::initialize(const JsonObject &args, Error *error) {
+    bool OnnxDriver::initialize(const JsonValue &args, Error *error) {
         return false;
     }
 
-    int64_t OnnxDriver::sessionCreate(const std::filesystem::path &path, const JsonObject &args,
+    int64_t OnnxDriver::sessionCreate(const std::filesystem::path &path, const JsonValue &args,
                                       Error *error) {
         return 0;
     }

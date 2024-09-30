@@ -14,9 +14,9 @@ namespace dsinfer {
         virtual ~InferenceDriver();
 
     public:
-        virtual bool initialize(const JsonObject &args, Error *error) = 0;
+        virtual bool initialize(const JsonValue &args, Error *error) = 0;
 
-        virtual int64_t sessionCreate(const std::filesystem::path &path, const JsonObject &args,
+        virtual int64_t sessionCreate(const std::filesystem::path &path, const JsonValue &args,
                                       Error *error) = 0;
         virtual bool sessionDestroy(int64_t handle, Error *error) = 0;
         virtual bool sessionRunning(int64_t handle) = 0;

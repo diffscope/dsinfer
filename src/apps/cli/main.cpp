@@ -3,6 +3,7 @@
 
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
+#include <dsinfer/singerregistry.h>
 #include <dsinfer/format.h>
 
 #include <syscmdline/command.h>
@@ -52,9 +53,7 @@ struct Context {
         std::ignore = loadConfig.load(loadConfigPath);
 
         // Add paths
-        for (const auto &item : std::as_const(loadConfig.paths)) {
-            env.addLibraryPath(item);
-        }
+        env.setLibraryPaths(loadConfig.paths);
     }
 };
 
@@ -72,21 +71,38 @@ static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
     return paths;
 }
 
+static fs::path searchPackage(const std::vector<fs::path> &paths, const std::string &id,
+                              const DS::VersionNumber &version) {
+    for (const auto &path : std::as_const(paths)) {
+        auto statusConfigPath = path / _TSTR("status.json");
+        StatusConfig sc;
+        if (!sc.load(statusConfigPath)) {
+            continue;
+        }
+
+        for (const auto &pkg : std::as_const(sc.packages)) {
+            if (pkg.id == id && pkg.version == version) {
+                return path / pkg.path;
+            }
+        }
+    }
+    return {};
+}
+
 static int cmd_stat(const SCL::ParseResult &result) {
     auto paths = getCmdPaths(result);
-    const auto &pkgIdStr = result.value(0).toString();
+    const auto &idStr = result.value(0).toString();
 
     std::string pkgId;
     DS::VersionNumber pkgVersion;
     {
-        auto identifier = DS::ContributeIdentifier::fromString(pkgIdStr);
+        auto identifier = DS::ContributeIdentifier::fromString(idStr);
         if (!identifier.library().empty() && !identifier.version().isEmpty() &&
             identifier.id().empty()) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
         } else {
-            throw std::runtime_error(
-                DS::formatTextN("invalid package identifier \"%1\"", pkgIdStr));
+            throw std::runtime_error(DS::formatTextN(R"(invalid package identifier "%1")", idStr));
         }
     }
 
@@ -98,27 +114,9 @@ static int cmd_stat(const SCL::ParseResult &result) {
     paths = env.libraryPaths();
 
     // Search package
-    fs::path pkgPath;
-    for (const auto &path : std::as_const(paths)) {
-        auto statusConfigPath = path / _TSTR("status.json");
-        StatusConfig sc;
-        if (!sc.load(statusConfigPath)) {
-            continue;
-        }
-
-        for (const auto &pkg : std::as_const(sc.packages)) {
-            if (pkg.id == pkgId && pkg.version == pkgVersion) {
-                pkgPath = path / pkg.path;
-                break;
-            }
-        }
-
-        if (!pkgPath.empty()) {
-            break;
-        }
-    }
+    fs::path pkgPath = searchPackage(paths, pkgId, pkgVersion);
     if (pkgPath.empty()) {
-        throw std::runtime_error(DS::formatTextN("package \"%1\" not found", pkgIdStr));
+        throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
     }
 
     // Try to load
@@ -128,7 +126,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
         lib = env.openLibrary(pkgPath, false, &error);
         if (!lib) {
             throw std::runtime_error(
-                DS::formatTextN("failed to open package \"%1\": %2", pkgPath, error.message()));
+                DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
         }
     }
 
@@ -137,9 +135,25 @@ static int cmd_stat(const SCL::ParseResult &result) {
     SCL::u8printf("Vendor: %s\n", lib->vendor().text().data());
     SCL::u8printf("Description: %s\n", lib->description().text().data());
 
+    SCL::u8printf("Inferences:\n");
+    const auto &inferences = lib->contributes(DS::ContributeSpec::Inference);
+    for (int i = 0; i < inferences.size(); ++i) {
+        auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
+        SCL::u8printf("    [%d] %s, %s, level=%d\n", i, inference->id().data(),
+                      inference->name().text().data(), inference->apiLevel());
+    }
+
+    SCL::u8printf("Singers:\n");
+    const auto &singers = lib->contributes(DS::ContributeSpec::Singer);
+    for (int i = 0; i < singers.size(); ++i) {
+        auto singer = static_cast<DS::SingerSpec *>(singers[i]);
+        SCL::u8printf("    [%d] %s, %s, model=%s\n", i, singer->id().data(),
+                      singer->name().text().data(), singer->model().data());
+    }
+
     if (auto error = lib->error(); !error.ok()) {
         SCL::u8printf("\n");
-        SCL::u8debug(SCL::MT_Warning, false, "Load failed: %s\n", error.what());
+        SCL::u8debug(SCL::MT_Warning, false, "Warning: failed to load package: %s\n", error.what());
     }
 
     std::ignore = env.closeLibrary(lib);
@@ -147,7 +161,6 @@ static int cmd_stat(const SCL::ParseResult &result) {
 }
 
 static int cmd_list(const SCL::ParseResult &result) {
-
     return 0;
 }
 
@@ -164,82 +177,99 @@ static int cmd_autoRemove(const SCL::ParseResult &result) {
 }
 
 static int cmd_exec(const SCL::ParseResult &result) {
-    //    auto driver = inferenceReg->createDriver(ctx.loadConfig.driver.id.data());
-    //    if (!driver) {
-    //        throw std::runtime_error(
-    //            DS::formatTextN("failed to load driver \"%1\"", ctx.loadConfig.driver.id));
-    //    }
-    //    SCL::u8printf("driver: %p\n", driver);
+    auto paths = getCmdPaths(result);
+    const auto &idStr = result.value(0).toString();
+    const auto &input = result.value(1).toString();
+    const auto &driverId = result.valueForOption("--driver").toString();
+    const auto &driverInit = result.valueForOption("--init").toString();
 
+    std::string pkgId;
+    DS::VersionNumber pkgVersion;
+    std::string singerId;
+    {
+        auto identifier = DS::ContributeIdentifier::fromString(idStr);
+        if (!identifier.library().empty() && !identifier.version().isEmpty() &&
+            !identifier.id().empty()) {
+            pkgId = identifier.library();
+            pkgVersion = identifier.version();
+        } else {
+            throw std::runtime_error(DS::formatTextN(R"(invalid singer identifier "%1")", idStr));
+        }
+    }
 
+    Context ctx;
+    auto &env = ctx.env;
+    for (const auto &item : paths) {
+        env.addLibraryPath(item);
+    }
+    paths = env.libraryPaths();
 
-    // DS::Error error;
+    // Search package
+    fs::path pkgPath = searchPackage(paths, pkgId, pkgVersion);
+    if (pkgPath.empty()) {
+        throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
+    }
 
-    // // Configure environment
-    // DS::Environment env;
-    // env.addPluginPath("com.diffsinger.InferenceInterpreter", fs::current_path().parent_path() /
-    // "lib" /
-    //                                                           "plugins" / "dsinfer" /
-    //                                                           "inferenceinterpreters");
+    auto inferenceReg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
+    auto singerReg = env.registry(DS::ContributeSpec::Singer)->cast<DS::SingerRegistry>();
 
-    // fs::path libPath = fs::current_path() / "lib";
-    // env.addLibraryPath(libPath);
+    // Create driver
+    const auto &realDriverId = driverId.empty() ? ctx.loadConfig.driver.id : driverId;
+    auto driver = inferenceReg->createDriver(realDriverId.data());
+    if (!driver) {
+        throw std::runtime_error(DS::formatTextN(R"(failed to load driver "%1")", realDriverId));
+    }
 
-    // auto driver = new DS::MyInferenceDriver();
-    // if (!driver->initialize(
-    //         {
-    //             {"ep", "DML"},
-    // },
-    //         &error)) {
-    //     printf("Error: %s\n", error.what());
-    //     return -1;
-    // }
+    // Initialize driver
+    {
+        DS::Error error;
+        if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit)
+                                                   : ctx.loadConfig.driver.init,
+                                &error)) {
+            throw std::runtime_error(DS::formatTextN(R"(failed to initialize driver "%1": %2)",
+                                                     realDriverId, error.message()));
+        }
+    }
+    inferenceReg->setDriver(driver);
 
-    // // Set driver
-    // auto inf_reg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
-    // inf_reg->setDriver(driver);
+    // Load package
+    DS::LibrarySpec *lib;
+    {
+        DS::Error error;
+        lib = env.openLibrary(pkgPath, false, &error);
+        if (!lib) {
+            throw std::runtime_error(
+                DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+        }
+    }
+    if (auto error = lib->error(); !error.ok()) {
+        throw std::runtime_error(
+            DS::formatTextN(R"(failed to load package "%1": %2)", pkgPath, error.message()));
+    }
 
-    // // Load library
-    // auto lib1 = env.openLibrary(libPath / "zhibin-0.5.1.0", false, &error);
-    // if (!lib1) {
-    //     printf("Error: %s\n", error.what());
-    //     return -1;
-    // }
+    auto singerSpec = lib->contribute(DS::ContributeSpec::Singer, singerId)->cast<DS::SingerSpec>();
+    if (!singerSpec) {
+        throw std::runtime_error(DS::formatTextN(R"(singer "%1" not found in package "%2[%3]")",
+                                                 singerId, pkgId, pkgVersion.toString()));
+    }
 
-    // // Get inference
-    // auto inf_spec =
-    //     lib1->contribute(DS::ContributeSpec::Inference, "pitch")->cast<DS::InferenceSpec>();
+    std::vector<DS::Inference *> inferences;
+    {
+        DS::Error error;
+        inferences = singerSpec->createInferences(&error);
+        if (!error.ok()) {
+            throw std::runtime_error(
+                DS::formatTextN(R"(failed to create inferences: %1)", error.message()));
+        }
+    }
 
-    // auto inf1 = inf_spec->create({}, &error);
-    // if (!inf1) {
-    //     printf("Error: %s\n", error.what());
-    //     return -1;
-    // }
+    // Handle inferences
+    (void) inferences;
 
-    // if (!inf1->initialize({}, &error)) {
-    //     printf("Error: %s\n", error.what());
-    //     return -1;
-    // }
+    return 0;
+}
 
-    // // Prepare input
-    // DS::JsonObject input;
-    // // ...
-
-    // // Start inf1
-    // if (!inf1->start(input, &error)) {
-    //     printf("Error: %s\n", error.what());
-    //     return -1;
-    // }
-
-    // while (inf1->state() == DS::Inference::Running) {
-    //     _sleep(1000);
-    // }
-
-    // // Get result
-    // auto result = inf1->result();
-
-    // // Process result
-    // // ...
+static int cmd_pack(const SCL::ParseResult &result) {
     return 0;
 }
 
@@ -310,6 +340,18 @@ int main(int argc, char *argv[]) {
         command.setHandler(cmd_exec);
         return command;
     }();
+    SCL::Command packCommand = [] {
+        SCL::Command command("pack", "Make DiffSinger package");
+        command.addArguments({
+            SCL::Argument("dir", "Directory containing package files"),
+            SCL::Argument("output", "Output file name").required(false),
+        });
+        command.addOptions({
+            SCL::Option("-y", "Force overwrite output file"),
+        });
+        command.setHandler(cmd_pack);
+        return command;
+    }();
 
     SCL::Command rootCommand(SCL::appName(), "DiffSinger package manager and inference tool.");
     rootCommand.addCommands({
@@ -319,6 +361,7 @@ int main(int argc, char *argv[]) {
         removeCommand,
         autoRemoveCommand,
         execCommand,
+        packCommand,
     });
     rootCommand.addVersionOption(TOOL_VERSION);
     rootCommand.addHelpOption(true, true);

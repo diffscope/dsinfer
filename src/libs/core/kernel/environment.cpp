@@ -111,6 +111,11 @@ namespace dsinfer {
             contribute->_impl->parent = spec;
         }
 
+        // Add to library
+        for (const auto &contribute : std::as_const(contributes)) {
+            spec_d->contributes[contribute->type()][contribute->id()] = contribute;
+        }
+
         if (noLoad) {
             std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
             impl.resourceLibraries.insert(spec);
@@ -410,6 +415,7 @@ namespace dsinfer {
         for (auto it = libToClose.linked.rbegin(); it != libToClose.linked.rend(); ++it) {
             closeLibrary(*it);
         }
+
         delete spec;
         return true;
     }

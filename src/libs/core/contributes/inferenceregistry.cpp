@@ -117,6 +117,17 @@ namespace dsinfer {
                     };
                     return false;
                 }
+                // Check api level
+                if (interp->apiLevel() < inferenceSpec->apiLevel()) {
+                    *error = {
+                        Error::FeatureNotSupported,
+                        formatTextN(
+                            R"(required interpreter "%1" of api level %2 doesn't support inference "%3" of api level %4)",
+                            inferenceSpec->className(), interp->apiLevel(), inferenceSpec->id(),
+                            inferenceSpec->apiLevel()),
+                    };
+                    return false;
+                }
                 // Check schema and configuration
                 std::string errMsg;
                 if (!interp->validate(inferenceSpec, &errMsg)) {
