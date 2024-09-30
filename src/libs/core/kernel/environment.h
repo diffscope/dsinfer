@@ -22,7 +22,8 @@ namespace dsinfer {
         ContributeRegistry *registry(int type) const;
 
     public:
-        void addLibraryPath(const std::filesystem::path &path);
+        inline void addLibraryPath(const std::filesystem::path &path);
+        void addLibraryPaths(const std::vector<std::filesystem::path> &paths);
         void setLibraryPaths(const std::vector<std::filesystem::path> &paths);
         const std::vector<std::filesystem::path> &libraryPaths() const;
 
@@ -39,6 +40,10 @@ namespace dsinfer {
         friend class ContributeRegistry;
         friend class LibrarySpec;
     };
+
+    inline void Environment::addLibraryPath(const std::filesystem::path &path) {
+        addLibraryPaths({path});
+    }
 
 }
 

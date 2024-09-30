@@ -46,15 +46,26 @@ namespace dsinfer {
         return impl.registries[type];
     }
 
-    void Environment::addLibraryPath(const std::filesystem::path &path) {
+    void Environment::addLibraryPaths(const std::vector<std::filesystem::path> &paths) {
         __dsinfer_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
-        impl.libraryPaths.push_back(path);
+        for (const auto &path : paths) {
+            if (!fs::is_directory(path)) {
+                continue;
+            }
+            impl.libraryPaths.push_back(fs::canonical(path));
+        }
     }
     void Environment::setLibraryPaths(const std::vector<std::filesystem::path> &paths) {
         __dsinfer_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
-        impl.libraryPaths = paths;
+        impl.libraryPaths.clear();
+        for (const auto &path : paths) {
+            if (!fs::is_directory(path)) {
+                continue;
+            }
+            impl.libraryPaths.push_back(fs::canonical(path));
+        }
     }
     const std::vector<std::filesystem::path> &Environment::libraryPaths() const {
         __dsinfer_impl_t;

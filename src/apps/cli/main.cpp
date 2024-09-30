@@ -53,7 +53,7 @@ struct Context {
         std::ignore = loadConfig.load(loadConfigPath);
 
         // Add paths
-        env.setLibraryPaths(loadConfig.paths);
+        env.addLibraryPaths(loadConfig.paths);
     }
 };
 
@@ -108,9 +108,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
 
     Context ctx;
     auto &env = ctx.env;
-    for (const auto &item : paths) {
-        env.addLibraryPath(item);
-    }
+    env.addLibraryPaths(paths);
     paths = env.libraryPaths();
 
     // Search package
@@ -182,6 +180,68 @@ static int cmd_stat(const SCL::ParseResult &result) {
 }
 
 static int cmd_list(const SCL::ParseResult &result) {
+    auto paths = getCmdPaths(result);
+
+    Context ctx;
+    auto &env = ctx.env;
+    env.addLibraryPaths(paths);
+    paths = env.libraryPaths();
+
+    struct PackageInfo {
+        std::string id;
+        DS::VersionNumber version;
+        bool valid = true;
+        bool operative = false;
+        std::vector<std::string> singers;
+    };
+
+    std::vector<PackageInfo> infoList;
+    for (const auto &path : std::as_const(paths)) {
+        auto statusConfigPath = path / _TSTR("status.json");
+        StatusConfig sc;
+        if (!sc.load(statusConfigPath)) {
+            continue;
+        }
+        for (const auto &pkg : std::as_const(sc.packages)) {
+            PackageInfo info;
+            info.id = pkg.id;
+            info.version = pkg.version;
+
+            DS::Error error;
+            auto lib = env.openLibrary(path / pkg.path, false, &error);
+            if (!lib) {
+                info.valid = false;
+                infoList.emplace_back(info);
+                continue;
+            }
+
+            if (lib->error().ok()) {
+                info.operative = true;
+            }
+            for (const auto &item : lib->contributes(DS::ContributeSpec::Singer)) {
+                info.singers.emplace_back(item->cast<DS::SingerSpec>()->id());
+            }
+            env.closeLibrary(lib);
+            infoList.emplace_back(info);
+        }
+    }
+    for (int i = 0; i < infoList.size(); ++i) {
+        const auto &info = infoList[i];
+        std::string line = DS::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
+        if (!info.valid) {
+            SCL::u8debug(SCL::MT_Critical, true, "%s (invalid)\n", line.data());
+            continue;
+        }
+
+        if (!info.singers.empty()) {
+            line += "; singers: " + DS::join(info.singers, ", ");
+        }
+        if (!info.operative) {
+            SCL::u8debug(SCL::MT_Warning, false, "%s (not work)\n", line.data());
+            continue;
+        }
+        SCL::u8printf("%s\n", line.data());
+    }
     return 0;
 }
 
@@ -301,7 +361,7 @@ int main(int argc, char *argv[]) {
             SCL::Argument("package", "Package identifier, format: id[version]"),
         });
         command.addOptions({
-            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+            SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
         });
         command.setHandler(cmd_stat);
         return command;
@@ -309,7 +369,7 @@ int main(int argc, char *argv[]) {
     SCL::Command listCommand = [] {
         SCL::Command command("list", "List installed packages");
         command.addOptions({
-            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+            SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
         });
         command.setHandler(cmd_list);
         return command;
@@ -342,7 +402,7 @@ int main(int argc, char *argv[]) {
             SCL::Argument("packages", "Package paths").multi(),
         });
         command.addOptions({
-            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+            SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
         });
         command.setHandler(cmd_autoRemove);
         return command;
@@ -354,7 +414,7 @@ int main(int argc, char *argv[]) {
             SCL::Argument("input", "Input arguments"),
         });
         command.addOptions({
-            SCL::Option("--paths", R"(Add searching paths)").arg(SCL::Argument("path").multi()),
+            SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
             SCL::Option("--driver", R"(Override default driver)").arg("id"),
             SCL::Option("--init", R"(Override default driver initialzing arguments)").arg("arg"),
         });

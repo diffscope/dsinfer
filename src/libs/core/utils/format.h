@@ -67,6 +67,12 @@ namespace dsinfer {
         return formatText(format, {anyToString(std::forward<decltype(args)>(args))...});
     }
 
+    DSINFER_EXPORT std::vector<std::string> split(const std::string &s,
+                                                  const std::string &delimiter);
+
+    DSINFER_EXPORT std::string join(const std::vector<std::string> &v,
+                                    const std::string &delimiter);
+
 }
 
 #endif // FORMAT_H
