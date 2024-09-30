@@ -132,23 +132,44 @@ static int cmd_stat(const SCL::ParseResult &result) {
 
     SCL::u8printf("ID: %s\n", lib->id().data());
     SCL::u8printf("Version: %s\n", lib->version().toString().data());
-    SCL::u8printf("Vendor: %s\n", lib->vendor().text().data());
-    SCL::u8printf("Description: %s\n", lib->description().text().data());
+    SCL::u8printf("CompatVersion: %s\n", lib->compatVersion().toString().data());
+    if (!lib->description().isEmpty())
+        SCL::u8printf("Description: %s\n", lib->description().text().data());
+    if (!lib->vendor().isEmpty())
+        SCL::u8printf("Vendor: %s\n", lib->vendor().text().data());
+    if (!lib->copyright().isEmpty())
+        SCL::u8printf("Copyright: %s\n", lib->copyright().text().data());
+    if (!lib->url().empty())
+        SCL::u8printf("Url: %s\n", lib->url().data());
 
-    SCL::u8printf("Inferences:\n");
+    SCL::u8printf("Contributes:\n");
     const auto &inferences = lib->contributes(DS::ContributeSpec::Inference);
-    for (int i = 0; i < inferences.size(); ++i) {
-        auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
-        SCL::u8printf("    [%d] %s, %s, level=%d\n", i, inference->id().data(),
-                      inference->name().text().data(), inference->apiLevel());
+    if (!inferences.empty()) {
+        SCL::u8printf("    Inferences:\n");
+        for (int i = 0; i < inferences.size(); ++i) {
+            auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
+            SCL::u8printf("        [%d] %s, %s, level=%d\n", i + 1, inference->id().data(),
+                          inference->name().text().data(), inference->apiLevel());
+        }
+    }
+    const auto &singers = lib->contributes(DS::ContributeSpec::Singer);
+    if (!singers.empty()) {
+        SCL::u8printf("    Singers:\n");
+        for (int i = 0; i < singers.size(); ++i) {
+            auto singer = static_cast<DS::SingerSpec *>(singers[i]);
+            SCL::u8printf("        [%d] %s, %s, model=%s\n", i + 1, singer->id().data(),
+                          singer->name().text().data(), singer->model().data());
+        }
     }
 
-    SCL::u8printf("Singers:\n");
-    const auto &singers = lib->contributes(DS::ContributeSpec::Singer);
-    for (int i = 0; i < singers.size(); ++i) {
-        auto singer = static_cast<DS::SingerSpec *>(singers[i]);
-        SCL::u8printf("    [%d] %s, %s, model=%s\n", i, singer->id().data(),
-                      singer->name().text().data(), singer->model().data());
+    const auto &deps = lib->dependencies();
+    if (!deps.empty()) {
+        SCL::u8printf("Dependencies:\n");
+        for (int i = 0; i < deps.size(); ++i) {
+            const auto &dep = deps[i];
+            SCL::u8printf("    [%d] %s[%s]%s\n", i + 1, dep.id.data(),
+                          dep.version.toString().data(), dep.required ? ", required" : "");
+        }
     }
 
     if (auto error = lib->error(); !error.ok()) {

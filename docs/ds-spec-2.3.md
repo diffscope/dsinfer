@@ -260,7 +260,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
     "packages": [
         {
             "id": "zhibin[5.1]",
-            "path": "junninghua-5.1",
+            "path": "zhibin-5.1",
             "contributes": [
                 "singers",
                 "inferences"
