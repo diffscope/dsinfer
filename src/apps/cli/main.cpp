@@ -28,8 +28,6 @@ struct Context {
     LoadConfig loadConfig;
     StatusConfig statusConfig;
 
-    DS::Log::Category logger = {"dsinfer-cli"};
-
     Context() {
         // Get basic directories
         appDir = DS::pathFromString(SCL::appDirectory());
@@ -57,6 +55,24 @@ struct Context {
         // Add paths
         env.addLibraryPaths(loadConfig.paths);
     }
+
+    template <class... Args>
+    static inline void info(const std::string &format, Args &&...args) {
+        DS::ConsoleOutput::printf(DS::ConsoleOutput::Default, DS::ConsoleOutput::Default, "%s\n",
+                                  DS::formatTextN(format, args...).c_str());
+    }
+
+    template <class... Args>
+    static inline void warning(const std::string &format, Args &&...args) {
+        DS::ConsoleOutput::printf(DS::ConsoleOutput::Yellow, DS::ConsoleOutput::Default, "%s\n",
+                                  DS::formatTextN(format, args...).c_str());
+    }
+
+    template <class... Args>
+    static inline void critical(const std::string &format, Args &&...args) {
+        DS::ConsoleOutput::printf(DS::ConsoleOutput::Red, DS::ConsoleOutput::Default, "%s\n",
+                                  DS::formatTextN(format, args...).c_str());
+    }
 };
 
 static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
@@ -71,6 +87,27 @@ static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
         paths.emplace_back(path);
     }
     return paths;
+}
+
+static void updateLogLevel(const SCL::ParseResult &result) {
+    auto opt = result.option("--debug");
+    if (!opt.isSet()) {
+        return;
+    }
+    int level = opt.value().toInt();
+    switch (level) {
+        case 1:
+            DS::Log::setLevel(DS::Log::Verbose);
+            break;
+        case 2:
+            DS::Log::setLevel(DS::Log::Debug);
+            break;
+        case 3:
+            DS::Log::setLevel(DS::Log::Trace);
+            break;
+        default:
+            break;
+    }
 }
 
 static fs::path searchPackage(const std::vector<fs::path> &paths, const std::string &id,
@@ -92,6 +129,7 @@ static fs::path searchPackage(const std::vector<fs::path> &paths, const std::str
 }
 
 static int cmd_stat(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     auto paths = getCmdPaths(result);
     const auto &idStr = result.value(0).toString();
 
@@ -130,51 +168,51 @@ static int cmd_stat(const SCL::ParseResult &result) {
         }
     }
 
-    ctx.logger.info("ID: %1", lib->id());
-    ctx.logger.info("Version: %1", lib->version().toString());
-    ctx.logger.info("CompatVersion: %1", lib->compatVersion().toString());
+    Context::info("ID: %1", lib->id());
+    Context::info("Version: %1", lib->version().toString());
+    Context::info("CompatVersion: %1", lib->compatVersion().toString());
     if (!lib->description().isEmpty())
-        ctx.logger.info("Description: %1", lib->description().text());
+        Context::info("Description: %1", lib->description().text());
     if (!lib->vendor().isEmpty())
-        ctx.logger.info("Vendor: %1", lib->vendor().text());
+        Context::info("Vendor: %1", lib->vendor().text());
     if (!lib->copyright().isEmpty())
-        ctx.logger.info("Copyright: %1", lib->copyright().text());
+        Context::info("Copyright: %1", lib->copyright().text());
     if (!lib->url().empty())
-        ctx.logger.info("Url: %1", lib->url());
+        Context::info("Url: %1", lib->url());
 
-    ctx.logger.info("Contributes:");
+    Context::info("Contributes:");
     const auto &inferences = lib->contributes(DS::ContributeSpec::Inference);
     if (!inferences.empty()) {
-        ctx.logger.info("    Inferences:");
+        Context::info("    Inferences:");
         for (int i = 0; i < inferences.size(); ++i) {
             auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
-            ctx.logger.info("        [%1] %2, %3, level=%4", i + 1, inference->id(),
-                            inference->name().text(), inference->apiLevel());
+            Context::info("        [%1] %2, %3, level=%4", i + 1, inference->id(),
+                          inference->name().text(), inference->apiLevel());
         }
     }
     const auto &singers = lib->contributes(DS::ContributeSpec::Singer);
     if (!singers.empty()) {
-        ctx.logger.info("    Singers:");
+        Context::info("    Singers:");
         for (int i = 0; i < singers.size(); ++i) {
             auto singer = static_cast<DS::SingerSpec *>(singers[i]);
-            ctx.logger.info("        [%1] %2, %3, model=%4", i + 1, singer->id(),
-                            singer->name().text(), singer->model());
+            Context::info("        [%1] %2, %3, model=%4", i + 1, singer->id(),
+                          singer->name().text(), singer->model());
         }
     }
 
     const auto &deps = lib->dependencies();
     if (!deps.empty()) {
-        ctx.logger.info("Dependencies:");
+        Context::info("Dependencies:");
         for (int i = 0; i < deps.size(); ++i) {
             const auto &dep = deps[i];
-            ctx.logger.info("    [%1] %2[%3]%4", i + 1, dep.id, dep.version.toString(),
-                            dep.required ? ", required" : "");
+            Context::info("    [%1] %2[%3]%4", i + 1, dep.id, dep.version.toString(),
+                          dep.required ? ", required" : "");
         }
     }
 
     if (auto error = lib->error(); !error.ok()) {
-        ctx.logger.info("");
-        ctx.logger.warning("Warning: failed to load package: %1", error.message());
+        Context::info("");
+        Context::warning("Warning: failed to load package: %1", error.message());
     }
 
     std::ignore = env.closeLibrary(lib);
@@ -182,6 +220,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
 }
 
 static int cmd_list(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     auto paths = getCmdPaths(result);
 
     Context ctx;
@@ -231,7 +270,7 @@ static int cmd_list(const SCL::ParseResult &result) {
         const auto &info = infoList[i];
         std::string line = DS::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
         if (!info.valid) {
-            ctx.logger.critical("%1 (invalid)", line);
+            Context::critical("%1 (invalid)", line);
             continue;
         }
 
@@ -239,27 +278,31 @@ static int cmd_list(const SCL::ParseResult &result) {
             line += "; singers: " + DS::join(info.singers, ", ");
         }
         if (!info.operative) {
-            ctx.logger.warning("%1 (not work)", line);
+            Context::warning("%1 (not work)", line);
             continue;
         }
-        ctx.logger.info("%1", line);
+        Context::info("%1", line);
     }
     return 0;
 }
 
 static int cmd_install(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     return 0;
 }
 
 static int cmd_remove(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     return 0;
 }
 
 static int cmd_autoRemove(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     return 0;
 }
 
 static int cmd_exec(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     auto paths = getCmdPaths(result);
     const auto &idStr = result.value(0).toString();
     const auto &input = result.value(1).toString();
@@ -353,6 +396,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
 }
 
 static int cmd_pack(const SCL::ParseResult &result) {
+    updateLogLevel(result);
     return 0;
 }
 
@@ -447,8 +491,13 @@ int main(int argc, char *argv[]) {
         packCommand,
     });
     SCL::Option debugOption = []() {
-        SCL::Option option("--debug", "Specify debug level");
-        option.addArgument(SCL::Argument("level"));
+        SCL::Option option("--debug", "Specify debug level: 0~3");
+        option.addArgument(SCL::Argument("level").expect({
+            0,
+            1,
+            2,
+            3,
+        }));
         option.setGlobal(true);
         option.setRole(SCL::Option::Debug);
         return option;

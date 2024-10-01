@@ -7,6 +7,27 @@
 
 namespace dsinfer {
 
+    class DSINFER_EXPORT ConsoleOutput {
+    public:
+        enum Color {
+            Default = -1,
+            Black = 0x0,
+            Red = 0x1,
+            Green = 0x2,
+            Blue = 0x4,
+            Yellow = Red | Green,
+            Purple = Red | Blue,
+            Cyan = Green | Blue,
+            White = Red | Green | Blue,
+            Intensified = 0x100,
+        };
+
+        static int printf(int foreground, int background, const char *fmt, ...)
+            DSINFER_PRINTF_FORMAT(3, 4);
+
+        static int vprintf(int foreground, int background, const char *fmt, va_list args);
+    };
+
     class DSINFER_EXPORT Log {
     public:
         enum Level {
@@ -39,7 +60,7 @@ namespace dsinfer {
         static void vprintf(int level, const char *category, const char *fmt, va_list args);
 
     public:
-        struct DSINFER_EXPORT Category {
+        struct Category {
             inline Category(const char *category) : category(category) {
             }
 
@@ -82,22 +103,6 @@ namespace dsinfer {
         private:
             const char *category;
         };
-    };
-
-    class DSINFER_EXPORT ConsoleOutput {
-    public:
-        enum Color {
-            NoColor,
-            Red,
-            Green,
-            Yellow,
-            White,
-        };
-
-        static int printf(Color color, bool light, const char *fmt, ...)
-            DSINFER_PRINTF_FORMAT(3, 4);
-
-        static int vprintf(Color color, bool light, const char *fmt, va_list args);
     };
 
 }
