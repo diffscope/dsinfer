@@ -11,7 +11,16 @@ namespace dsinfer {
 
     static void log_default_callback(int level, const char *category, const char *fmt,
                                      va_list args) {
-        // TODO
+        std::ignore = category;
+        ConsoleOutput::Color color;
+        if (level <= Log::Information) {
+            color = ConsoleOutput::NoColor;
+        } else if (level <= Log::Warning) {
+            color = ConsoleOutput::Yellow;
+        } else {
+            color = ConsoleOutput::Red;
+        }
+        ConsoleOutput::vprintf(color, false, fmt, args);
     }
 
     static int m_level = Log::Information;
@@ -35,10 +44,20 @@ namespace dsinfer {
     }
 
     void Log::printf(int level, const char *category, const char *fmt, ...) {
+        if (level < m_level) {
+            return;
+        }
         va_list args;
         va_start(args, fmt);
         m_callback(level, category, fmt, args);
         va_end(args);
+    }
+
+    void Log::vprintf(int level, const char *category, const char *fmt, va_list args) {
+        if (level < m_level) {
+            return;
+        }
+        m_callback(level, category, fmt, args);
     }
 
     class PrintScopeGuard {

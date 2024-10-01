@@ -30,20 +30,22 @@ namespace dsinfer {
         template <class... Args>
         static inline void print(int level, const char *category, const std::string &format,
                                  Args &&...args) {
-            std::ignore = printf(level, category, "%s\n", formatTextN(format, args...).c_str());
+            printf(level, category, "%s\n", formatTextN(format, args...).c_str());
         }
 
         static void printf(int level, const char *category, const char *fmt, ...)
             DSINFER_PRINTF_FORMAT(3, 4);
 
+        static void vprintf(int level, const char *category, const char *fmt, va_list args);
+
     public:
-        struct Category {
+        struct DSINFER_EXPORT Category {
             inline Category(const char *category) : category(category) {
             }
 
             template <class... Args>
             inline void trace(const std::string &format, Args &&...args) {
-                print(Log::Trace, category, format, args...);
+                print(Trace, category, format, args...);
             }
 
             template <class... Args>

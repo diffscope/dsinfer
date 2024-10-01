@@ -4,7 +4,7 @@
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
 #include <dsinfer/singerregistry.h>
-#include <dsinfer/format.h>
+#include <dsinfer/log.h>
 
 #include <syscmdline/command.h>
 #include <syscmdline/parser.h>
@@ -27,6 +27,8 @@ struct Context {
     DS::Environment env;
     LoadConfig loadConfig;
     StatusConfig statusConfig;
+
+    DS::Log::Category logger = {"dsinfer-cli"};
 
     Context() {
         // Get basic directories
@@ -128,51 +130,51 @@ static int cmd_stat(const SCL::ParseResult &result) {
         }
     }
 
-    SCL::u8printf("ID: %s\n", lib->id().data());
-    SCL::u8printf("Version: %s\n", lib->version().toString().data());
-    SCL::u8printf("CompatVersion: %s\n", lib->compatVersion().toString().data());
+    ctx.logger.info("ID: %1", lib->id());
+    ctx.logger.info("Version: %1", lib->version().toString());
+    ctx.logger.info("CompatVersion: %1", lib->compatVersion().toString());
     if (!lib->description().isEmpty())
-        SCL::u8printf("Description: %s\n", lib->description().text().data());
+        ctx.logger.info("Description: %1", lib->description().text());
     if (!lib->vendor().isEmpty())
-        SCL::u8printf("Vendor: %s\n", lib->vendor().text().data());
+        ctx.logger.info("Vendor: %1", lib->vendor().text());
     if (!lib->copyright().isEmpty())
-        SCL::u8printf("Copyright: %s\n", lib->copyright().text().data());
+        ctx.logger.info("Copyright: %1", lib->copyright().text());
     if (!lib->url().empty())
-        SCL::u8printf("Url: %s\n", lib->url().data());
+        ctx.logger.info("Url: %1", lib->url());
 
-    SCL::u8printf("Contributes:\n");
+    ctx.logger.info("Contributes:");
     const auto &inferences = lib->contributes(DS::ContributeSpec::Inference);
     if (!inferences.empty()) {
-        SCL::u8printf("    Inferences:\n");
+        ctx.logger.info("    Inferences:");
         for (int i = 0; i < inferences.size(); ++i) {
             auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
-            SCL::u8printf("        [%d] %s, %s, level=%d\n", i + 1, inference->id().data(),
-                          inference->name().text().data(), inference->apiLevel());
+            ctx.logger.info("        [%1] %2, %3, level=%4", i + 1, inference->id(),
+                            inference->name().text(), inference->apiLevel());
         }
     }
     const auto &singers = lib->contributes(DS::ContributeSpec::Singer);
     if (!singers.empty()) {
-        SCL::u8printf("    Singers:\n");
+        ctx.logger.info("    Singers:");
         for (int i = 0; i < singers.size(); ++i) {
             auto singer = static_cast<DS::SingerSpec *>(singers[i]);
-            SCL::u8printf("        [%d] %s, %s, model=%s\n", i + 1, singer->id().data(),
-                          singer->name().text().data(), singer->model().data());
+            ctx.logger.info("        [%1] %2, %3, model=%4", i + 1, singer->id(),
+                            singer->name().text(), singer->model());
         }
     }
 
     const auto &deps = lib->dependencies();
     if (!deps.empty()) {
-        SCL::u8printf("Dependencies:\n");
+        ctx.logger.info("Dependencies:");
         for (int i = 0; i < deps.size(); ++i) {
             const auto &dep = deps[i];
-            SCL::u8printf("    [%d] %s[%s]%s\n", i + 1, dep.id.data(),
-                          dep.version.toString().data(), dep.required ? ", required" : "");
+            ctx.logger.info("    [%1] %2[%3]%4", i + 1, dep.id, dep.version.toString(),
+                            dep.required ? ", required" : "");
         }
     }
 
     if (auto error = lib->error(); !error.ok()) {
-        SCL::u8printf("\n");
-        SCL::u8debug(SCL::MT_Warning, false, "Warning: failed to load package: %s\n", error.what());
+        ctx.logger.info("");
+        ctx.logger.warning("Warning: failed to load package: %1", error.message());
     }
 
     std::ignore = env.closeLibrary(lib);
@@ -229,7 +231,7 @@ static int cmd_list(const SCL::ParseResult &result) {
         const auto &info = infoList[i];
         std::string line = DS::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
         if (!info.valid) {
-            SCL::u8debug(SCL::MT_Critical, true, "%s (invalid)\n", line.data());
+            ctx.logger.critical("%1 (invalid)", line);
             continue;
         }
 
@@ -237,10 +239,10 @@ static int cmd_list(const SCL::ParseResult &result) {
             line += "; singers: " + DS::join(info.singers, ", ");
         }
         if (!info.operative) {
-            SCL::u8debug(SCL::MT_Warning, false, "%s (not work)\n", line.data());
+            ctx.logger.warning("%1 (not work)", line);
             continue;
         }
-        SCL::u8printf("%s\n", line.data());
+        ctx.logger.info("%1", line);
     }
     return 0;
 }
@@ -444,6 +446,14 @@ int main(int argc, char *argv[]) {
         execCommand,
         packCommand,
     });
+    SCL::Option debugOption = []() {
+        SCL::Option option("--debug", "Specify debug level");
+        option.addArgument(SCL::Argument("level"));
+        option.setGlobal(true);
+        option.setRole(SCL::Option::Debug);
+        return option;
+    }();
+    rootCommand.addOption(debugOption);
     rootCommand.addVersionOption(TOOL_VERSION);
     rootCommand.addHelpOption(false, true);
     rootCommand.setHandler([](const SCL::ParseResult &result) -> int {
