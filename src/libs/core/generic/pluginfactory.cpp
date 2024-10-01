@@ -1,6 +1,9 @@
 #include "pluginfactory.h"
 #include "pluginfactory_p.h"
 
+#include <utility>
+#include <cstring>
+
 namespace fs = std::filesystem;
 
 namespace dsinfer {

@@ -2,6 +2,7 @@
 #define ENVIRONMENT_P_H
 
 #include <map>
+#include <list>
 #include <unordered_set>
 
 #include <dsinfer/environment.h>

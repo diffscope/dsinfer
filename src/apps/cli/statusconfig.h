@@ -1,6 +1,7 @@
 #ifndef STATUSCONFIG_H
 #define STATUSCONFIG_H
 
+#include <vector>
 #include <filesystem>
 
 #include <dsinfer/versionnumber.h>
