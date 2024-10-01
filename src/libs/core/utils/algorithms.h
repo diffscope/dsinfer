@@ -1,5 +1,5 @@
-#ifndef ALGORITHMS_H
-#define ALGORITHMS_H
+#ifndef DSINFER_ALGORITHMS_H
+#define DSINFER_ALGORITHMS_H
 
 #include <dsinfer/dsinferglobal.h>
 
@@ -24,4 +24,4 @@ namespace dsinfer {
 
 }
 
-#endif // ALGORITHMS_H
+#endif // DSINFER_ALGORITHMS_H

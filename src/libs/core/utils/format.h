@@ -1,5 +1,5 @@
-#ifndef FORMAT_H
-#define FORMAT_H
+#ifndef DSINFER_FORMAT_H
+#define DSINFER_FORMAT_H
 
 #include <string>
 #include <vector>
@@ -62,7 +62,7 @@ namespace dsinfer {
     DSINFER_EXPORT std::string formatText(const std::string &format,
                                           const std::vector<std::string> &args);
 
-    template <typename... Args>
+    template <class... Args>
     auto formatTextN(const std::string &format, Args &&...args) {
         return formatText(format, {anyToString(std::forward<decltype(args)>(args))...});
     }
@@ -75,4 +75,4 @@ namespace dsinfer {
 
 }
 
-#endif // FORMAT_H
+#endif // DSINFER_FORMAT_H

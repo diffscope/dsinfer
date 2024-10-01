@@ -96,4 +96,11 @@ public:                                                                         
 #  define _TSTR(T) T
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#  define DSINFER_PRINTF_FORMAT(fmtpos, attrpos)                                                   \
+      __attribute__((__format__(__printf__, fmtpos, attrpos)))
+#else
+#  define DSINFER_PRINTF_FORMAT(fmtpos, attrpos)
+#endif
+
 #endif // DSINFERCOREGLOBAL_H
