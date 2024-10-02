@@ -90,10 +90,12 @@ public:                                                                         
         return static_cast<T *>(this);                                                             \
     }
 
-#ifdef _WIN32
-#  define _TSTR(T) L##T
-#else
-#  define _TSTR(T) T
+#ifndef _TSTR
+#  ifdef _WIN32
+#    define _TSTR(T) L##T
+#  else
+#    define _TSTR(T) T
+#  endif
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)

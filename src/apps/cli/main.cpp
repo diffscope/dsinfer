@@ -1,5 +1,8 @@
 #include <iostream>
 #include <filesystem>
+#include <iomanip>
+#include <ctime>
+#include <sstream>
 
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
@@ -19,6 +22,58 @@ namespace SCL = SysCmdLine;
 
 namespace DS = dsinfer;
 
+static void log_report_callback(int level, const char *category, const char *fmt, va_list args) {
+    using namespace DS;
+
+    auto t = std::time(nullptr);
+    auto tm = std::localtime(&t);
+    auto dts = (std::stringstream() << std::put_time(tm, "%Y-%m-%d %H:%M:%S")).str();
+
+    ConsoleOutput::Color foreground, background;
+    if (level <= Log::Verbose) {
+        foreground = ConsoleOutput::Default;
+        background = ConsoleOutput::White;
+    } else if (level <= Log::Information) {
+        foreground = ConsoleOutput::Blue;
+        background = foreground;
+    } else if (level <= Log::Warning) {
+        foreground = ConsoleOutput::Yellow;
+        background = foreground;
+    } else {
+        foreground = ConsoleOutput::Red;
+        background = foreground;
+    }
+
+    const char *sig = "I";
+    switch (level) {
+        case Log::Trace:
+            sig = "T";
+            break;
+        case Log::Debug:
+            sig = "D";
+            break;
+        case Log::Verbose:
+            sig = "V";
+            break;
+        case Log::Warning:
+            sig = "W";
+            break;
+        case Log::Critical:
+            sig = "C";
+            break;
+        case Log::Fatal:
+            sig = "F";
+            break;
+        default:
+            break;
+    }
+
+    ConsoleOutput::printf(foreground, ConsoleOutput::Default, "[%s] %-15s", dts.c_str(), category);
+    ConsoleOutput::printf(ConsoleOutput::Black, background, " %s ", sig);
+    ConsoleOutput::printf(ConsoleOutput::Default, ConsoleOutput::Default, "  ");
+    ConsoleOutput::vprintf(foreground, ConsoleOutput::Default, fmt, args);
+}
+
 struct Context {
     fs::path appDir;
     fs::path defaultPluginDir;
@@ -27,6 +82,8 @@ struct Context {
     DS::Environment env;
     LoadConfig loadConfig;
     StatusConfig statusConfig;
+
+    DS::Log::Category logger = {"dsinfer-cli"};
 
     Context() {
         // Get basic directories
@@ -50,7 +107,11 @@ struct Context {
                           defaultPluginDir / _TSTR("inferenceinterpreters"));
 
         // Load config
-        std::ignore = loadConfig.load(loadConfigPath);
+        if (loadConfig.load(loadConfigPath)) {
+            logger.debug(R"(Successfully read user configuration "%1")", loadConfigPath);
+        } else {
+            logger.debug(R"(Failed to read user configuration "%1")", loadConfigPath);
+        }
 
         // Add paths
         env.addLibraryPaths(loadConfig.paths);
@@ -89,25 +150,25 @@ static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
     return paths;
 }
 
-static void updateLogLevel(const SCL::ParseResult &result) {
+static void updateLogger(const SCL::ParseResult &result) {
     auto opt = result.option("--debug");
-    if (!opt.isSet()) {
-        return;
+    if (opt.isSet()) {
+        int level = opt.value().toInt();
+        switch (level) {
+            case 1:
+                DS::Log::setLevel(DS::Log::Verbose);
+                break;
+            case 2:
+                DS::Log::setLevel(DS::Log::Debug);
+                break;
+            case 3:
+                DS::Log::setLevel(DS::Log::Trace);
+                break;
+            default:
+                break;
+        }
     }
-    int level = opt.value().toInt();
-    switch (level) {
-        case 1:
-            DS::Log::setLevel(DS::Log::Verbose);
-            break;
-        case 2:
-            DS::Log::setLevel(DS::Log::Debug);
-            break;
-        case 3:
-            DS::Log::setLevel(DS::Log::Trace);
-            break;
-        default:
-            break;
-    }
+    DS::Log::setCallback(log_report_callback);
 }
 
 static fs::path searchPackage(const std::vector<fs::path> &paths, const std::string &id,
@@ -129,7 +190,7 @@ static fs::path searchPackage(const std::vector<fs::path> &paths, const std::str
 }
 
 static int cmd_stat(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     auto paths = getCmdPaths(result);
     const auto &idStr = result.value(0).toString();
 
@@ -211,7 +272,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     }
 
     if (auto error = lib->error(); !error.ok()) {
-        Context::info("");
+        printf("\n");
         Context::warning("Warning: failed to load package: %1", error.message());
     }
 
@@ -220,7 +281,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
 }
 
 static int cmd_list(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     auto paths = getCmdPaths(result);
 
     Context ctx;
@@ -287,22 +348,22 @@ static int cmd_list(const SCL::ParseResult &result) {
 }
 
 static int cmd_install(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     return 0;
 }
 
 static int cmd_remove(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     return 0;
 }
 
 static int cmd_autoRemove(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     return 0;
 }
 
 static int cmd_exec(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     auto paths = getCmdPaths(result);
     const auto &idStr = result.value(0).toString();
     const auto &input = result.value(1).toString();
@@ -396,7 +457,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
 }
 
 static int cmd_pack(const SCL::ParseResult &result) {
-    updateLogLevel(result);
+    updateLogger(result);
     return 0;
 }
 
