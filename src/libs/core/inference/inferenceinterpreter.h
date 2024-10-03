@@ -24,7 +24,7 @@ namespace dsinfer {
                               std::string *message) const;
 
         virtual Inference *create(const InferenceSpec *spec, const JsonValue &options,
-                                  Error *error) const = 0;
+                                  Error *error) = 0;
 
     public:
         DSINFER_DISABLE_COPY(InferenceInterpreter)

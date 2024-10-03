@@ -13,7 +13,7 @@ namespace dsinfer {
         const char *key() const override;
 
     public:
-        InferenceDriver * create() const override;
+        InferenceDriver * create() override;
     };
 
 }

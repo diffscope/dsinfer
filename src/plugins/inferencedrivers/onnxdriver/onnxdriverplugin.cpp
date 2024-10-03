@@ -11,7 +11,7 @@ namespace dsinfer {
         return "com.diffsinger.InferenceDriver.OnnxDriver";
     }
 
-    InferenceDriver *OnnxDriverPlugin::create() const {
+    InferenceDriver *OnnxDriverPlugin::create() {
         return new OnnxDriver();
     }
 

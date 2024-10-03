@@ -16,7 +16,7 @@ namespace dsinfer {
         }
 
     public:
-        virtual InferenceDriver *create() const = 0;
+        virtual InferenceDriver *create() = 0;
 
     public:
         DSINFER_DISABLE_COPY(InferenceDriverPlugin)

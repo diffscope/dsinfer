@@ -26,7 +26,7 @@ namespace dsinfer {
     }
 
     Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonValue &options,
-                                           Error *error) const {
+                                           Error *error) {
         switch (spec->apiLevel()) {
             case 1:
                 return new AcousticInference(spec->env());
