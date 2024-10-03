@@ -110,7 +110,7 @@ namespace dsinfer {
                 return false;
             }
             id_ = it->second.toString();
-            if (id_.empty()) {
+            if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
                     R"("id" field has invalid value in library manifest)",
@@ -462,7 +462,7 @@ namespace dsinfer {
                             continue;
                         }
                         id_ = it->second.toString();
-                        if (id_.empty()) {
+                        if (!ContributeIdentifier::isValidId(id_)) {
                             continue;
                         }
                     }

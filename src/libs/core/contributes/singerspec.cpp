@@ -36,6 +36,7 @@ namespace dsinfer {
     bool SingerSpec::Impl::read(const std::filesystem::path &basePath, const JsonObject &obj,
                                 Error *error) {
         fs::path configPath;
+        VersionNumber fmtVersion_;
         std::string id_;
         std::string model_;
 
@@ -60,7 +61,7 @@ namespace dsinfer {
                 return false;
             }
             id_ = it->second.toString();
-            if (id_.empty()) {
+            if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
                     R"("id" field has invalid value in singer contribute field)",
@@ -118,7 +119,7 @@ namespace dsinfer {
             if (!file.is_open()) {
                 *error = {
                     Error::FileNotFound,
-                    formatTextN(R"(failed to open singer manifest "%1")", configPath),
+                    formatTextN(R"(%1: failed to open singer manifest)", configPath),
                 };
                 return false;
             }
@@ -131,14 +132,14 @@ namespace dsinfer {
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(invalid singer manifest format "%1": %2)", configPath, error2),
+                    formatTextN(R"(%1: invalid singer manifest format: %2)", configPath, error2),
                 };
                 return false;
             }
             if (!root.isObject()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(invalid singer manifest format "%1")", configPath),
+                    formatTextN(R"(%1: invalid singer manifest format)", configPath),
                 };
                 return false;
             }
@@ -146,6 +147,26 @@ namespace dsinfer {
         }
 
         // Get attributes
+        // $version
+        {
+            auto it = configObj.find("$version");
+            if (it == configObj.end()) {
+                *error = {
+                    Error::InvalidFormat,
+                    formatTextN(R"(%1: missing "$version" field)", configPath),
+                };
+                return false;
+            }
+            fmtVersion_ = VersionNumber::fromString(it->second.toString());
+            if (fmtVersion_ > VersionNumber(1)) {
+                *error = {
+                    Error::FeatureNotSupported,
+                    formatTextN(R"(%1: format version "%1" is not supported)",
+                                fmtVersion_.toString()),
+                };
+                return false;
+            }
+        }
         // name
         {
             auto it = configObj.find("name");
@@ -184,7 +205,7 @@ namespace dsinfer {
                 if (!it->second.isArray()) {
                     *error = {
                         Error::InvalidFormat,
-                        R"("imports" field has invalid value in singer manifest)",
+                        formatTextN(R"(%1: "imports" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -194,9 +215,8 @@ namespace dsinfer {
                     if (singerImport.inference.id().empty()) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(
-                                R"(unknown data in "imports" field entry %1 in singer manifest)",
-                                imports_.size()),
+                            formatTextN(R"(%1: unknown data in "imports" field entry %2)",
+                                        configPath, imports_.size()),
                         };
                         return false;
                     }
@@ -211,7 +231,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        R"("configuration" field has invalid value in singer manifest)",
+                        formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
                     };
                     return false;
                 }

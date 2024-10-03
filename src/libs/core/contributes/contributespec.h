@@ -45,6 +45,8 @@ namespace dsinfer {
         std::string toString() const;
         static ContributeIdentifier fromString(const std::string &token);
 
+        static bool isValidId(const std::string &id);
+
     protected:
         std::string m_library;
         VersionNumber m_version;

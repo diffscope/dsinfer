@@ -52,6 +52,29 @@ namespace dsinfer {
         return false;
     }
 
+    bool ContributeIdentifier::isValidId(const std::string &id) {
+        if (id.empty()) {
+            return false;
+        }
+        for (const auto &ch : id) {
+            switch (ch) {
+                case '/':
+                case '\\':
+                case '[':
+                case ']':
+                case ':':
+                case ';':
+                case '\'':
+                case '\"':
+                    return false;
+                default:
+                    break;
+            }
+        }
+        return true;
+    }
+
+
     ContributeSpec::~ContributeSpec() = default;
 
     int ContributeSpec::type() const {

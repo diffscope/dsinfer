@@ -23,6 +23,7 @@ namespace dsinfer {
         ContributeSpec::State state;
         LibrarySpec *parent = nullptr;
 
+        VersionNumber fmtVersion;
         std::string id;
     };
 

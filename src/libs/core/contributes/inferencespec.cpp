@@ -14,6 +14,7 @@ namespace dsinfer {
     bool InferenceSpec::Impl::read(const std::filesystem::path &basePath, const JsonObject &obj,
                                    Error *error) {
         fs::path configPath;
+        VersionNumber fmtVersion_;
         std::string id_;
         std::string className_;
 
@@ -35,7 +36,7 @@ namespace dsinfer {
                 return false;
             }
             id_ = it->second.toString();
-            if (id_.empty()) {
+            if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
                     R"("id" field has invalid value in inference contribute field)",
@@ -93,7 +94,7 @@ namespace dsinfer {
             if (!file.is_open()) {
                 *error = {
                     Error::FileNotFound,
-                    formatTextN(R"(failed to open inference manifest "%1")", configPath),
+                    formatTextN(R"(%1: failed to open inference manifest)", configPath),
                 };
                 return false;
             }
@@ -106,15 +107,14 @@ namespace dsinfer {
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(invalid inference manifest format "%1": %2)", configPath,
-                                error2),
+                    formatTextN(R"(%1: invalid inference manifest format: %2)", configPath, error2),
                 };
                 return false;
             }
             if (!root.isObject()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(invalid inference manifest format "%1")", configPath),
+                    formatTextN(R"(%1: invalid inference manifest format)", configPath),
                 };
                 return false;
             }
@@ -122,6 +122,26 @@ namespace dsinfer {
         }
 
         // Get attributes
+        // $version
+        {
+            auto it = configObj.find("$version");
+            if (it == configObj.end()) {
+                *error = {
+                    Error::InvalidFormat,
+                    formatTextN(R"(%1: missing "$version" field)", configPath),
+                };
+                return false;
+            }
+            fmtVersion_ = VersionNumber::fromString(it->second.toString());
+            if (fmtVersion_ > VersionNumber(1)) {
+                *error = {
+                    Error::FeatureNotSupported,
+                    formatTextN(R"(%1: format version "%2" is not supported)", configPath,
+                                fmtVersion_.toString()),
+                };
+                return false;
+            }
+        }
         // name
         {
             auto it = configObj.find("name");
@@ -138,7 +158,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    R"(missing "level" field in inference manifest)",
+                    formatTextN(R"(%1: missing "level" field)", configPath),
                 };
                 return false;
             }
@@ -146,7 +166,7 @@ namespace dsinfer {
             if (apiLevel_ == 0) {
                 *error = {
                     Error::InvalidFormat,
-                    R"("level" field has invalid value in inference manifest)",
+                    formatTextN(R"(%1: "level" field has invalid value)", configPath),
                 };
                 return false;
             }
@@ -158,7 +178,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        R"("schema" field has invalid value in inference manifest)",
+                        formatTextN(R"(%1: "schema" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -172,7 +192,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        R"("configuration" field has invalid value in inference manifest)",
+                        formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -181,6 +201,7 @@ namespace dsinfer {
         }
 
         path = fs::canonical(configPath).parent_path();
+        fmtVersion = fmtVersion_;
         id = std::move(id_);
         className = std::move(className_);
         name = std::move(name_);

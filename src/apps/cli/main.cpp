@@ -13,7 +13,7 @@
 #include <syscmdline/parser.h>
 #include <syscmdline/system.h>
 
-#include "loadconfig.h"
+#include "startupconfig.h"
 #include "statusconfig.h"
 
 namespace fs = std::filesystem;
@@ -77,12 +77,12 @@ static void log_report_callback(int level, const char *category, const char *fmt
 struct Context {
     fs::path appDir;
     fs::path defaultPluginDir;
-    fs::path loadConfigPath;
+    fs::path startupConfigPath;
+
+    cli::StartupConfig startupConfig;
+    cli::StatusConfig statusConfig;
 
     DS::Environment env;
-    LoadConfig loadConfig;
-    StatusConfig statusConfig;
-
     DS::Log::Category logger = {"dsinfer-cli"};
 
     Context() {
@@ -91,6 +91,13 @@ struct Context {
         defaultPluginDir =
             appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
 
+        // Set default plugin directories
+        env.addPluginPath("com.diffsinger.InferenceDriver",
+                          defaultPluginDir / _TSTR("inferencedrivers"));
+        env.addPluginPath("com.diffsinger.InferenceInterpreter",
+                          defaultPluginDir / _TSTR("inferenceinterpreters"));
+
+        // Load startup config
         fs::path homeDir =
 #ifdef WIN32
             _wgetenv(L"USERPROFILE")
@@ -98,23 +105,27 @@ struct Context {
             getenv("HOME")
 #endif
             ;
-        loadConfigPath = homeDir / _TSTR(".diffsinger") / _TSTR("dsinfer.json");
 
-        // Set default plugin directories
-        env.addPluginPath("com.diffsinger.InferenceDriver",
-                          defaultPluginDir / _TSTR("inferencedrivers"));
-        env.addPluginPath("com.diffsinger.InferenceInterpreter",
-                          defaultPluginDir / _TSTR("inferenceinterpreters"));
+        const std::filesystem::path startupConfigDirs[] = {
+            appDir,
+            homeDir / _TSTR(".diffsinger"),
+        };
 
-        // Load config
-        if (loadConfig.load(loadConfigPath)) {
-            logger.debug(R"(Successfully read user configuration "%1")", loadConfigPath);
-        } else {
-            logger.debug(R"(Failed to read user configuration "%1")", loadConfigPath);
+        for (const auto &dir : std::as_const(startupConfigDirs)) {
+            auto path = dir / _TSTR("dsinfer-conf.json");
+            if (!startupConfig.load(path)) {
+                continue;
+            }
+            logger.debug(R"(Successfully read user configuration "%1")", path);
+            startupConfigPath = path;
+            break;
+        }
+        if (startupConfigPath.empty()) {
+            logger.debug(R"(Failed to find user configuration")");
         }
 
         // Add paths
-        env.addLibraryPaths(loadConfig.paths);
+        env.addLibraryPaths(startupConfig.paths);
     }
 
     template <class... Args>
@@ -175,7 +186,7 @@ static fs::path searchPackage(const std::vector<fs::path> &paths, const std::str
                               const DS::VersionNumber &version) {
     for (const auto &path : std::as_const(paths)) {
         auto statusConfigPath = path / _TSTR("status.json");
-        StatusConfig sc;
+        cli::StatusConfig sc;
         if (!sc.load(statusConfigPath)) {
             continue;
         }
@@ -300,10 +311,12 @@ static int cmd_list(const SCL::ParseResult &result) {
     std::vector<PackageInfo> infoList;
     for (const auto &path : std::as_const(paths)) {
         auto statusConfigPath = path / _TSTR("status.json");
-        StatusConfig sc;
+        cli::StatusConfig sc;
         if (!sc.load(statusConfigPath)) {
             continue;
         }
+
+        // Try load each library
         for (const auto &pkg : std::as_const(sc.packages)) {
             PackageInfo info;
             info.id = pkg.id;
@@ -327,6 +340,8 @@ static int cmd_list(const SCL::ParseResult &result) {
             infoList.emplace_back(info);
         }
     }
+
+    // Print
     for (int i = 0; i < infoList.size(); ++i) {
         const auto &info = infoList[i];
         std::string line = DS::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
@@ -339,7 +354,7 @@ static int cmd_list(const SCL::ParseResult &result) {
             line += "; singers: " + DS::join(info.singers, ", ");
         }
         if (!info.operative) {
-            Context::warning("%1 (not work)", line);
+            Context::warning("%1 (inoperative)", line);
             continue;
         }
         Context::info("%1", line);
@@ -401,7 +416,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     auto singerReg = env.registry(DS::ContributeSpec::Singer)->cast<DS::SingerRegistry>();
 
     // Create driver
-    const auto &realDriverId = driverId.empty() ? ctx.loadConfig.driver.id : driverId;
+    const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
     auto driver = inferenceReg->createDriver(realDriverId.data());
     if (!driver) {
         throw std::runtime_error(DS::formatTextN(R"(failed to load driver "%1")", realDriverId));
@@ -411,7 +426,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     {
         DS::Error error;
         if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit)
-                                                   : ctx.loadConfig.driver.init,
+                                                   : ctx.startupConfig.driver.init,
                                 &error)) {
             throw std::runtime_error(DS::formatTextN(R"(failed to initialize driver "%1": %2)",
                                                      realDriverId, error.message()));
@@ -505,9 +520,6 @@ int main(int argc, char *argv[]) {
     }();
     SCL::Command autoRemoveCommand = [] {
         SCL::Command command("autoremove", "Remove unused packages automatically");
-        command.addArguments({
-            SCL::Argument("packages", "Package paths").multi(),
-        });
         command.addOptions({
             SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
         });
