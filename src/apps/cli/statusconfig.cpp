@@ -25,7 +25,7 @@ namespace cli {
         ss << file.rdbuf();
 
         std::string error;
-        auto root = JsonValue::fromJson(ss.str(), &error);
+        auto root = JsonValue::fromJson(ss.str(), true, &error);
         if (!error.empty() || !root.isObject()) {
             return false;
         }

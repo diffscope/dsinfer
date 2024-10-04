@@ -37,7 +37,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
     "copyright": "Copyright (C) someone",
     "description": "Some library",
     "readme": "assets/readme.txt",
-    "url": "https://www.dummy.cn",
+    "url": "https://www.example.com",
     "contributes": {
         "inferences": [
             {
@@ -75,7 +75,7 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
     + `vender`：提供者，可提供多语言，多语言形式如下（`_`指定首选名称）
         ```json
         {
-            "_": "Takokoro Koji",
+            "_": "Tadokoro Koji",
             "zh_CN": "李田所",
             "ja_JP": "田所浩二"
         }
@@ -314,7 +314,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 
 使用`dsinfer-cli pack`命令来将整理好的目录打包为`dspk`，此命令将执行校验与压缩功能。
 
-打包完成的`dspk`中，其根目录会加入`package-meta`目录，目录内有`manifest.json`，存储文件校验信息。存在此目录及其文件，且内容合法的`dspk`才能被安装。
+打包完成的`dspk`中，其根目录会加入`package-info`目录，目录内有`manifest.json`，存储文件校验信息。存在此目录及其文件，且内容合法的`dspk`才能被安装。
 
 ```json
 {
@@ -327,7 +327,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
             "path": "assets/avatar.png",
             "crc32": "xxx"
         },
-        ...
+        // ...
     ]
 }
 ```

@@ -88,7 +88,7 @@ namespace dsinfer {
         }
     }
 
-    JsonValue::JsonValue(const JsonValue::_Object &o) {
+    JsonValue::JsonValue(const JsonValue::_Object &o) : _data(new JsonValueContainter()) {
         auto &json = _data->json;
         for (const auto &it : o) {
             json[it.first] = it.second._data->json;
@@ -238,10 +238,11 @@ namespace dsinfer {
     std::string JsonValue::toJson(int indent) const {
         return _data->json.dump(indent);
     }
-    JsonValue JsonValue::fromJson(const std::string &json, std::string *error) {
+    JsonValue JsonValue::fromJson(const std::string &json, bool ignore_comments,
+                                  std::string *error) {
         JsonValue val;
         try {
-            auto ex = nlohmann::json::parse(json);
+            auto ex = nlohmann::json::parse(json, nullptr, true, ignore_comments);
             val._data->json = ex;
         } catch (const std::exception &e) {
             if (error)

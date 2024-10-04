@@ -425,7 +425,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     // Initialize driver
     {
         DS::Error error;
-        if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit)
+        if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit, true)
                                                    : ctx.startupConfig.driver.init,
                                 &error)) {
             throw std::runtime_error(DS::formatTextN(R"(failed to initialize driver "%1": %2)",
@@ -477,6 +477,10 @@ static int cmd_pack(const SCL::ParseResult &result) {
 }
 
 int main(int argc, char *argv[]) {
+    DS::JsonObject obj;
+    obj["ep"] = "dml";
+    printf("%s\n", DS::JsonValue(obj).toJson().c_str());
+
     SCL::Command statCommand = [] {
         SCL::Command command("stat", "Display package status");
         command.addArguments({

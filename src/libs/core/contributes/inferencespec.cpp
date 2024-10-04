@@ -103,7 +103,7 @@ namespace dsinfer {
             ss << file.rdbuf();
 
             std::string error2;
-            auto root = JsonValue::fromJson(ss.str(), &error2);
+            auto root = JsonValue::fromJson(ss.str(), true, &error2);
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
