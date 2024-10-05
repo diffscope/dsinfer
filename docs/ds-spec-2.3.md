@@ -43,19 +43,19 @@ Library 内多使用`json`作为声明文件，我们规定，声明文件中使
             {
                 "id": "pitch",
                 "class": "com.diffsinger.InferenceInterpreter.PitchInference",
-                "configuration": "./inferences/pitch.json"
+                "configuration": "./inferences/pitch/config.json"
             },
             {
                 "id": "variance",
                 "class": "com.diffsinger.InferenceInterpreter.VarianceInference",
-                "configuration": "./inferences/variance.json"
+                "configuration": "./inferences/variance/config.json"
             }
         ],
         "singers": [
             {
                 "id": "zhibin",
                 "model": "diffsinger",
-                "path": "./characters/zhibin.json"
+                "path": "./characters/zhibin/config.json"
             }
         ]
     },
@@ -259,7 +259,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 
 ## 3. 工具开发
 
-下面介绍一种经典的工具套件，命名为`dsinfer-cli`。
+dsinfer 库提供一个命令行工具，名称为`dsinfer-cli`。
 
 ### 功能贡献
 
@@ -354,3 +354,13 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 - `stop`：立即停止推理任务（同步）
 - `state`：推理任务状态
 - `result`：推理结果
+
+<!-- 推理任务的输入格式，推荐从以下基本格式进行扩展。
+```json
+{
+    "type": "inference",
+    "content": {
+         "class": "com.diffsinger.InferenceInterpreter.DurationPrediction",
+    }
+}
+``` -->

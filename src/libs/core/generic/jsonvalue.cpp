@@ -20,6 +20,9 @@ namespace dsinfer {
                 json = false;
                 break;
             }
+            case Integer:
+                json = 0;
+                break;
             case Double: {
                 json = 0.0;
                 break;
@@ -29,7 +32,7 @@ namespace dsinfer {
                 break;
             }
             case Binary:
-                json = std::vector<uint8_t>();
+                json = nlohmann::json::binary_t();
                 break;
             case Array: {
                 json = nlohmann::json::array();
@@ -73,7 +76,7 @@ namespace dsinfer {
 
     JsonValue::JsonValue(const std::vector<uint8_t> &bytes) : _data(new JsonValueContainter()) {
         auto &json = _data->json;
-        json = bytes;
+        json = nlohmann::json::binary_t(bytes);
     }
 
     JsonValue::JsonValue(const uint8_t *data, int size) : _data(new JsonValueContainter()) {
@@ -81,14 +84,14 @@ namespace dsinfer {
         json = std::vector<uint8_t>(data, data + size);
     }
 
-    JsonValue::JsonValue(const JsonValue::_Array &a) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const _Array &a) : _data(new JsonValueContainter()) {
         auto &json = _data->json;
         for (const auto &item : a) {
             json.push_back(item._data->json);
         }
     }
 
-    JsonValue::JsonValue(const JsonValue::_Object &o) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const _Object &o) : _data(new JsonValueContainter()) {
         auto &json = _data->json;
         for (const auto &it : o) {
             json[it.first] = it.second._data->json;
@@ -123,6 +126,8 @@ namespace dsinfer {
                 break;
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_integer:
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_unsigned:
+                type = Integer;
+                break;
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_float:
                 type = Double;
                 break;
@@ -139,7 +144,7 @@ namespace dsinfer {
         if (json.is_boolean()) {
             return json.get<bool>();
         }
-        return false;
+        return defaultValue;
     }
     int JsonValue::toInt(int defaultValue) const {
         auto &json = _data->json;
@@ -153,7 +158,7 @@ namespace dsinfer {
             default:
                 break;
         }
-        return 0;
+        return defaultValue;
     }
     double JsonValue::toDouble(double defaultValue) const {
         auto &json = _data->json;
@@ -167,23 +172,23 @@ namespace dsinfer {
             default:
                 break;
         }
-        return 0;
+        return defaultValue;
     }
     std::string JsonValue::toString(const std::string &defaultValue) const {
         auto &json = _data->json;
         if (json.is_string()) {
             return json.get<std::string>();
         }
-        return {};
+        return defaultValue;
     }
     std::vector<uint8_t> JsonValue::toBinary(const std::vector<uint8_t> &defaultValue) const {
         auto &json = _data->json;
         if (json.is_binary()) {
-            return json.get<std::vector<uint8_t>>();
+            return json.get_binary();
         }
-        return {};
+        return defaultValue;
     }
-    JsonValue::_Array JsonValue::toArray(const JsonValue::_Array &defaultValue) const {
+    JsonValue::_Array JsonValue::toArray(const _Array &defaultValue) const {
         auto &json = _data->json;
         if (json.is_array()) {
             _Array a;
@@ -195,9 +200,9 @@ namespace dsinfer {
             }
             return a;
         }
-        return {};
+        return defaultValue;
     }
-    JsonValue::_Object JsonValue::toObject(const JsonValue::_Object &defaultValue) const {
+    JsonValue::_Object JsonValue::toObject(const _Object &defaultValue) const {
         auto &json = _data->json;
         if (json.is_object()) {
             _Object o;
@@ -208,7 +213,7 @@ namespace dsinfer {
             }
             return o;
         }
-        return {};
+        return defaultValue;
     }
     JsonValue JsonValue::operator[](const char *key) const {
         auto &json = _data->json;
@@ -243,6 +248,22 @@ namespace dsinfer {
         JsonValue val;
         try {
             auto ex = nlohmann::json::parse(json, nullptr, true, ignore_comments);
+            val._data->json = ex;
+        } catch (const std::exception &e) {
+            if (error)
+                *error = e.what();
+        }
+        return val;
+    }
+
+    std::vector<uint8_t> JsonValue::toCbor() const {
+        return nlohmann::json::to_cbor(_data->json);
+    }
+
+    JsonValue JsonValue::fromCbor(const std::vector<uint8_t> &cbor, std::string *error) {
+        JsonValue val;
+        try {
+            auto ex = nlohmann::json::from_cbor(cbor, false, true);
             val._data->json = ex;
         } catch (const std::exception &e) {
             if (error)

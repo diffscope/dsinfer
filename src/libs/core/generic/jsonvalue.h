@@ -16,9 +16,10 @@ namespace dsinfer {
         enum Type {
             Null = 0x0,
             Bool = 0x1,
-            Double = 0x2,
-            String = 0x3,
-            Binary = 0x4,
+            Integer = 0x2,
+            Double = 0x3,
+            String = 0x4,
+            Binary = 0x5,
             Array = 0x11,
             Object = 0x12,
             Undefined = 0x80
@@ -58,6 +59,9 @@ namespace dsinfer {
         }
         inline bool isBool() const {
             return type() == Bool;
+        }
+        inline bool isInteger() const {
+            return type() == Integer;
         }
         inline bool isDouble() const {
             return type() == Double;
@@ -104,6 +108,9 @@ namespace dsinfer {
         std::string toJson(int indent = -1) const;
         static JsonValue fromJson(const std::string &json, bool ignore_comments,
                                   std::string *error = nullptr);
+
+        std::vector<uint8_t> toCbor() const;
+        static JsonValue fromCbor(const std::vector<uint8_t> &cbor, std::string *error = nullptr);
 
     protected:
         std::shared_ptr<JsonValueContainter> _data;

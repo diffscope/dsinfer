@@ -477,10 +477,6 @@ static int cmd_pack(const SCL::ParseResult &result) {
 }
 
 int main(int argc, char *argv[]) {
-    DS::JsonObject obj;
-    obj["ep"] = "dml";
-    printf("%s\n", DS::JsonValue(obj).toJson().c_str());
-
     SCL::Command statCommand = [] {
         SCL::Command command("stat", "Display package status");
         command.addArguments({
