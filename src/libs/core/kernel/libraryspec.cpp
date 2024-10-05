@@ -27,7 +27,8 @@ namespace dsinfer {
         }
     }
 
-    static LibraryDependency readDependency(const JsonValue &val) {
+    static bool readDependency(const JsonValue &val, LibraryDependency *out,
+                               std::string *errorMessage) {
         if (val.isString()) {
             auto identifier = ContributeIdentifier::fromString(val.toString());
             if (!identifier.library().empty() && !identifier.version().isEmpty() &&
@@ -35,13 +36,16 @@ namespace dsinfer {
                 LibraryDependency res;
                 res.id = identifier.library();
                 res.version = identifier.version();
-                return res;
+                *out = res;
+                return true;
             }
-            return {};
+            *errorMessage = R"(invalid id)";
+            return false;
         }
 
         if (!val.isObject()) {
-            return {};
+            *errorMessage = R"(not an object)";
+            return false;
         }
 
         std::string id;
@@ -51,11 +55,13 @@ namespace dsinfer {
         auto obj = val.toObject();
         auto it = obj.find("id");
         if (it == obj.end()) {
-            return {};
+            *errorMessage = R"(missing "id" field)";
+            return false;
         }
         id = it->second.toString();
         if (id.empty()) {
-            return {};
+            *errorMessage = R"(invalid id)";
+            return false;
         }
 
         it = obj.find("version");
@@ -71,7 +77,8 @@ namespace dsinfer {
         LibraryDependency res(required);
         res.id = std::move(id);
         res.version = version;
-        return res;
+        *out = res;
+        return true;
     }
 
     bool LibrarySpec::Impl::parse(const std::filesystem::path &dir,
@@ -98,6 +105,7 @@ namespace dsinfer {
         }
 
         auto canonicalDir = fs::canonical(dir);
+        const auto &descPath = canonicalDir / _TSTR("desc.json");
 
         // id
         {
@@ -105,7 +113,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    R"(missing "id" field in library manifest)",
+                    formatTextN(R"(%1: missing "id" field)", descPath),
                 };
                 return false;
             }
@@ -113,7 +121,7 @@ namespace dsinfer {
             if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
-                    R"("id" field has invalid value in library manifest)",
+                    formatTextN(R"(%1: "id" field has invalid value)", descPath),
                 };
                 return false;
             }
@@ -124,7 +132,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    R"(missing "version" field in library manifest)",
+                    formatTextN(R"(%1: missing "version" field)", descPath),
                 };
                 return false;
             }
@@ -132,7 +140,7 @@ namespace dsinfer {
             if (version_.isEmpty()) {
                 *error = {
                     Error::InvalidFormat,
-                    R"(library version cannot be empty)",
+                    formatTextN(R"(%1: invalid version)", descPath),
                 };
                 return false;
             }
@@ -188,19 +196,19 @@ namespace dsinfer {
                 if (!it->second.isArray()) {
                     *error = {
                         Error::InvalidFormat,
-                        R"("dependencies" field has invalid value in library manifest)",
+                        formatTextN(R"(%1: "dependencies" field has invalid value)", descPath),
                     };
                     return false;
                 }
 
                 for (const auto &item : it->second.toArray()) {
-                    auto dep = readDependency(item);
-                    if (dep.id.empty()) {
+                    std::string errorMessage;
+                    LibraryDependency dep;
+                    if (!readDependency(item, &dep, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(
-                                R"(unknown data in "dependencies" field entry %1 in library manifest)",
-                                dependencies_.size()),
+                            formatTextN(R"(%1: invalid "dependencies" field entry %2: %3)",
+                                        descPath, dependencies_.size() + 1, errorMessage),
                         };
                         return false;
                     }
@@ -295,7 +303,7 @@ namespace dsinfer {
         if (!file.is_open()) {
             *error = {
                 Error::FileNotFound,
-                formatTextN(R"(failed to open library manifest "%1")", descPath),
+                formatTextN(R"("%1": failed to open library manifest)", descPath),
             };
             return false;
         }
@@ -308,14 +316,14 @@ namespace dsinfer {
         if (!error2.empty()) {
             *error = {
                 Error::InvalidFormat,
-                formatTextN(R"(invalid library manifest format "%1": %2)", descPath, error2),
+                formatTextN(R"("%1": invalid library manifest format: %2)", descPath, error2),
             };
             return false;
         }
         if (!root.isObject()) {
             *error = {
                 Error::InvalidFormat,
-                formatTextN(R"(invalid library manifest format "%1")", descPath),
+                formatTextN(R"("%1": invalid library manifest format)", descPath),
             };
             return false;
         }

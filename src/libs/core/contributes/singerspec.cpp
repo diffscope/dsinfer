@@ -4,33 +4,56 @@
 #include <fstream>
 
 #include "format.h"
-#include "inferencespec.h"
 
 namespace fs = std::filesystem;
 
 namespace dsinfer {
 
-    static SingerImport readSingerImport(const JsonValue &val) {
-        if (val.isString()) {
-            auto inference = ContributeIdentifier::fromString(val.toString());
-            SingerImport res;
-            res.inference = inference;
-            return res;
+    static bool readSingerImport(const JsonValue &val, SingerImport *out,
+                                 std::string *errorMessage) {
+        if (!val.isObject()) {
+            *errorMessage = R"(not an object)";
+            return false;
         }
-
         auto obj = val.toObject();
         auto it = obj.find("id");
         if (it == obj.end()) {
-            return {};
+            *errorMessage = R"(missing "id" field)";
+            return false;
         }
         auto inference = ContributeIdentifier::fromString(it->second.toString());
         SingerImport res;
         res.inference = inference;
+
+        // roles
+        it = obj.find("roles");
+        if (it == obj.end() || !it->second.isArray()) {
+            *errorMessage = R"(missing "roles" field)";
+            return false;
+        }
+        const auto &arr = it->second.toArray();
+        for (const auto &item : arr) {
+            if (!item.isString()) {
+                *errorMessage =
+                    formatTextN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
+                return false;
+            }
+            auto role = item.toString();
+            if (role.empty()) {
+                *errorMessage =
+                    formatTextN(R"(empty item in roles field entry %1)", res.roles.size() + 1);
+                return false;
+            }
+            res.roles.emplace_back(role);
+        }
+
+        // options
         it = obj.find("options");
         if (it != obj.end()) {
             res.options = it->second;
         }
-        return res;
+        *out = res;
+        return false;
     }
 
     bool SingerSpec::Impl::read(const std::filesystem::path &basePath, const JsonObject &obj,
@@ -211,12 +234,13 @@ namespace dsinfer {
                 }
 
                 for (const auto &item : it->second.toArray()) {
-                    auto singerImport = readSingerImport(item);
-                    if (singerImport.inference.id().empty()) {
+                    SingerImport singerImport;
+                    std::string errorMessage;
+                    if (readSingerImport(item, &singerImport, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(R"(%1: unknown data in "imports" field entry %2)",
-                                        configPath, imports_.size()),
+                            formatTextN(R"(%1: invalid "imports" field entry %2: %3)", configPath,
+                                        imports_.size() + 1, errorMessage),
                         };
                         return false;
                     }
@@ -293,7 +317,7 @@ namespace dsinfer {
         return impl.configuration;
     }
 
-    std::vector<Inference *> SingerSpec::createInferences(Error *error) const {
+    std::vector<Inference *> SingerSpec::createInferences(Error *error) {
         __dsinfer_impl_t;
         return {};
     }

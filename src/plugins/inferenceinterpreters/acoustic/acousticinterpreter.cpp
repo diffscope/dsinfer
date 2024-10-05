@@ -29,9 +29,9 @@ namespace dsinfer {
                                            Error *error) {
         switch (spec->apiLevel()) {
             case 1:
-                return new AcousticInference(spec->env());
+                return new AcousticInference(spec);
             case 2:
-                return new AcousticInference(spec->env());
+                return new AcousticInference(spec);
             default:
                 break;
         }

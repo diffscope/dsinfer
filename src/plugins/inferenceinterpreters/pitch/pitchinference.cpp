@@ -6,11 +6,11 @@ namespace dsinfer {
 
     class PitchInference::Impl : public Inference::Impl {
     public:
-        explicit Impl(Environment *env) : Inference::Impl(env) {
+        explicit Impl(const InferenceSpec *spec) : Inference::Impl(spec) {
         }
     };
 
-    PitchInference::PitchInference(Environment *env) : Inference(*new Impl(env)) {
+    PitchInference::PitchInference(const InferenceSpec *spec) : Inference(*new Impl(spec)) {
     }
 
     PitchInference::~PitchInference() = default;

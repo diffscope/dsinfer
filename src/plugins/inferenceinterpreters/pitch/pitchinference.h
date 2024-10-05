@@ -7,7 +7,7 @@ namespace dsinfer {
 
     class PitchInference : public Inference {
     public:
-        explicit PitchInference(Environment *env);
+        explicit PitchInference(const InferenceSpec *spec);
         ~PitchInference();
 
     public:

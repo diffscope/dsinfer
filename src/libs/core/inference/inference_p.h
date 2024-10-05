@@ -7,11 +7,11 @@ namespace dsinfer {
 
     class DSINFER_EXPORT Inference::Impl {
     public:
-        explicit Impl(Environment *env) : env(env) {
+        explicit Impl(const InferenceSpec *spec) : spec(spec) {
         }
         virtual ~Impl() = default;
 
-        Environment *env;
+        const InferenceSpec *spec;
     };
 
 }

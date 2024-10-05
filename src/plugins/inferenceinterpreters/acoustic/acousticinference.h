@@ -9,7 +9,7 @@ namespace dsinfer {
 
     class AcousticInference : public Inference {
     public:
-        explicit AcousticInference(Environment *env);
+        explicit AcousticInference(const InferenceSpec *spec);
         ~AcousticInference();
 
     public:

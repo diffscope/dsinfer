@@ -6,11 +6,11 @@ namespace dsinfer {
 
     class AcousticInference::Impl : public Inference::Impl {
     public:
-        explicit Impl(Environment *env) : Inference::Impl(env) {
+        explicit Impl(const InferenceSpec *spec) : Inference::Impl(spec) {
         }
     };
 
-    AcousticInference::AcousticInference(Environment *env) : Inference(*new Impl(env)) {
+    AcousticInference::AcousticInference(const InferenceSpec *spec) : Inference(*new Impl(spec)) {
     }
 
     AcousticInference::~AcousticInference() = default;

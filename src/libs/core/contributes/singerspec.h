@@ -15,6 +15,7 @@ namespace dsinfer {
     public:
         ContributeIdentifier inference;
         JsonValue options;
+        std::vector<std::string> roles;
     };
 
     class DSINFER_EXPORT SingerSpec : public ContributeSpec {
@@ -36,7 +37,7 @@ namespace dsinfer {
         JsonObject configuration() const;
 
     public:
-        std::vector<class Inference *> createInferences(Error *error) const;
+        std::vector<class Inference *> createInferences(Error *error);
 
     protected:
         class Impl;

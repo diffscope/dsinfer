@@ -465,7 +465,13 @@ static int cmd_exec(const SCL::ParseResult &result) {
         }
     }
 
-    // Handle inferences
+    // Check inference api levels
+    // for (const auto &inference : std::as_const(inferences)) {
+    //     auto spec = inference->spec();
+    //     if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
+    //         // Not supported
+    //     }
+    // }
     (void) inferences;
 
     return 0;

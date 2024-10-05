@@ -243,7 +243,7 @@ namespace dsinfer {
         return impl.configuration;
     }
 
-    Inference *InferenceSpec::create(const JsonObject &options, Error *error) const {
+    Inference *InferenceSpec::create(const JsonObject &options, Error *error) {
         __dsinfer_impl_t;
         return impl.interp->create(this, options, error);
     }

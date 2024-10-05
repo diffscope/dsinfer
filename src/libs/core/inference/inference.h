@@ -6,9 +6,11 @@
 
 namespace dsinfer {
 
+    class InferenceSpec;
+
     class DSINFER_EXPORT Inference {
     public:
-        explicit Inference(Environment *env);
+        explicit Inference(const InferenceSpec *env);
         virtual ~Inference();
 
         enum State {
@@ -28,6 +30,7 @@ namespace dsinfer {
         virtual JsonValue result() const = 0;
 
     public:
+        const InferenceSpec *spec() const;
         Environment *env() const;
 
     protected:

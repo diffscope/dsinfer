@@ -28,7 +28,7 @@ namespace dsinfer {
         JsonObject configuration() const;
 
     public:
-        class Inference *create(const JsonObject &options, Error *error) const;
+        class Inference *create(const JsonObject &options, Error *error);
         bool validate(const JsonValue &options, std::string *error) const;
 
     protected:

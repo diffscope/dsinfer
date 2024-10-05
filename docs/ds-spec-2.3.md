@@ -195,13 +195,30 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
     "background": "../assets/sprite.png",
     "demoAudio": "../assets/demo.wav",
     "imports": [
-        "acoustic-1",
-        "bar/pitch",
+        {
+            "id": "acoustic-1",
+            "roles": [
+                "acoustic"
+            ]
+        },
+        {
+            "id": "bar/pitch",
+            "roles": [
+                "pitch"
+            ]
+        },
         {
             "id": "variance-A",
             "options": {
-                "prediction": "duration"
-            }
+                "predictions": [
+                    "tension",
+                    "energy"
+                ]
+            },
+            "roles": [
+                "tension",
+                "energy"
+            ]
         }
     ],
     "configuration": {
@@ -216,6 +233,7 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
     + `imports`：歌手依赖的推理模块
         + `id`：依赖的推理模块 ID，如果是别的库的那么使用`lib[version]/id`的形式，`lib`与`version`可以省略
         + `options`：输出参数，需要符合对应的 API 版本以及推理模块的`schema`的限制
+        + `roles`：在合成流程中的职责
     + `avatar`：头像
     + `background`：可用于 SVS 编辑器显示的立绘背景
     + `demoAudio`：可用于 SVS 编辑器预览的声音
