@@ -1,0 +1,38 @@
+[
+  {
+    "session": 1,  // session id
+    "input": [
+      {
+        "name": "f0", // input parameter name
+        "data": "<binary bytes>", // data as binary bytes
+        "shape": [1, 100], // shape
+        "type": "float", // data type
+        "bindTo": [2] // optional, which session id(s) to bind to
+      },
+      {
+        "name": "steps",
+        "data": "<binary bytes>",
+        "shape": [1],
+        "type": "int64_t"
+      }
+    ],
+    "output": [
+      {
+        "name": "x_masks" // output parameter name
+      },
+      {
+        "name": "encoder_out",
+        "bindTo": [2] // optional, which session id(s) to bind to
+      }
+    ]
+  },
+  {
+    "session": 2,
+    "input": [],
+    "output": [
+      {
+        "name": "prediction"
+      }
+    ]
+  }
+]
