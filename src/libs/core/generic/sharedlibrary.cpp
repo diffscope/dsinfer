@@ -12,6 +12,12 @@
 #  include <string.h>
 #endif
 
+#ifdef __APPLE__
+#  define PRIOR_LIBRARY_PATH_KEY "DYLD_LIBRARY_PATH"
+#else
+#  define PRIOR_LIBRARY_PATH_KEY "LD_LIBRARY_PATH"
+#endif
+
 namespace fs = std::filesystem;
 
 namespace dsinfer {
@@ -71,6 +77,21 @@ namespace dsinfer {
 
         std::string res(buf);
         delete[] buf;
+        return res;
+    }
+
+    static std::wstring winGetFullDllDirectory() {
+        auto size = ::GetDllDirectoryW(0, nullptr);
+        if (!size) {
+            return {};
+        }
+
+        std::wstring res;
+        res.resize(size);
+        size = ::GetDllDirectoryW(size, res.data());
+        if (!size) {
+            return {};
+        }
         return res;
     }
 
@@ -280,6 +301,17 @@ namespace dsinfer {
         }
         return false;
 #endif
+    }
+
+    fs::path SharedLibrary::setLibraryPath(const fs::path &path) {
+#ifdef _WIN32
+        std::wstring org = winGetFullDllDirectory();
+        ::SetDllDirectoryW(path.c_str());
+#else
+        std::string org = getenv(PRIOR_LIBRARY_PATH_KEY);
+        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path).data());
+#endif
+        return org;
     }
 
 }

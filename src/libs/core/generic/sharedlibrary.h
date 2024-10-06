@@ -37,6 +37,7 @@ namespace dsinfer {
         std::string lastError() const;
 
         static bool isLibrary(const std::filesystem::path &path);
+        static std::filesystem::path setLibraryPath(const std::filesystem::path &path);
 
     protected:
         class Impl;
