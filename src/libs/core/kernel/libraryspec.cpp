@@ -150,6 +150,13 @@ namespace dsinfer {
             auto it = obj.find("compatVersion");
             if (it != obj.end()) {
                 compatVersion_ = VersionNumber::fromString(it->second.toString());
+                if (compatVersion_ > version_) {
+                    *error = {
+                        Error::InvalidFormat,
+                        formatTextN(R"(%1: invalid compat version)", descPath),
+                    };
+                    return false;
+                }
             } else {
                 compatVersion_ = version_;
             }
@@ -438,79 +445,6 @@ namespace dsinfer {
     Environment *LibrarySpec::env() const {
         __dsinfer_impl_t;
         return impl.env;
-    }
-
-    std::filesystem::path
-        LibrarySpec::searchLibrary(const std::vector<std::filesystem::path> &paths,
-                                   const std::string &id, const VersionNumber &version,
-                                   bool precise) {
-        try {
-            for (const auto &path : paths) {
-                for (const auto &entry : fs::directory_iterator(path)) {
-                    const auto filename = entry.path().filename();
-                    if (!entry.is_directory()) {
-                        continue;
-                    }
-
-                    JsonObject obj;
-                    Error error;
-                    if (!Impl::readDesc(entry.path(), &obj, &error)) {
-                        continue;
-                    }
-
-                    // Search id, version, compatVersion
-                    std::string id_;
-                    VersionNumber version_;
-                    VersionNumber compatVersion_;
-
-                    // id
-                    {
-                        auto it = obj.find("id");
-                        if (it == obj.end()) {
-                            continue;
-                        }
-                        id_ = it->second.toString();
-                        if (!ContributeIdentifier::isValidId(id_)) {
-                            continue;
-                        }
-                    }
-                    // version
-                    {
-                        auto it = obj.find("version");
-                        if (it == obj.end()) {
-                            continue;
-                        }
-                        version_ = VersionNumber::fromString(it->second.toString());
-                    }
-                    // compatVersion
-                    {
-                        auto it = obj.find("compatVersion");
-                        if (it != obj.end()) {
-                            compatVersion_ = VersionNumber::fromString(it->second.toString());
-                        } else {
-                            compatVersion_ = version_;
-                        }
-                    }
-
-                    // Check
-                    if (id_ != id) {
-                        continue;
-                    }
-                    if (precise) {
-                        if (version_ != version) {
-                            continue;
-                        }
-                    } else {
-                        if (compatVersion_ > version) {
-                            continue;
-                        }
-                    }
-                    return fs::canonical(entry.path());
-                }
-            }
-        } catch (...) {
-        }
-        return {};
     }
 
     LibrarySpec::LibrarySpec(Environment *env) : _impl(new Impl(this, env)) {

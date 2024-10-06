@@ -284,7 +284,8 @@ static int cmd_stat(const SCL::ParseResult &result) {
 
     if (auto error = lib->error(); !error.ok()) {
         printf("\n");
-        Context::warning("Warning: failed to load package: %1", error.message());
+        Context::warning(R"(Warning: failed to load package "%1": %2)", lib->path(),
+                         error.message());
     }
 
     std::ignore = env.closeLibrary(lib);

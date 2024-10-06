@@ -90,6 +90,22 @@ namespace dsinfer {
         return result;
     }
 
+    DSINFER_EXPORT std::string normalizePathSeparators(const std::string &path, bool native) {
+        std::string res = path;
+#if _WIN32
+        if (native) {
+            std::replace(res.begin(), res.end(), '/', '\\');
+
+        } else {
+            std::replace(res.begin(), res.end(), '\\', '/');
+        }
+#else
+        (void) native;
+        std::replace(res.begin(), res.end(), '\\', '/');
+#endif
+        return res;
+    }
+
     std::string formatText(const std::string &format, const std::vector<std::string> &args) {
         std::string result = format;
         for (size_t i = 0; i < args.size(); i++) {

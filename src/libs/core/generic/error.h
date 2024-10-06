@@ -15,6 +15,7 @@ namespace dsinfer {
             InvalidFormat,
             FileNotFound,
             FileDuplicated,
+            RecursiveDependency,
             FeatureNotSupported,
             LibraryNotFound,
         };

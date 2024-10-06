@@ -36,6 +36,67 @@ namespace dsinfer {
         }
     }
 
+    void Environment::Impl::refreshLibraryIndexes() {
+        cachedLibraryIndexesMap.clear();
+        for (const auto &path : std::as_const(libraryPaths)) {
+            try {
+                for (const auto &entry : fs::directory_iterator(path)) {
+                    const auto filename = entry.path().filename();
+                    if (!entry.is_directory()) {
+                        continue;
+                    }
+
+                    JsonObject obj;
+                    Error error;
+                    if (!LibrarySpec::Impl::readDesc(entry.path(), &obj, &error)) {
+                        continue;
+                    }
+
+                    // Search id, version, compatVersion
+                    std::string id_;
+                    VersionNumber version_;
+                    VersionNumber compatVersion_;
+
+                    // id
+                    {
+                        auto it = obj.find("id");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        id_ = it->second.toString();
+                        if (!ContributeIdentifier::isValidId(id_)) {
+                            continue;
+                        }
+                    }
+                    // version
+                    {
+                        auto it = obj.find("version");
+                        if (it == obj.end()) {
+                            continue;
+                        }
+                        version_ = VersionNumber::fromString(it->second.toString());
+                    }
+                    // compatVersion
+                    {
+                        auto it = obj.find("compatVersion");
+                        if (it != obj.end()) {
+                            compatVersion_ = VersionNumber::fromString(it->second.toString());
+                        } else {
+                            compatVersion_ = version_;
+                        }
+                    }
+
+                    // Store
+                    cachedLibraryIndexesMap[id_][version_] = {fs::canonical(entry.path()),
+                                                              compatVersion_};
+                }
+            } catch (...) {
+            }
+        }
+
+        libraryPathsDirty = false;
+    }
+
     Environment::Environment() : PluginFactory(*new Impl(this)) {
     }
 
@@ -54,6 +115,9 @@ namespace dsinfer {
                 continue;
             }
             impl.libraryPaths.push_back(fs::canonical(path));
+            if (!impl.libraryPathsDirty) {
+                impl.libraryPathsDirty = true;
+            }
         }
     }
     void Environment::setLibraryPaths(const std::vector<std::filesystem::path> &paths) {
@@ -65,6 +129,9 @@ namespace dsinfer {
                 continue;
             }
             impl.libraryPaths.push_back(fs::canonical(path));
+            if (!impl.libraryPathsDirty) {
+                impl.libraryPathsDirty = true;
+            }
         }
     }
     const std::vector<std::filesystem::path> &Environment::libraryPaths() const {
@@ -111,7 +178,7 @@ namespace dsinfer {
         std::vector<ContributeSpec *> contributes;
 
         auto spec_d = spec->_impl.get();
-        if (!spec_d->parse(path, impl.regSpecMap, &contributes, error)) {
+        if (!spec_d->parse(canonicalPath, impl.regSpecMap, &contributes, error)) {
             delete spec;
             deleteAll(contributes); // Maybe redundant
             return nullptr;
@@ -122,7 +189,7 @@ namespace dsinfer {
             contribute->_impl->parent = spec;
         }
 
-        // Add to library
+        // Add to library's data space
         for (const auto &contribute : std::as_const(contributes)) {
             spec_d->contributes[contribute->type()][contribute->id()] = contribute;
         }
@@ -133,7 +200,6 @@ namespace dsinfer {
             return spec;
         }
 
-        // Check duplication
         const auto &removePending = [&impl, spec] {
             auto it = impl.pendingLibraries.find(spec->id());
             auto &versionSet = it->second;
@@ -142,16 +208,26 @@ namespace dsinfer {
                 impl.pendingLibraries.erase(it);
             }
         };
+
+        // Check duplications
         do {
             std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
             auto &libMap = impl.loadedLibraryMap;
+            Error error1;
 
-            // Check loaded libraries
+            // Check if a library with same id and version but different path is loaded
             {
                 auto it = libMap.idIndexes.find(spec->id());
                 if (it != libMap.idIndexes.end()) {
-                    const auto &versionSet = it->second;
-                    if (versionSet.count(spec->version())) {
+                    const auto &versionMap = it->second;
+                    auto it2 = versionMap.find(spec->version());
+                    if (it2 != versionMap.end()) {
+                        auto lib = *it2->second;
+                        error1 = {
+                            Error::FileDuplicated,
+                            formatTextN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
+                                        spec->id(), spec->version().toString(), lib.spec->path()),
+                        };
                         goto out_dup;
                     }
                 }
@@ -161,25 +237,34 @@ namespace dsinfer {
             {
                 auto it = impl.pendingLibraries.find(spec->id());
                 if (it != impl.pendingLibraries.end()) {
-                    const auto &versionSet = it->second;
-                    if (versionSet.count(spec->version())) {
+                    const auto &versionMap = it->second;
+                    auto it2 = versionMap.find(spec->version());
+                    if (it2 != versionMap.end()) {
+                        error1 = {
+                            Error::RecursiveDependency,
+                            formatTextN(
+                                R"(recursive depencency chain detected: library "%1[%2]" in %3 is being loaded)",
+                                spec->id(), spec->version().toString(), it2->second),
+                        };
                         goto out_dup;
                     }
                 }
             }
 
-            impl.pendingLibraries[spec->id()].insert(spec->version());
+            impl.pendingLibraries[spec->id()][spec->version()] = spec->path();
             break;
 
         out_dup:
-            spec_d->err = {
-                Error::FileDuplicated,
-                formatTextN(R"(duplicated library "%1[%2]" has been loaded)", spec->id(),
-                            spec->version().toString()),
-            };
+            spec_d->err = error1;
             impl.resourceLibraries.insert(spec);
             return spec;
         } while (false);
+
+        // Refresh dependency cache if needed
+        if (impl.libraryPathsDirty) {
+            std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
+            impl.refreshLibraryIndexes();
+        }
 
         // Load dependencies
         std::vector<LibrarySpec *> dependencies;
@@ -188,51 +273,71 @@ namespace dsinfer {
                 std::ignore = closeLibrary(*it);
             }
         };
-        do {
-            Error error1;
-            std::unordered_set<fs::path> dependencyPaths{spec->path()};
-            for (const auto &dep : std::as_const(spec->dependencies())) {
-                std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
-                auto depPath =
-                    LibrarySpec::searchLibrary(impl.libraryPaths, dep.id, dep.version, false);
-                lock.unlock();
-                if (depPath.empty()) {
-                    if (!dep.required) {
-                        continue;
-                    }
-                    error1 = {
-                        Error::LibraryNotFound,
-                        formatTextN(R"(required library "%1[%2]" not found)", dep.id,
-                                    dep.version.toString()),
-                    };
-                    goto out_deps;
-                }
-
-                if (dependencyPaths.count(depPath)) {
-                    error1 = {
-                        Error::LibraryNotFound,
-                        formatTextN("recursive dependency chain detected: %1", depPath),
-                    };
-                    goto out_deps;
-                }
-
-                Error error2;
-                auto depLib = openLibrary(depPath, true, &error2);
-                if (!depLib) {
-                    if (!dep.required) {
-                        continue;
-                    }
-                    error1 = {
-                        Error::LibraryNotFound,
-                        formatTextN(R"(failed to load dependency "%1[%2]" in "%3": %4)", dep.id,
-                                    dep.version.toString(), depPath, error2.message()),
-                    };
-                    goto out_deps;
-                }
-                dependencies.push_back(depLib);
-                dependencyPaths.emplace(depPath);
+        auto searchDependencies = [&impl](const std::string &id,
+                                          const VersionNumber &version) -> std::vector<fs::path> {
+            std::vector<fs::path> res;
+            auto it = impl.cachedLibraryIndexesMap.find(id);
+            if (it == impl.cachedLibraryIndexesMap.end()) {
+                return {};
             }
 
+            // Search precise version
+            const auto &versionMap = it->second;
+            {
+                auto it2 = versionMap.find(version);
+                if (it2 != versionMap.end()) {
+                    res.emplace_back(it2->second.path);
+                }
+            }
+
+            // Test from high version to low version
+            for (auto it2 = versionMap.rbegin(); it2 != versionMap.rend(); ++it2) {
+                if (it2->first < version) {
+                    break;
+                }
+                const auto &brief = it2->second;
+                if (brief.compatVersion <= version) {
+                    res.emplace_back(it2->second.path);
+                }
+            }
+            return res;
+        };
+        do {
+            Error error1;
+            for (const auto &dep : std::as_const(spec->dependencies())) {
+                VersionNumber depVersion;
+
+                // Try to load all matched libraries
+                bool success = false;
+                auto depPaths = searchDependencies(dep.id, dep.version);
+                for (auto it = depPaths.rbegin(); it != depPaths.rend(); ++it) {
+                    const auto &depPath = *it;
+                    Error error2;
+                    auto depLib = openLibrary(depPath, true, &error2);
+                    if (!depLib) {
+                        continue; // ignore
+                    }
+                    dependencies.push_back(depLib);
+                    success = true;
+                    break;
+                }
+
+                if (success) {
+                    continue;
+                }
+
+                if (!dep.required) {
+                    continue; // ignore
+                }
+
+                // Not found
+                error1 = {
+                    Error::LibraryNotFound,
+                    formatTextN(R"(required library "%1[%2]" not found)", dep.id,
+                                dep.version.toString()),
+                };
+                goto out_deps;
+            }
             break;
 
         out_deps:

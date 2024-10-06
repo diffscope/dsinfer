@@ -37,6 +37,9 @@ namespace dsinfer {
 
     DSINFER_EXPORT std::filesystem::path cleanPath(const std::filesystem::path &path);
 
+    DSINFER_EXPORT std::string normalizePathSeparators(const std::string &path,
+                                                       bool native = false);
+
     template <class T>
     std::string anyToString(T &&t) {
         using T2 = std::decay_t<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -49,7 +52,7 @@ namespace dsinfer {
             oss << std::noshowpoint << t;
             return oss.str();
         } else if constexpr (std::is_same_v<T2, std::filesystem::path>) {
-            return pathToString(t);
+            return normalizePathSeparators(pathToString(t), true);
         } else if constexpr (std::is_same_v<T2, std::wstring>) {
             return wideToUtf8(t.data(), int(t.size()));
         } else if constexpr (std::is_same_v<T2, wchar_t *>) {

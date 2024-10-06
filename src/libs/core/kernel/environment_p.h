@@ -4,6 +4,7 @@
 #include <map>
 #include <list>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <dsinfer/environment.h>
 #include <dsinfer/contributespec.h>
@@ -20,6 +21,7 @@ namespace dsinfer {
 
     public:
         void closeAllLoadedLibraries();
+        void refreshLibraryIndexes();
 
         std::vector<ContributeRegistry *> registries;
         std::map<std::string, ContributeRegistry *> regSpecMap;
@@ -40,13 +42,19 @@ namespace dsinfer {
                                std::unordered_map<VersionNumber, decltype(libraries)::iterator>>
                 idIndexes;
             std::unordered_map<LibrarySpec *, decltype(libraries)::iterator> pointerIndexes;
-
         };
         LibraryMap loadedLibraryMap;
         std::unordered_set<LibrarySpec *> resourceLibraries;
 
+        struct LibraryBrief {
+            std::filesystem::path path;
+            VersionNumber compatVersion;
+        };
+        bool libraryPathsDirty = false;
+        std::unordered_map<std::string, std::map<VersionNumber, LibraryBrief>> cachedLibraryIndexesMap;
+
         // temp
-        std::unordered_map<std::string, std::unordered_set<VersionNumber>> pendingLibraries;
+        std::unordered_map<std::string, std::unordered_map<VersionNumber, std::filesystem::path>> pendingLibraries;
 
         mutable std::shared_mutex env_mtx;
     };
