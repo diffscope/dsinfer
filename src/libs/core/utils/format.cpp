@@ -4,6 +4,9 @@
 #  include <windows.h>
 #endif
 
+#include <algorithm>
+#include <cstring>
+
 namespace fs = std::filesystem;
 
 namespace dsinfer {
@@ -57,6 +60,7 @@ namespace dsinfer {
     }
 
     std::string ansiToUtf8(const char *s, int size) {
+#ifdef _WIN32
         if (size < 0) {
             size = (int) strlen(s);
         }
@@ -72,6 +76,9 @@ namespace dsinfer {
         utf16Str.resize(utf16Length);
         ::MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, s, size, utf16Str.data(), utf16Length);
         return wideToUtf8(utf16Str.data(), int(utf16Str.size()));
+#else
+        return std::string(s, size);
+#endif
     }
 
     std::filesystem::path cleanPath(const std::filesystem::path &path) {

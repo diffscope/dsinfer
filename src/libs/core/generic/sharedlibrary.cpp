@@ -1,5 +1,6 @@
 #include "sharedlibrary.h"
 
+#include <algorithm>
 #include <cctype>
 
 #ifdef _WIN32
@@ -290,6 +291,7 @@ namespace dsinfer {
                    return ::tolower(a) == ::tolower(b); //
                });
 #else
+        auto fileName = path.string();
         size_t soPos;
         if (fileName.size() >= 3 && (soPos = fileName.rfind(".so")) != std::string::npos) {
             // 检查 .so 后是否有版本号部分
@@ -309,7 +311,7 @@ namespace dsinfer {
         ::SetDllDirectoryW(path.c_str());
 #else
         std::string org = getenv(PRIOR_LIBRARY_PATH_KEY);
-        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path).data());
+        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path.string()).data());
 #endif
         return org;
     }

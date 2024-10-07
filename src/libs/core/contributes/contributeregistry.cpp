@@ -1,6 +1,8 @@
 #include "contributeregistry.h"
 #include "contributeregistry_p.h"
 
+#include <mutex>
+
 #include "contributespec_p.h"
 
 namespace dsinfer {
