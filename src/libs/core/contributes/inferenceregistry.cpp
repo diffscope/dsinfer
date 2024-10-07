@@ -1,5 +1,6 @@
 #include "inferenceregistry.h"
 
+#include <mutex>
 #include <unordered_map>
 #include <list>
 

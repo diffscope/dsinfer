@@ -5,7 +5,9 @@
 #endif
 
 #include <mutex>
+#include <cstdarg>
 #include <cstdio>
+#include <cstring>
 
 namespace dsinfer {
 

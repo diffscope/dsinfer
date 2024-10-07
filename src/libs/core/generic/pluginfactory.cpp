@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <cstring>
+#include <mutex>
 
 namespace fs = std::filesystem;
 

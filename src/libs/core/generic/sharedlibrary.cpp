@@ -1,5 +1,6 @@
 #include "sharedlibrary.h"
 
+#include <algorithm>
 #include <cctype>
 
 #ifdef _WIN32
@@ -10,6 +11,12 @@
 #  include <dlfcn.h>
 #  include <limits.h>
 #  include <string.h>
+#endif
+
+#ifdef __APPLE__
+#  define PRIOR_LIBRARY_PATH_KEY "DYLD_LIBRARY_PATH"
+#else
+#  define PRIOR_LIBRARY_PATH_KEY "LD_LIBRARY_PATH"
 #endif
 
 namespace fs = std::filesystem;
@@ -71,6 +78,21 @@ namespace dsinfer {
 
         std::string res(buf);
         delete[] buf;
+        return res;
+    }
+
+    static std::wstring winGetFullDllDirectory() {
+        auto size = ::GetDllDirectoryW(0, nullptr);
+        if (!size) {
+            return {};
+        }
+
+        std::wstring res;
+        res.resize(size);
+        size = ::GetDllDirectoryW(size, res.data());
+        if (!size) {
+            return {};
+        }
         return res;
     }
 
@@ -269,6 +291,7 @@ namespace dsinfer {
                    return ::tolower(a) == ::tolower(b); //
                });
 #else
+        auto fileName = path.string();
         size_t soPos;
         if (fileName.size() >= 3 && (soPos = fileName.rfind(".so")) != std::string::npos) {
             // 检查 .so 后是否有版本号部分
@@ -280,6 +303,17 @@ namespace dsinfer {
         }
         return false;
 #endif
+    }
+
+    fs::path SharedLibrary::setLibraryPath(const fs::path &path) {
+#ifdef _WIN32
+        std::wstring org = winGetFullDllDirectory();
+        ::SetDllDirectoryW(path.c_str());
+#else
+        std::string org = getenv(PRIOR_LIBRARY_PATH_KEY);
+        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path.string()).data());
+#endif
+        return org;
     }
 
 }

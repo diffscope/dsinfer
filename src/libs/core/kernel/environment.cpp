@@ -1,6 +1,8 @@
 #include "environment.h"
 #include "environment_p.h"
 
+#include <mutex>
+
 #include "inferenceregistry.h"
 #include "singerregistry.h"
 #include "format.h"
