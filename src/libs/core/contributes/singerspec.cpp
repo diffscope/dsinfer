@@ -11,8 +11,19 @@ namespace dsinfer {
 
     static bool readSingerImport(const JsonValue &val, SingerImport *out,
                                  std::string *errorMessage) {
+        if (val.isString()) {
+            auto inference = ContributeIdentifier::fromString(val.toString());
+            if (inference.id().empty()) {
+                *errorMessage = R"(invalid id)";
+                return false;
+            }
+            SingerImport res;
+            res.inference = inference;
+            *out = std::move(res);
+            return true;
+        }
         if (!val.isObject()) {
-            *errorMessage = R"(not an object)";
+            *errorMessage = R"(invalid data type)";
             return false;
         }
         auto obj = val.toObject();
@@ -26,33 +37,34 @@ namespace dsinfer {
         res.inference = inference;
 
         // roles
-        it = obj.find("roles");
-        if (it == obj.end() || !it->second.isArray()) {
-            *errorMessage = R"(missing "roles" field)";
-            return false;
-        }
-        const auto &arr = it->second.toArray();
-        for (const auto &item : arr) {
-            if (!item.isString()) {
-                *errorMessage =
-                    formatTextN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
-                return false;
-            }
-            auto role = item.toString();
-            if (role.empty()) {
-                *errorMessage =
-                    formatTextN(R"(empty item in roles field entry %1)", res.roles.size() + 1);
-                return false;
-            }
-            res.roles.emplace_back(role);
-        }
+        // it = obj.find("roles");
+        // if (it == obj.end() || !it->second.isArray()) {
+        //     *errorMessage = R"(missing "roles" field)";
+        //     return false;
+        // }
+        // const auto &arr = it->second.toArray();
+        // for (const auto &item : arr) {
+        //     if (!item.isString()) {
+        //         *errorMessage =
+        //             formatTextN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
+        //         return false;
+        //     }
+        //     auto role = item.toString();
+        //     if (role.empty()) {
+        //         *errorMessage =
+        //             formatTextN(R"(empty item in roles field entry %1)", res.roles.size() + 1);
+        //         return false;
+        //     }
+        //     res.roles.emplace_back(role);
+        // }
 
         // options
         it = obj.find("options");
         if (it != obj.end()) {
             res.options = it->second;
         }
-        *out = res;
+        *out = std::move(res);
+        ;
         return false;
     }
 

@@ -15,7 +15,7 @@ namespace dsinfer {
     public:
         ContributeIdentifier inference;
         JsonValue options;
-        std::vector<std::string> roles;
+        // std::vector<std::string> roles;
     };
 
     class DSINFER_EXPORT SingerSpec : public ContributeSpec {

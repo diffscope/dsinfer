@@ -36,7 +36,7 @@ namespace dsinfer {
                 LibraryDependency res;
                 res.id = identifier.library();
                 res.version = identifier.version();
-                *out = res;
+                *out = std::move(res);
                 return true;
             }
             *errorMessage = R"(invalid id)";
@@ -44,7 +44,7 @@ namespace dsinfer {
         }
 
         if (!val.isObject()) {
-            *errorMessage = R"(not an object)";
+            *errorMessage = R"(invalid data type)";
             return false;
         }
 
@@ -77,7 +77,7 @@ namespace dsinfer {
         LibraryDependency res(required);
         res.id = std::move(id);
         res.version = version;
-        *out = res;
+        *out = std::move(res);
         return true;
     }
 
