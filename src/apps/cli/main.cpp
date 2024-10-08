@@ -207,12 +207,16 @@ static int cmd_stat(const SCL::ParseResult &result) {
 
     std::string pkgId;
     DS::VersionNumber pkgVersion;
+    fs::path pkgPath;
     {
         auto identifier = DS::ContributeIdentifier::fromString(idStr);
         if (!identifier.library().empty() && !identifier.version().isEmpty() &&
             identifier.id().empty()) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
+        } else if (auto path = DS::pathFromString(idStr);
+                   fs::is_regular_file(path / _TSTR("desc.json"))) {
+            pkgPath = fs::canonical(path);
         } else {
             throw std::runtime_error(DS::formatTextN(R"(invalid package identifier "%1")", idStr));
         }
@@ -224,9 +228,11 @@ static int cmd_stat(const SCL::ParseResult &result) {
     paths = env.libraryPaths();
 
     // Search package
-    fs::path pkgPath = searchPackage(paths, pkgId, pkgVersion);
     if (pkgPath.empty()) {
-        throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
+        pkgPath = searchPackage(paths, pkgId, pkgVersion);
+        if (pkgPath.empty()) {
+            throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
+        }
     }
 
     // Try to load
@@ -418,7 +424,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
 
     // Create driver
     const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
-    auto driver = inferenceReg->createDriver(realDriverId.data());
+    auto driver = inferenceReg->createDriver(realDriverId.c_str());
     if (!driver) {
         throw std::runtime_error(DS::formatTextN(R"(failed to load driver "%1")", realDriverId));
     }
@@ -487,7 +493,7 @@ int main(int argc, char *argv[]) {
     SCL::Command statCommand = [] {
         SCL::Command command("stat", "Display package status");
         command.addArguments({
-            SCL::Argument("package", "Package identifier, format: id[version]"),
+            SCL::Argument("package", "Package path or identifier, format: id[version]"),
         });
         command.addOptions({
             SCL::Option("--paths", R"(Add library paths)").arg(SCL::Argument("path").multi()),
@@ -612,7 +618,7 @@ int main(int argc, char *argv[]) {
         }
 #endif
 
-        SCL::u8debug(SCL::MT_Critical, true, "Error: %s\n", msg.data());
+        SCL::u8debug(SCL::MT_Critical, true, "Error: %s\n", msg.c_str());
         ret = -1;
     }
     return ret;

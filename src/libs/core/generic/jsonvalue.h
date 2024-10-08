@@ -91,7 +91,7 @@ namespace dsinfer {
         _Object toObject(const _Object &defaultValue = {}) const;
 
         inline JsonValue operator[](const std::string &key) const {
-            return operator[](key.data());
+            return operator[](key.c_str());
         }
         inline JsonValue operator[](std::string_view key) const {
             return operator[](key.data());

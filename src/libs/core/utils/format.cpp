@@ -126,8 +126,9 @@ namespace dsinfer {
         return result;
     }
 
-    std::vector<std::string> split(const std::string &s, const std::string &delimiter) {
-        std::vector<std::string> tokens;
+    std::vector<std::string_view> split(const std::string_view &s,
+                                        const std::string_view &delimiter) {
+        std::vector<std::string_view> tokens;
         std::string::size_type start = 0;
         std::string::size_type end = s.find(delimiter);
         while (end != std::string::npos) {
@@ -139,7 +140,7 @@ namespace dsinfer {
         return tokens;
     }
 
-    std::string join(const std::vector<std::string> &v, const std::string &delimiter) {
+    std::string join(const std::vector<std::string> &v, const std::string_view &delimiter) {
         if (v.empty())
             return {};
 

@@ -2,7 +2,6 @@
 #define CONTRIBUTESPEC_H
 
 #include <string>
-#include <filesystem>
 #include <utility>
 
 #include <dsinfer/jsonvalue.h>

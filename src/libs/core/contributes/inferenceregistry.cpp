@@ -109,7 +109,7 @@ namespace dsinfer {
                 auto inferenceSpec = static_cast<InferenceSpec *>(spec);
                 // Search interpreter
                 auto interp =
-                    env()->plugin<InferenceInterpreter>(inferenceSpec->className().data());
+                    env()->plugin<InferenceInterpreter>(inferenceSpec->className().c_str());
                 if (!interp) {
                     *error = {
                         Error::FeatureNotSupported,

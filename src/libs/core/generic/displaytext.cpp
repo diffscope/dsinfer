@@ -62,6 +62,13 @@ namespace dsinfer {
         _impl->assign(value);
     }
 
+    DisplayText::DisplayText(const std::string &defaultText,
+                             const std::map<std::string, std::string> &texts)
+        : _impl(new Impl()) {
+        _impl->defaultText = defaultText;
+        _impl->texts = texts;
+    }
+
     DisplayText::~DisplayText() = default;
 
     DisplayText::DisplayText(const DisplayText &rhs) = default;

@@ -64,8 +64,7 @@ namespace dsinfer {
             res.options = it->second;
         }
         *out = std::move(res);
-        ;
-        return false;
+        return true;
     }
 
     bool SingerSpec::Impl::read(const std::filesystem::path &basePath, const JsonObject &obj,
@@ -248,7 +247,7 @@ namespace dsinfer {
                 for (const auto &item : it->second.toArray()) {
                     SingerImport singerImport;
                     std::string errorMessage;
-                    if (readSingerImport(item, &singerImport, &errorMessage)) {
+                    if (!readSingerImport(item, &singerImport, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
                             formatTextN(R"(%1: invalid "imports" field entry %2: %3)", configPath,
