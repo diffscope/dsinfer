@@ -46,11 +46,11 @@ namespace dsinfer {
             // TODO: If the same session is already opened before, preferCpu will have no effect
             //       due to SessionSystem will return the existing SessionImage instead creating a new one. Should this be the desired behavior, or it needs to be fixed?
 
-            LOG_DEBUG("[flowonnx] Session - Try open " + path.string());
+            LOG_DEBUG("[onnxdriver] Session - Try open " + path.string());
             fs::path canonicalPath;
             try {
                 canonicalPath = fs::canonical(path);
-                LOG_DEBUG("[flowonnx] Session - The canonical path is " + canonicalPath.string());
+                LOG_DEBUG("[onnxdriver] Session - The canonical path is " + canonicalPath.string());
             } catch (const std::exception &e) {
                 if (errorMessage) {
                     *errorMessage = e.what();
@@ -69,10 +69,10 @@ namespace dsinfer {
             auto it = mgr->sessionImageMap.find(canonicalPath);
             if (it == mgr->sessionImageMap.end()) {
                 LOG_DEBUG(
-                    "[flowonnx] Session - The session image does not exist. Creating a new one...");
+                    "[onnxdriver] Session - The session image does not exist. Creating a new one...");
                 impl.image = SessionImage::create(path, preferCpu, errorMessage);
             } else {
-                LOG_DEBUG("[flowonnx] Session - The session image already exists. Increasing the reference count...");
+                LOG_DEBUG("[onnxdriver] Session - The session image already exists. Increasing the reference count...");
                 impl.image = it->second;
                 impl.image->ref();
             }
@@ -85,7 +85,7 @@ namespace dsinfer {
                 return false;
             }
             auto &impl = *_impl;
-            LOG_DEBUG("[flowonnx] Session [%1] - close", path().filename());
+            LOG_DEBUG("[onnxdriver] Session [%1] - close", path().filename());
             if (!impl.image)
                 return false;
 
@@ -301,9 +301,9 @@ namespace dsinfer {
             try {
                 Ort::SessionOptions sessOpt;
 
-                auto flowonnxEnv = Env::instance();
-                auto ep = flowonnxEnv->executionProvider();
-                auto deviceIndex = flowonnxEnv->deviceIndex();
+                auto onnxdriverEnv = Env::instance();
+                auto ep = onnxdriverEnv->executionProvider();
+                auto deviceIndex = onnxdriverEnv->deviceIndex();
 
                 std::string initEPErrorMsg;
                 if (!preferCpu) {
@@ -311,31 +311,31 @@ namespace dsinfer {
                         case EP_DirectML: {
                             if (!initDirectML(sessOpt, deviceIndex, &initEPErrorMsg)) {
                                 // log warning: "Could not initialize DirectML: {initEPErrorMsg}, falling back to CPU."
-                                LOG_WARNING("[flowonnx] Could not initialize DirectML: %1, falling back to CPU.",
+                                LOG_WARNING("[onnxdriver] Could not initialize DirectML: %1, falling back to CPU.",
                                             initEPErrorMsg);
                             } else {
-                                LOG_INFO("[flowonnx] Use DirectML. Device index: %1", deviceIndex);
+                                LOG_INFO("[onnxdriver] Use DirectML. Device index: %1", deviceIndex);
                             }
                             break;
                         }
                         case EP_CUDA: {
                             if (!initCUDA(sessOpt, deviceIndex, &initEPErrorMsg)) {
                                 // log warning: "Could not initialize CUDA: {initEPErrorMsg}, falling back to CPU."
-                                LOG_WARNING("[flowonnx] Could not initialize CUDA: %1, falling back to CPU.",
+                                LOG_WARNING("[onnxdriver] Could not initialize CUDA: %1, falling back to CPU.",
                                             initEPErrorMsg);
                             } else {
-                                LOG_INFO("[flowonnx] Use CUDA. Device index: %1", deviceIndex);
+                                LOG_INFO("[onnxdriver] Use CUDA. Device index: %1", deviceIndex);
                             }
                             break;
                         }
                         default: {
                             // log info: "Use CPU."
-                            LOG_INFO("[flowonnx] Use CPU.");
+                            LOG_INFO("[onnxdriver] Use CPU.");
                             break;
                         }
                     }
                 } else {
-                    LOG_INFO("[flowonnx] The model prefers to use CPU. [%1]", modelPath.filename());
+                    LOG_INFO("[onnxdriver] The model prefers to use CPU. [%1]", modelPath.filename());
                 }
 
 #ifdef _WIN32

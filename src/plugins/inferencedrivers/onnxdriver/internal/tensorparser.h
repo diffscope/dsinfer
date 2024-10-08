@@ -90,22 +90,26 @@ namespace dsinfer {
         }
 
         inline dsinfer::JsonValue serializeTensor(const Ort::Value &tensor, dsinfer::Error *error = nullptr) {
-            dsinfer::JsonValue jVal;
+            std::string dataType;
+            size_t elemSize = 1;
             auto typeAndShapeInfo = tensor.GetTensorTypeAndShapeInfo();
             auto type = typeAndShapeInfo.GetElementType();
 
             // Serialize type
             switch (type) {
                 case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: {
-                    jVal["type"] = "float";
+                    dataType = "float";
+                    elemSize = sizeof(float);
                     break;
                 }
                 case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: {
-                    jVal["type"] = "int64";
+                    dataType = "int64";
+                    elemSize = sizeof(int64_t);
                     break;
                 }
                 case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: {
-                    jVal["type"] = "bool";
+                    dataType = "bool";
+                    elemSize = sizeof(bool);
                     break;
                 }
                 default:
@@ -123,10 +127,9 @@ namespace dsinfer {
             for (size_t i = 0; i < tensorShape.size(); ++i) {
                 shapeArray[i] = dsinfer::JsonValue(static_cast<int>(tensorShape[i])); // TODO: int64_t type in JsonValue
             }
-            jVal["shape"] = shapeArray;
 
             // Serialize data (as binary)
-            auto bufferSize = typeAndShapeInfo.GetElementCount();
+            auto bufferSize = typeAndShapeInfo.GetElementCount() * elemSize;
 
             auto buffer = tensor.template GetTensorData<uint8_t>();
             if (!buffer) {
@@ -134,11 +137,14 @@ namespace dsinfer {
                     *error = dsinfer::Error(dsinfer::Error::Type::InvalidFormat,
                                             "Failed to convert to JsonValue: ort tensor buffer is null");
                 }
+                return {};
             }
 
-            jVal["data"] = dsinfer::JsonValue(buffer, bufferSize);
-
-            return jVal;
+            return JsonObject {
+                {"data", dsinfer::JsonValue(std::vector<uint8_t>(buffer, buffer + bufferSize))},
+                {"shape", shapeArray},
+                {"type", dataType},
+            };
         }
     }
 }

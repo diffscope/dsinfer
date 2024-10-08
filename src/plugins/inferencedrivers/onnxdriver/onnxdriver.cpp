@@ -214,12 +214,16 @@ namespace dsinfer {
 
             onnxdriver::ValueMap inputMap;
             for (const auto &inputItem: item["input"].toArray()) {
-                auto val = onnxdriver::deserializeTensor(inputItem, error);
-                if (!error->ok()) {
+                Error err_;
+                auto val = onnxdriver::deserializeTensor(inputItem, &err_);
+                if (!err_.ok()) {
                     task->state = InferTask::Failed;
+                    if (error) {
+                        *error = err_;
+                    }
                     return false;
                 }
-                inputMap.emplace(item["name"].toString(), onnxdriver::makeSharedValue(std::move(val)));
+                inputMap.emplace(inputItem["name"].toString(), onnxdriver::makeSharedValue(std::move(val)));
             }
 
             std::string errorMessage;
