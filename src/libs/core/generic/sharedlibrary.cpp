@@ -13,6 +13,8 @@
 #  include <string.h>
 #endif
 
+#include "format.h"
+
 #ifdef __APPLE__
 #  define PRIOR_LIBRARY_PATH_KEY "DYLD_LIBRARY_PATH"
 #else
@@ -69,18 +71,6 @@ namespace dsinfer {
         return rc;
     }
 
-    static std::string wide2utf8(const std::wstring &str) {
-        int len = ::WideCharToMultiByte(CP_UTF8, 0, str.data(), (int) str.size(), nullptr, 0,
-                                        nullptr, nullptr);
-        auto buf = new char[len + 1];
-        ::WideCharToMultiByte(CP_UTF8, 0, str.data(), (int) str.size(), buf, len, nullptr, nullptr);
-        buf[len] = '\0';
-
-        std::string res(buf);
-        delete[] buf;
-        return res;
-    }
-
     static std::wstring winGetFullDllDirectory() {
         auto size = ::GetDllDirectoryW(0, nullptr);
         if (!size) {
@@ -130,7 +120,7 @@ namespace dsinfer {
 
     std::string SharedLibrary::Impl::sysErrorMessage(bool nativeLanguage) {
 #ifdef _WIN32
-        return wide2utf8(winErrorMessage(::GetLastError(), nativeLanguage));
+        return wideToUtf8(winErrorMessage(::GetLastError(), nativeLanguage));
 #else
         auto err = dlerror();
         if (err) {
@@ -311,7 +301,7 @@ namespace dsinfer {
         ::SetDllDirectoryW(path.c_str());
 #else
         std::string org = getenv(PRIOR_LIBRARY_PATH_KEY);
-        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path.string()).data());
+        putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path.string()).c_str());
 #endif
         return org;
     }

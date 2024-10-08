@@ -2,6 +2,7 @@
 #define DSINFER_LOG_H
 
 #include <cstdlib>
+#include <cstdarg>
 
 #include <dsinfer/format.h>
 

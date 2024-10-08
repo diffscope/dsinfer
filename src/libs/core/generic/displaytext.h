@@ -10,6 +10,8 @@ namespace dsinfer {
         DisplayText();
         DisplayText(const std::string &text);
         explicit DisplayText(const JsonValue &value);
+        explicit DisplayText(const std::string &defaultText,
+                             const std::map<std::string, std::string> &texts);
         ~DisplayText();
 
         DisplayText(const DisplayText &rhs);
