@@ -1,8 +1,10 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <filesystem>
+
+#include <dsinfer/error.h>
 #include <dsinfer/jsonvalue.h>
-#include <dsinfer/environment.h>
 
 namespace dsinfer {
 

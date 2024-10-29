@@ -1,8 +1,8 @@
 #ifndef INFERENCETASK_H
 #define INFERENCETASK_H
 
+#include <dsinfer/error.h>
 #include <dsinfer/jsonvalue.h>
-#include <dsinfer/environment.h>
 
 namespace dsinfer {
 
