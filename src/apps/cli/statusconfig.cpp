@@ -33,27 +33,27 @@ namespace cli {
 
         // packages
         std::vector<Package> packages_;
-        {
+        do {
             auto it = obj.find("packages");
             if (it == obj.end() || !it->second.isArray()) {
-                return false;
+                break;
             }
             for (const auto &item : it->second.toArray()) {
                 if (!item.isObject()) {
-                    return false;
+                    continue;
                 }
                 auto packageObj = item.toObject();
-
                 Package pkg;
+
                 // id[version]
                 {
                     auto it2 = packageObj.find("id");
                     if (it2 == packageObj.end() || !it2->second.isString()) {
-                        return false;
+                        continue;
                     }
                     std::string id = it2->second.toString();
                     if (id.empty()) {
-                        return false;
+                        continue;
                     }
                     auto identifier = ContributeIdentifier::fromString(id);
                     if (!identifier.library().empty() && !identifier.version().isEmpty() &&
@@ -61,41 +61,53 @@ namespace cli {
                         pkg.id = identifier.library();
                         pkg.version = identifier.version();
                     } else {
-                        return false;
+                        continue;
                     }
                 }
-                // path
+                // relativeLocation
                 {
-                    auto it2 = packageObj.find("path");
+                    auto it2 = packageObj.find("relativeLocation");
                     if (it2 == packageObj.end() || !it2->second.isString()) {
-                        return false;
+                        continue;
                     }
                     std::string path_ = it2->second.toString();
                     if (path_.empty()) {
-                        return false;
+                        continue;
                     }
-                    pkg.path = path_;
+                    pkg.relativeLocation = path_;
                 }
-                // contributes
+                // metadata
                 {
-                    auto it2 = packageObj.find("contributes");
-                    if (it2 == packageObj.end() || !it2->second.isArray()) {
-                        return false;
+                    auto it2 = packageObj.find("metadata");
+                    if (it2 == packageObj.end() || !it2->second.isObject()) {
+                        continue;
                     }
-                    for (const auto &contributeItem : it2->second.toArray()) {
-                        if (!contributeItem.isString()) {
-                            return false;
+                    const auto &metadataObj = it2->second.toObject();
+                    Package::Metadata metadata_;
+
+                    // hasSinger (optional)
+                    do {
+                        auto it3 = metadataObj.find("hasSinger");
+                        if (it3 == packageObj.end() || !it3->second.isBool()) {
+                            break;
                         }
-                        auto contribute = contributeItem.toString();
-                        if (contribute.empty()) {
-                            return false;
+                        metadata_.hasSinger = it3->second.toBool();
+                    } while (false);
+
+                    // installedTimestamp (optional)
+                    do {
+                        auto it3 = metadataObj.find("installedTimestamp");
+                        if (it3 == packageObj.end() || !it3->second.isInteger()) {
+                            break;
                         }
-                        pkg.contributes.emplace_back(contribute);
-                    }
+                        metadata_.installedTimestamp = it3->second.toInt64();
+                    } while (false);
+
+                    pkg.metadata = std::move(metadata_);
                 }
                 packages_.emplace_back(pkg);
             }
-        }
+        } while (false);
 
         packages = std::move(packages_);
         return true;
@@ -108,19 +120,34 @@ namespace cli {
         {
             JsonArray packagesArr;
             for (const auto &packageItem : std::as_const(packages)) {
-                JsonObject packageObj;
-                packageObj["id"] =
+                JsonObject pkgObj;
+
+                // id
+                pkgObj["id"] =
                     formatTextN("%1[%2]", packageItem.id, packageItem.version.toString());
 
-                JsonArray contributesArr;
-                for (const auto &contributeItem : std::as_const(packageItem.contributes)) {
-                    contributesArr.emplace_back(contributeItem);
-                }
-                packageObj["contributes"] = contributesArr;
+                // relativeLocation
+                pkgObj["relativeLocation"] = packageItem.relativeLocation;
 
-                packagesArr.emplace_back(packageObj);
+                // metadata
+                {
+                    JsonObject metadataObj;
+                    const auto &metadata = packageItem.metadata;
+
+                    // contributes
+                    metadataObj["hasSinger"] = metadata.hasSinger;
+
+                    // installedTimestamp
+                    if (metadata.installedTimestamp != 0) {
+                        metadataObj["installedTimestamp"] = metadata.installedTimestamp;
+                    }
+
+                    pkgObj["metadata"] = std::move(metadataObj);
+                }
+
+                packagesArr.emplace_back(pkgObj);
             }
-            obj["packages"] = packagesArr;
+            obj["packages"] = std::move(packagesArr);
         }
 
         std::ofstream file(path);

@@ -8,8 +8,8 @@ namespace dsinfer {
 
     class DSINFER_EXPORT InferenceTask {
     public:
-        explicit InferenceTask(Environment *env);
-        ~InferenceTask();
+        InferenceTask();
+        virtual ~InferenceTask();
 
         enum State {
             Idle,
@@ -19,19 +19,14 @@ namespace dsinfer {
         };
 
     public:
-        bool start(const JsonValue &input, Error *error);
-        bool stop(Error *error);
+        virtual bool initialize(const JsonValue &args, Error *error) = 0;
 
-        int64_t id() const;
-        State state() const;
-        JsonValue result() const;
+        virtual bool start(const JsonValue &input, Error *error) = 0;
+        virtual bool stop(Error *error) = 0;
 
-    public:
-        Environment *env() const;
-
-    protected:
-        class Impl;
-        std::unique_ptr<Impl> _impl;
+        virtual int64_t id() const = 0;
+        virtual State state() const = 0;
+        virtual JsonValue result() const = 0;
     };
 
 }

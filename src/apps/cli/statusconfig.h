@@ -19,10 +19,19 @@ namespace cli {
 
     public:
         struct Package {
+            // identifier
             std::string id;
             dsinfer::VersionNumber version;
-            std::string path;
-            std::vector<std::string> contributes;
+
+            // basic
+            std::string relativeLocation;
+
+            // metadata
+            struct Metadata {
+                bool hasSinger = false;
+                int64_t installedTimestamp = 0;
+            };
+            Metadata metadata;
         };
         std::vector<Package> packages;
     };

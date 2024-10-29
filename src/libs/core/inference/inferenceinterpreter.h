@@ -7,14 +7,10 @@
 
 namespace dsinfer {
 
-    class DSINFER_EXPORT InferenceInterpreter : public Plugin {
+    class DSINFER_EXPORT InferenceInterpreter {
     public:
         InferenceInterpreter();
-        ~InferenceInterpreter();
-
-        const char *iid() const override {
-            return "com.diffsinger.InferenceInterpreter";
-        }
+        virtual ~InferenceInterpreter();
 
     public:
         virtual int apiLevel() const = 0;

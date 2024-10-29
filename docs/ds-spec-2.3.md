@@ -329,6 +329,7 @@ dsinfer 库提供一个命令行工具，名称为`dsinfer-cli`。
 
 ```json
 {
+    "$version": "1.0",
     "files": [
         {
             "path": "desc.json",

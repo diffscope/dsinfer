@@ -32,6 +32,7 @@ namespace dsinfer {
         JsonValue(bool b);
         JsonValue(double n);
         JsonValue(int n);
+        JsonValue(int64_t n);
         JsonValue(const std::string &s);
         JsonValue(const char *s);
         JsonValue(const std::vector<uint8_t> &bytes);
@@ -84,6 +85,7 @@ namespace dsinfer {
 
         bool toBool(bool defaultValue = false) const;
         int toInt(int defaultValue = 0) const;
+        int64_t toInt64(int64_t defaultValue = 0) const;
         double toDouble(double defaultValue = 0) const;
         std::string toString(const std::string &defaultValue = {}) const;
         std::vector<uint8_t> toBinary(const std::vector<uint8_t> &defaultValue = {}) const;

@@ -1,8 +1,6 @@
 #ifndef ACOUSTICINFERENCE_H
 #define ACOUSTICINFERENCE_H
 
-#include <string>
-
 #include <dsinfer/inference.h>
 
 namespace dsinfer {

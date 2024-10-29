@@ -3,8 +3,6 @@
 
 #include <mutex>
 
-#include "contributespec_p.h"
-
 namespace dsinfer {
 
     std::vector<ContributeSpec *> ContributeRegistry::Impl::findContributes(

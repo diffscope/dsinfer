@@ -64,6 +64,11 @@ namespace dsinfer {
         json = n;
     }
 
+    JsonValue::JsonValue(int64_t n) : _data(new JsonValueContainter()) {
+        auto &json = _data->json;
+        json = n;
+    }
+
     JsonValue::JsonValue(const std::string &s) : _data(new JsonValueContainter()) {
         auto &json = _data->json;
         json = s;
@@ -150,11 +155,25 @@ namespace dsinfer {
         auto &json = _data->json;
         switch (json.type()) {
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_integer:
-                return json.get<int>();
+                return int(json.get<int64_t>());
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_unsigned:
-                return int(json.get<unsigned int>());
+                return int(json.get<uint64_t>());
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_float:
                 return int(json.get<double>());
+            default:
+                break;
+        }
+        return defaultValue;
+    }
+    int64_t JsonValue::toInt64(int64_t defaultValue) const {
+        auto &json = _data->json;
+        switch (json.type()) {
+            case nlohmann::json_abi_v3_11_3::detail::value_t::number_integer:
+                return json.get<int64_t>();
+            case nlohmann::json_abi_v3_11_3::detail::value_t::number_unsigned:
+                return uint64_t(json.get<uint64_t>());
+            case nlohmann::json_abi_v3_11_3::detail::value_t::number_float:
+                return uint64_t(json.get<double>());
             default:
                 break;
         }

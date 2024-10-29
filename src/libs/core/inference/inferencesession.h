@@ -8,23 +8,17 @@ namespace dsinfer {
 
     class DSINFER_EXPORT InferenceSession {
     public:
-        explicit InferenceSession(Environment *env);
-        ~InferenceSession();
+        InferenceSession();
+        virtual ~InferenceSession();
 
     public:
-        bool open(const std::filesystem::path &path, const JsonObject &args, Error *error);
-        bool close(Error *error);
+        virtual bool open(const std::filesystem::path &path, const JsonObject &args,
+                          Error *error) = 0;
+        virtual bool close(Error *error) = 0;
 
     public:
-        int64_t id() const;
-        bool isRunning() const;
-
-    public:
-        Environment *env() const;
-
-    protected:
-        class Impl;
-        std::unique_ptr<Impl> _impl;
+        virtual int64_t id() const = 0;
+        virtual bool isRunning() const = 0;
     };
 
 }

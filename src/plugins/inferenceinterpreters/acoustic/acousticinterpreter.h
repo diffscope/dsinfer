@@ -10,9 +10,6 @@ namespace dsinfer {
         AcousticInterpreter();
 
     public:
-        const char *key() const override;
-
-    public:
         int apiLevel() const override;
 
         bool validate(const InferenceSpec *spec, std::string *message) const override;

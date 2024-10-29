@@ -1,14 +1,14 @@
 #include "inferenceregistry.h"
 
+#include <list>
 #include <mutex>
 #include <unordered_map>
-#include <list>
 
 #include "inferencespec_p.h"
 #include "contributeregistry_p.h"
-#include "environment_p.h"
 #include "format.h"
 #include "inferencedriverplugin.h"
+#include "inferenceinterpreterplugin.h"
 
 namespace dsinfer {
 
@@ -22,6 +22,7 @@ namespace dsinfer {
         }
 
         InferenceDriver *driver = nullptr;
+        std::unordered_map<std::string, InferenceInterpreter *> interpreters;
     };
 
     InferenceRegistry::~InferenceRegistry() = default;
@@ -107,17 +108,28 @@ namespace dsinfer {
         switch (state) {
             case ContributeSpec::Initialized: {
                 auto inferenceSpec = static_cast<InferenceSpec *>(spec);
-                // Search interpreter
-                auto interp =
-                    env()->plugin<InferenceInterpreter>(inferenceSpec->className().c_str());
-                if (!interp) {
-                    *error = {
-                        Error::FeatureNotSupported,
-                        formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
-                                    inferenceSpec->className(), inferenceSpec->id()),
-                    };
-                    return false;
+                const auto &key = inferenceSpec->className();
+                InferenceInterpreter *interp = nullptr;
+
+                // Search interpreter cache
+                if (auto it = impl.interpreters.find(key); it != impl.interpreters.end()) {
+                    interp = it->second;
+                } else {
+                    // Search interpreter in file system
+                    auto plugin = env()->plugin<InferenceInterpreterPlugin>(
+                        inferenceSpec->className().c_str());
+                    if (!plugin) {
+                        *error = {
+                            Error::FeatureNotSupported,
+                            formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
+                                        inferenceSpec->className(), inferenceSpec->id()),
+                        };
+                        return false;
+                    }
+                    interp = plugin->create();
+                    impl.interpreters[key] = interp;
                 }
+
                 // Check api level
                 if (interp->apiLevel() < inferenceSpec->apiLevel()) {
                     *error = {
@@ -129,6 +141,7 @@ namespace dsinfer {
                     };
                     return false;
                 }
+
                 // Check schema and configuration
                 std::string errMsg;
                 if (!interp->validate(inferenceSpec, &errMsg)) {

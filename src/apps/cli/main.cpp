@@ -67,7 +67,6 @@ static void log_report_callback(int level, const char *category, const char *fmt
         default:
             break;
     }
-
     ConsoleOutput::printf(foreground, ConsoleOutput::Default, "[%s] %-15s", dts.c_str(), category);
     ConsoleOutput::printf(ConsoleOutput::Black, background, " %s ", sig);
     ConsoleOutput::printf(ConsoleOutput::Default, ConsoleOutput::Default, "  ");
@@ -193,7 +192,7 @@ static fs::path searchPackage(const std::vector<fs::path> &paths, const std::str
 
         for (const auto &pkg : std::as_const(sc.packages)) {
             if (pkg.id == id && pkg.version == version) {
-                return path / pkg.path;
+                return path / pkg.relativeLocation;
             }
         }
     }
@@ -237,13 +236,9 @@ static int cmd_stat(const SCL::ParseResult &result) {
 
     // Try to load
     DS::LibrarySpec *lib;
-    {
-        DS::Error error;
-        lib = env.openLibrary(pkgPath, false, &error);
-        if (!lib) {
-            throw std::runtime_error(
-                DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
-        }
+    if (DS::Error error; !(lib = env.openLibrary(pkgPath, false, &error))) {
+        throw std::runtime_error(
+            DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
 
     Context::info("ID: %1", lib->id());
@@ -263,7 +258,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     if (!inferences.empty()) {
         Context::info("    Inferences:");
         for (int i = 0; i < inferences.size(); ++i) {
-            auto inference = static_cast<DS::InferenceSpec *>(inferences[i]);
+            auto inference = inferences[i]->cast<DS::InferenceSpec>();
             Context::info("        [%1] %2, %3, level=%4", i + 1, inference->id(),
                           inference->name().text(), inference->apiLevel());
         }
@@ -272,7 +267,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     if (!singers.empty()) {
         Context::info("    Singers:");
         for (int i = 0; i < singers.size(); ++i) {
-            auto singer = static_cast<DS::SingerSpec *>(singers[i]);
+            auto singer = singers[i]->cast<DS::SingerSpec>();
             Context::info("        [%1] %2, %3, model=%4", i + 1, singer->id(),
                           singer->name().text(), singer->model());
         }
@@ -330,7 +325,7 @@ static int cmd_list(const SCL::ParseResult &result) {
             info.version = pkg.version;
 
             DS::Error error;
-            auto lib = env.openLibrary(path / pkg.path, false, &error);
+            auto lib = env.openLibrary(path / pkg.relativeLocation, false, &error);
             if (!lib) {
                 info.valid = false;
                 infoList.emplace_back(info);
@@ -473,13 +468,21 @@ static int cmd_exec(const SCL::ParseResult &result) {
     }
 
     // Check inference api levels
+    // DS::InferenceContext ctx;
+    // DS::JsonValue args = {
+    //     {"ctx", ctx->id(),}
+    // };
     // for (const auto &inference : std::as_const(inferences)) {
     //     auto spec = inference->spec();
     //     if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
     //         // Not supported
     //     }
+
+    //     inference->start(args, nullptr);
+    //     args = inference->result();
+    //     // process args
     // }
-    (void) inferences;
+    // (void) inferences;
 
     return 0;
 }

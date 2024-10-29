@@ -232,7 +232,7 @@ namespace dsinfer {
         } else {
             color = ConsoleOutput::Red;
         }
-        ConsoleOutput::vprintf(color, ConsoleOutput::Cyan, fmt, args);
+        ConsoleOutput::vprintf(color, ConsoleOutput::Default, fmt, args);
     }
 
     static int m_level = Log::Information;

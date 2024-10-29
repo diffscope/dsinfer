@@ -32,22 +32,22 @@ namespace cli {
 
         // paths
         std::vector<std::filesystem::path> paths_;
-        {
+        do {
             auto it = obj.find("paths");
             if (it == obj.end() || !it->second.isArray()) {
-                return false;
+                break;
             }
             for (const auto &pathItem : it->second.toArray()) {
                 if (!pathItem.isString()) {
-                    return false;
+                    continue;
                 }
                 auto pathStr = pathItem.toString();
                 if (pathStr.empty()) {
-                    return false;
+                    continue;
                 }
                 paths_.emplace_back(pathFromString(pathStr));
             }
-        }
+        } while (false);
 
         // driver
         Driver driver_;

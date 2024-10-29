@@ -11,19 +11,21 @@ namespace dsinfer {
         ~OnnxDriver();
 
     public:
-        bool initialize(const JsonValue &args, Error *error) override;
+        bool initialize(const JsonValue &args, Error *error) override {
+            return {};
+        }
 
-        int64_t sessionCreate(const std::filesystem::path &path, const JsonValue &args,
-                              Error *error) override;
-        bool sessionDestroy(int64_t handle, Error *error) override;
-        bool sessionRunning(int64_t handle) override;
+        InferenceSession *createSession() override {
+            return {};
+        }
 
-        int64_t taskCreate() override;
-        void taskDestroy(int64_t handle) override;
-        bool taskStart(int64_t handle, const JsonValue &input, Error *error) override;
-        bool taskStop(int64_t handle, Error *error) override;
-        int taskState(int64_t handle) override;
-        bool taskResult(int64_t handle, JsonValue *result) override;
+        InferenceTask *createTask() override {
+            return {};
+        }
+
+        InferenceContext *createContext() override {
+            return {};
+        }
     };
 
 }
