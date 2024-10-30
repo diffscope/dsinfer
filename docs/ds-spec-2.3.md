@@ -237,6 +237,16 @@ Singer 模块负责定义一个或若干个歌手的信息，以及其需要使�
 
 - 每个歌手的预设所用到的`id`都必须在`desc.json`的`dependencies`中声明。
 
+#### 关于 API Level
+
+由于 DiffSinger 引擎架构的复杂性，我们为推理模块引入了 API Level 的概念，在声明文件中用`level`表示。
+
+API Level 代表引擎接口的版本号，是一个正整数，每当模型的输入或输出格式发生更新时，它将向上递增。引擎官方为每个 API Level 制定一套描述模型功能的语法。
+
+每个 Inference 模块在声明文件，使用`level`声明自己所属的 API Level，在`schema`字段中按照该 Level 规定的语法公开自己所支持的功能集合，在`configuration`字段中按照语法填写模型相关参数。
+
+每个 Singer 模块在其`imports`字段中导入其依赖的 Inference 模块，在每个导入项的`options`字段中填写其选择的一部分功能，`options`的值需要符合其依赖的 Inference 模块所属的 API Level 语法。
+
 ### 可扩展性
 
 - 具有新功能的模型开发完成后，开发者为之起一个`class`名，再基于现有的推理程序开发一个与这种模型匹配的解释器，这样即可扩展推理功能。

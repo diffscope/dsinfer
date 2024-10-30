@@ -1,5 +1,3 @@
-
-
 #include <dsinfer/inferencedriverplugin.h>
 
 #include "onnxdriver.h"
@@ -17,7 +15,6 @@ namespace dsinfer {
 
     public:
         InferenceDriver *create() override {
-            // return new OnnxDriver();
             return new OnnxDriver();
         }
     };
