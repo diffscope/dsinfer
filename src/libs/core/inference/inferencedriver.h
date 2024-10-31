@@ -1,8 +1,6 @@
 #ifndef INFERENCEDRIVER_H
 #define INFERENCEDRIVER_H
 
-#include <filesystem>
-
 #include <dsinfer/error.h>
 #include <dsinfer/inferencesession.h>
 #include <dsinfer/inferencetask.h>

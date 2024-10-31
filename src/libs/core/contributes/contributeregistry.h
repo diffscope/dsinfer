@@ -1,5 +1,5 @@
-#ifndef CONTRIBUTEREGISTRY_H
-#define CONTRIBUTEREGISTRY_H
+#ifndef DSINFER_CONTRIBUTEREGISTRY_H
+#define DSINFER_CONTRIBUTEREGISTRY_H
 
 #include <filesystem>
 
@@ -53,4 +53,4 @@ namespace dsinfer {
 
 }
 
-#endif // CONTRIBUTEREGISTRY_H
+#endif // DSINFER_CONTRIBUTEREGISTRY_H

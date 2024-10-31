@@ -1,5 +1,5 @@
-#ifndef SESSION_H
-#define SESSION_H
+#ifndef DSINFER_INFERENCESESSION_H
+#define DSINFER_INFERENCESESSION_H
 
 #include <filesystem>
 
@@ -25,4 +25,4 @@ namespace dsinfer {
 
 }
 
-#endif // SESSION_H
+#endif // DSINFER_INFERENCESESSION_H

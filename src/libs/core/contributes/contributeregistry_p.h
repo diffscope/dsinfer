@@ -1,5 +1,5 @@
-#ifndef RESOURCEMANAGER_P_H
-#define RESOURCEMANAGER_P_H
+#ifndef DSINFER_CONTRIBUTEREGISTRY_P_H
+#define DSINFER_CONTRIBUTEREGISTRY_P_H
 
 #include <shared_mutex>
 
@@ -34,4 +34,4 @@ namespace dsinfer {
 
 }
 
-#endif // RESOURCEMANAGER_P_H
+#endif // DSINFER_CONTRIBUTEREGISTRY_P_H

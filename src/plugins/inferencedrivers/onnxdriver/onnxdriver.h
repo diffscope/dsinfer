@@ -11,21 +11,11 @@ namespace dsinfer {
         ~OnnxDriver();
 
     public:
-        bool initialize(const JsonValue &args, Error *error) override {
-            return {};
-        }
+        bool initialize(const JsonValue &args, Error *error) override;
 
-        InferenceSession *createSession() override {
-            return {};
-        }
-
-        InferenceTask *createTask() override {
-            return {};
-        }
-
-        InferenceContext *createContext() override {
-            return {};
-        }
+        InferenceSession *createSession() override ;
+        InferenceTask *createTask() override ;
+        InferenceContext *createContext() override;
     };
 
 }

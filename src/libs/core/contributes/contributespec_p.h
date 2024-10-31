@@ -1,8 +1,5 @@
-#ifndef CONTRIBUTESPEC_P_H
-#define CONTRIBUTESPEC_P_H
-
-#include <map>
-#include <utility>
+#ifndef DSINFER_CONTRIBUTESPEC_P_H
+#define DSINFER_CONTRIBUTESPEC_P_H
 
 #include <dsinfer/contributespec.h>
 
@@ -29,4 +26,4 @@ namespace dsinfer {
 
 }
 
-#endif // CONTRIBUTESPEC_P_H
+#endif // DSINFER_CONTRIBUTESPEC_P_H
