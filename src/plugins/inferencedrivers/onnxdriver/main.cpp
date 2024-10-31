@@ -10,7 +10,7 @@ namespace dsinfer {
 
     public:
         const char *key() const override {
-            return "com.diffsinger.InferenceDriver.OnnxDriver";
+            return "onnx";
         }
 
     public:

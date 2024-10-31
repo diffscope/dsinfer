@@ -13,8 +13,8 @@ namespace dsinfer {
     public:
         bool initialize(const JsonValue &args, Error *error) override;
 
-        InferenceSession *createSession() override ;
-        InferenceTask *createTask() override ;
+        InferenceSession *createSession() override;
+        InferenceTask *createTask() override;
         InferenceContext *createContext() override;
     };
 

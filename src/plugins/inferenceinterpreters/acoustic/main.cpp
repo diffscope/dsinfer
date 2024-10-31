@@ -9,7 +9,7 @@ namespace dsinfer {
         AcousticInterpreterPlugin() = default;
 
         const char *key() const {
-            return "com.diffsinger.InferenceInterpreter.AcousticPrediction";
+            return "ai.svs.AcousticInference";
         }
 
         InferenceInterpreter *create() {
