@@ -40,20 +40,24 @@
 - `context`：当前推理上下文 ID
 - `input`：输入参数
   - `name`：输入参数名
-  - `format`：数据格式，可选`bytes`、`array`、`reference`
+  - `format`：输入数据格式，可选`bytes`、`array`、`reference`
   - `data`：输入数据
     - `type`：数据类型
     - `shape`：向量形状
     - `value`：数据值
 - `output`：输出参数
   - `name`：输出参数名
-  - `format`：数据格式，，可选`bytes`、`array`、`reference`
+  - `format`：输出数据格式，可选`bytes`、`array`、`reference`
 
 `InferenceTask`的输出为一个 json object，结构如下。
 ```json
 {
-    "fmt": "bytes",         // output data format
-    "value": "<bytes>"      // raw data
+    "format": "bytes",
+    "data": {
+        "type": "int64",
+        "shape": [ 1 ],
+        "value": "<bytes>"
+    }
 }
 ```
 若输出数据格式选择`reference`，则推理完成后，输出的`value`字段是一个随机生成的 key，推理输出的向量将以`Ort::Value`的形式留在内存中，该实例以这个 key 存入指定的 context 中。

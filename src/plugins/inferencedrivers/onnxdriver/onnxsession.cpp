@@ -1,8 +1,16 @@
 #include "onnxsession.h"
 
+#include <onnxruntime_cxx_api.h>
+
 namespace dsinfer {
 
-    OnnxSession::OnnxSession() {
+    class OnnxSession::Impl {
+    public:
+        Impl() {
+        }
+    };
+
+    OnnxSession::OnnxSession() : _impl(std::make_unique<Impl>()) {
     }
 
     OnnxSession::~OnnxSession() {
