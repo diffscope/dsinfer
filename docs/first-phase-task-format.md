@@ -10,30 +10,28 @@
     "context": 1,
     "input": [
         {
-            "name": "f0",           // input argument name
-            "data": {
-                "fmt": "bytes",     // input data format
-                "value": "<bytes>"  // raw data
-            },
-            "shape": [ 1, 100 ],    // tensor shape
-            "type": "float",        // data type
+            "name": "f0",               // input argument name
+            "format": "bytes",          // input data format
+            "data": {        
+                "type": "float",        // data type
+                "shape": [ 1, 100 ],    // tensor shape
+                "value": "<bytes>"      // raw data
+            }
         },
         {
             "name": "steps",
+            "format": "bytes",
             "data": {
-                "fmt": "bytes",     // data format
-                "value": "<bytes>"  // raw data
-            },
-            "shape": [ 1 ],
-            "type": "int64"
+                "type": "int64",
+                "shape": [ 1 ],
+                "value": "<bytes>"
+            }
         }
     ],
     "output": [
         {
-            "name": "x_masks",       // output argument name
-            "dataHints": {
-                "fmt": "bytes"       // output data format
-            }
+            "name": "x_masks",          // output argument name
+            "format": "bytes"           // output data format
         }
     ]
 }
@@ -42,15 +40,14 @@
 - `context`：当前推理上下文 ID
 - `input`：输入参数
   - `name`：输入参数名
+  - `format`：数据格式，可选`bytes`、`array`、`reference`
   - `data`：输入数据
-    - `fmt`：数据格式，可选`bytes`、`array`、`reference`
+    - `type`：数据类型
+    - `shape`：向量形状
     - `value`：数据值
-  - `shape`：向量形状
-  - `type`：数据类型
 - `output`：输出参数
   - `name`：输出参数名
-  - `dataHints`：输出数据配置
-    - `fmt`：数据格式，，可选`bytes`、`array`、`reference`
+  - `format`：数据格式，，可选`bytes`、`array`、`reference`
 
 `InferenceTask`的输出为一个 json object，结构如下。
 ```json
@@ -69,12 +66,12 @@
     "type": "object",
     "content": {
         "class": "Ort::Value",
+        "format": "bytes",
         "data": {
-            "fmt": "bytes",
+            "type": "int64",
+            "shape": [ 1 ],
             "value": "<bytes>"
-        },
-        "shape": [ 1 ],
-        "type": "int64"
+        }
     }
 }
 ```
