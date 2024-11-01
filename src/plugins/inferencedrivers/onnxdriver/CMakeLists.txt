@@ -24,8 +24,9 @@ dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
 
 if(WIN32)
     # Copy onnxruntime dlls
-    qm_add_copy_command(${PROJECT_NAME} SKIP_INSTALL
+    qm_add_copy_command(${PROJECT_NAME} # SKIP_INSTALL
         SOURCES ${_onnxruntime_dir}/lib/*.dll
         DESTINATION runtimes
+        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
     )
 endif()

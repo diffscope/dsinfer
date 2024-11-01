@@ -48,18 +48,19 @@ namespace dsinfer {
         std::wstring rc;
         wchar_t *lpMsgBuf;
 
-        const DWORD len =
-            ::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                                 FORMAT_MESSAGE_IGNORE_INSERTS,
-                             NULL, error, nativeLanguage ? 0 : g_EnglishLangId,
-                             reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, NULL);
+        DWORD len = ::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                                         FORMAT_MESSAGE_IGNORE_INSERTS,
+                                     NULL, error, nativeLanguage ? 0 : g_EnglishLangId,
+                                     reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, NULL);
 
         if (len) {
             // Remove tail line breaks
             if (lpMsgBuf[len - 1] == L'\n') {
                 lpMsgBuf[len - 1] = L'\0';
+                len--;
                 if (len > 2 && lpMsgBuf[len - 2] == L'\r') {
                     lpMsgBuf[len - 2] = L'\0';
+                    len--;
                 }
             }
             rc = std::wstring(lpMsgBuf, int(len));
@@ -67,7 +68,6 @@ namespace dsinfer {
         } else {
             rc += L"unknown error";
         }
-
         return rc;
     }
 
