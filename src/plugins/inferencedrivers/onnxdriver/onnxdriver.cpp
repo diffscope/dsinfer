@@ -79,9 +79,9 @@ namespace dsinfer {
         }
 
         auto dllPath = impl.runtimePath /
-#if _WIN32
+#if defined(_WIN32)
                        L"onnxruntime.dll"
-#elif __APPLE__
+#elif defined(__APPLE__)
                        "libonnxruntime.dylib"
 #else
                        "libonnxruntime.so"

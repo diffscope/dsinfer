@@ -30,7 +30,7 @@ namespace dsinfer::onnxdriver {
             auto orgLibPath = SharedLibrary::setLibraryPath(path.parent_path());
 #endif
             if (!dylib.open(path, SharedLibrary::ResolveAllSymbolsHint)) {
-                std::string msg = formatTextN("%1: load library failed: %2", path, dylib.lastError());
+                std::string msg = formatTextN("Load library failed: %1 [%2]", dylib.lastError(), path);
                 onnxdriver_log().critical("Env - %1", msg);
                 if (errorMessage) {
                     *errorMessage = std::move(msg);
