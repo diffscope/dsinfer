@@ -38,6 +38,7 @@ namespace dsinfer {
 
         static bool isLibrary(const std::filesystem::path &path);
         static std::filesystem::path setLibraryPath(const std::filesystem::path &path);
+        static std::filesystem::path locateLibraryPath(const void *addr);
 
     protected:
         class Impl;

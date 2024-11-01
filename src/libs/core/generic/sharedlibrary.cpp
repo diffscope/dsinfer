@@ -73,17 +73,42 @@ namespace dsinfer {
 
     static std::wstring winGetFullDllDirectory() {
         auto size = ::GetDllDirectoryW(0, nullptr);
-        if (!size) {
+        if (size == 0) {
             return {};
         }
 
         std::wstring res;
         res.resize(size);
-        size = ::GetDllDirectoryW(size, res.data());
-        if (!size) {
+        if (!::GetDllDirectoryW(size, res.data())) {
             return {};
         }
         return res;
+    }
+
+    static std::wstring winGetFullModuleFileName(HMODULE hModule) {
+        // https://stackoverflow.com/a/57114164/17177007
+        DWORD size = MAX_PATH;
+        std::wstring buffer;
+        buffer.resize(size);
+        while (true) {
+            DWORD result = ::GetModuleFileNameW(hModule, buffer.data(), size);
+            if (result == 0) {
+                break;
+            }
+
+            if (result < size) {
+                return buffer;
+            }
+
+            // Check if a larger buffer is needed
+            if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+                size *= 2;
+                buffer.resize(size);
+            } else {
+                break;
+            }
+        }
+        return {};
     }
 
 #endif
@@ -304,6 +329,23 @@ namespace dsinfer {
         putenv((char *) (PRIOR_LIBRARY_PATH_KEY "=" + path.string()).c_str());
 #endif
         return org;
+    }
+
+    fs::path SharedLibrary::locateLibraryPath(const void *addr) {
+#ifdef _WIN32
+        HMODULE hModule = nullptr;
+        if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                      GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                  (LPCWSTR) addr, &hModule)) {
+            return {};
+        }
+        return winGetFullModuleFileName(hModule);
+#else
+        Dl_info dl_info;
+        dladdr(const_cast<void *>(addr), &dl_info);
+        auto buf = dl_info.dli_fname;
+        return buf;
+#endif
     }
 
 }
