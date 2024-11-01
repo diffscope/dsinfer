@@ -58,8 +58,8 @@ namespace dsinfer {
             if (lpMsgBuf[len - 1] == L'\n') {
                 lpMsgBuf[len - 1] = L'\0';
                 len--;
-                if (len > 2 && lpMsgBuf[len - 2] == L'\r') {
-                    lpMsgBuf[len - 2] = L'\0';
+                if (len > 1 && lpMsgBuf[len - 1] == L'\r') {
+                    lpMsgBuf[len - 1] = L'\0';
                     len--;
                 }
             }
