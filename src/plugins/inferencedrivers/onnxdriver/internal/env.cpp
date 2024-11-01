@@ -1,5 +1,6 @@
 #include "env.h"
 
+#include <memory>
 #include <utility>
 
 #include <dsinfer/sharedlibrary.h>
@@ -8,6 +9,7 @@
 #include <onnxruntime_cxx_api.h>
 
 #include "onnxdriver_logger.h"
+#include "sessionsystem.h"
 
 namespace fs = std::filesystem;
 
@@ -83,6 +85,10 @@ namespace dsinfer::onnxdriver {
             ortApiBase = apiBase;
             ortApi = api;
 
+            if (!pSessionSystem) {
+                pSessionSystem = std::make_unique<SessionSystem>();
+            }
+
             onnxdriver_log().info("Env - Load successful");
             return true;
         }
@@ -99,6 +105,8 @@ namespace dsinfer::onnxdriver {
         void *hLibrary = nullptr;
         const OrtApi *ortApi = nullptr;
         const OrtApiBase *ortApiBase = nullptr;
+
+        std::unique_ptr<SessionSystem> pSessionSystem = nullptr;
     };
 
     Env::Env() : _impl(std::make_unique<Impl>()) {
