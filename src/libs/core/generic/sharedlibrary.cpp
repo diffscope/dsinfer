@@ -97,6 +97,7 @@ namespace dsinfer {
             }
 
             if (result < size) {
+                buffer.resize(result);
                 return buffer;
             }
 
@@ -104,9 +105,11 @@ namespace dsinfer {
             if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
                 size *= 2;
                 buffer.resize(size);
-            } else {
-                break;
+                continue;
             }
+
+            // Exactly
+            return buffer;
         }
         return {};
     }
