@@ -36,6 +36,7 @@ endif()
 # ----------------------------------
 set(DSINFER_VERSION ${PROJECT_VERSION})
 set(DSINFER_INSTALL_NAME ${PROJECT_NAME})
+set(DSINFER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 # ----------------------------------
 # Find basic dependencies

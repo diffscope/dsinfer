@@ -7,7 +7,7 @@ namespace dsinfer {
 
     class OnnxDriver : public InferenceDriver {
     public:
-        OnnxDriver();
+        explicit OnnxDriver(const std::filesystem::path &runtimePath);
         ~OnnxDriver();
 
     public:
@@ -16,6 +16,10 @@ namespace dsinfer {
         InferenceSession *createSession() override;
         InferenceTask *createTask() override;
         InferenceContext *createContext() override;
+
+    protected:
+        class Impl;
+        std::unique_ptr<Impl> _impl;
     };
 
 }

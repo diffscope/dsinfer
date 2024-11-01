@@ -97,7 +97,7 @@ namespace cli {
                     // installedTimestamp (optional)
                     do {
                         auto it3 = metadataObj.find("installedTimestamp");
-                        if (it3 == packageObj.end() || !it3->second.isInteger()) {
+                        if (it3 == packageObj.end() || !it3->second.isInt()) {
                             break;
                         }
                         metadata_.installedTimestamp = it3->second.toInt64();

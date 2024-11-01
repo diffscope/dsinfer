@@ -29,7 +29,7 @@
 
 |      name       |        type         |               description                |        example         |
 | :-------------: | :-----------------: | :--------------------------------------: | :--------------------: |
-| speakerMappings | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
+| speakerMapping | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
 
 ### Configurations
 
@@ -78,7 +78,7 @@
 
 |      name       |        type         |               description                |        example         |
 | :-------------: | :-----------------: | :--------------------------------------: | :--------------------: |
-| speakerMappings | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
+| speakerMapping | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
 
 ### Configurations
 
@@ -136,7 +136,7 @@
 
 |      name       |        type         |               description                |        example         |
 | :-------------: | :-----------------: | :--------------------------------------: | :--------------------: |
-| speakerMappings | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
+| speakerMapping | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
 | usePredictions  |  list&lt;enum&gt;   |            使用的预测参数列表            |      ["tension"]       |
 
 ### Configurations
@@ -198,7 +198,7 @@
 
 |      name       |        type         |               description                |        example         |
 | :-------------: | :-----------------: | :--------------------------------------: | :--------------------: |
-| speakerMappings | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
+| speakerMapping | map<string, string> | 歌手全局音色名称 => 模块内部嵌入名称映射 | {"zhu": "zhibin-base"} |
 
 ### Configurations
 

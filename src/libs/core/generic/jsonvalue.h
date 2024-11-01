@@ -61,7 +61,7 @@ namespace dsinfer {
         inline bool isBool() const {
             return type() == Bool;
         }
-        inline bool isInteger() const {
+        inline bool isInt() const {
             return type() == Integer;
         }
         inline bool isDouble() const {

@@ -15,7 +15,7 @@ namespace dsinfer {
 
     public:
         InferenceDriver *create() override {
-            return new OnnxDriver();
+            return new OnnxDriver(path().parent_path() / _TSTR("runtimes"));
         }
     };
 

@@ -1,6 +1,8 @@
 #ifndef PLUGIN_H
 #define PLUGIN_H
 
+#include <filesystem>
+
 #include <dsinfer/dsinferglobal.h>
 
 namespace dsinfer {
@@ -12,6 +14,9 @@ namespace dsinfer {
     public:
         virtual const char *iid() const = 0;
         virtual const char *key() const = 0;
+
+    public:
+        std::filesystem::path path() const;
     };
 
 }
