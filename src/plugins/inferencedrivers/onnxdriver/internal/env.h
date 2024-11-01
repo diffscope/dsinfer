@@ -12,8 +12,10 @@ namespace dsinfer::onnxdriver {
         Env();
         ~Env();
 
-        static Env *instance();
+        Env(const Env &) = delete;
+        Env &operator=(const Env &) = delete;
 
+        static Env *instance();
     public:
         bool load(const std::filesystem::path &path, ExecutionProvider ep,
                   std::string *errorMessage);

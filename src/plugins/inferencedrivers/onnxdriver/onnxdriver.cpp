@@ -35,10 +35,12 @@ namespace dsinfer {
     bool OnnxDriver::initialize(const JsonValue &args, Error *error) {
         __dsinfer_impl_t;
         if (impl.shared_env) {
-            *error = {
-                Error::FileDuplicated,
-                "onnx runtime has been initialized by another instance",
-            };
+            if (error) {
+                *error = {
+                    Error::FileDuplicated,
+                    "onnx runtime has been initialized by another instance",
+                };
+            }
             return false;
         }
 

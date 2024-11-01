@@ -7,6 +7,8 @@
 
 #include <onnxruntime_cxx_api.h>
 
+#include "onnxdriver_logger.h"
+
 namespace fs = std::filesystem;
 
 namespace dsinfer::onnxdriver {
@@ -16,16 +18,23 @@ namespace dsinfer::onnxdriver {
     class Env::Impl {
     public:
         bool load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
+            onnxdriver_log().info("Env - Loading onnx environment");
+
             SharedLibrary dylib;
 
             /**
              *  1. Load Ort shared library and create handle
              */
+            onnxdriver_log().debug("Env - Loading ORT shared library from %1", path);
 #ifdef _WIN32
             auto orgLibPath = SharedLibrary::setLibraryPath(path.parent_path());
 #endif
             if (!dylib.open(path, SharedLibrary::ResolveAllSymbolsHint)) {
-                *errorMessage = formatTextN("%1: load library failed: %2", path, dylib.lastError());
+                std::string msg = formatTextN("%1: load library failed: %2", path, dylib.lastError());
+                onnxdriver_log().critical("Env - %1", msg);
+                if (errorMessage) {
+                    *errorMessage = std::move(msg);
+                }
                 return false;
             }
 #ifdef _WIN32
@@ -35,22 +44,32 @@ namespace dsinfer::onnxdriver {
             /**
              *  2. Get Ort API getter handle
              */
+            onnxdriver_log().debug("Env - Getting ORT API handle");
             auto handle = (OrtApiBase * (ORT_API_CALL *) ()) dylib.resolve("OrtGetApiBase");
             if (!handle) {
-                *errorMessage =
-                    formatTextN("%1: failed to get API handle: %2", path, dylib.lastError());
+                std::string msg = formatTextN("Failed to get API handle: %1 [%2]", dylib.lastError(), path);
+                onnxdriver_log().critical("Env - %1", msg);
+                if (errorMessage) {
+                    *errorMessage = std::move(msg);
+                }
                 return false;
             }
 
             /**
              *  3. Check Ort API
              */
+            onnxdriver_log().debug("Env - ORT_API_VERSION is %1", ORT_API_VERSION);
             auto apiBase = handle();
             auto api = apiBase->GetApi(ORT_API_VERSION);
             if (!api) {
-                *errorMessage = formatTextN("%1: failed to get API instance");
+                std::string msg = formatTextN("%1: failed to get API instance");
+                onnxdriver_log().critical("Env - %1", msg);
+                if (errorMessage) {
+                    *errorMessage = std::move(msg);
+                }
                 return false;
             }
+            onnxdriver_log().debug("Env - ORT library version is %1", apiBase->GetVersionString());
 
             /**
              *  4. Successfully get Ort API
@@ -63,6 +82,8 @@ namespace dsinfer::onnxdriver {
             executionProvider = ep;
             ortApiBase = apiBase;
             ortApi = api;
+
+            onnxdriver_log().info("Env - Load successful");
             return true;
         }
 
@@ -91,7 +112,11 @@ namespace dsinfer::onnxdriver {
     bool Env::load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
         __dsinfer_impl_t;
         if (impl.loaded) {
-            *errorMessage = formatTextN(R"(%1: library "%2" has been loaded)", path, impl.ortPath);
+            std::string msg = formatTextN(R"(Library "%1" has been loaded [%2])", impl.ortPath, path);
+            onnxdriver_log().warning("Env - %1", msg);
+            if (errorMessage) {
+                *errorMessage = std::move(msg);
+            }
             return false;
         }
         return impl.load(path, ep, errorMessage);
