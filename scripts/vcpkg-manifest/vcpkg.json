@@ -2,7 +2,8 @@
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "dependencies": [
         "qmsetup",
-        "nlohmann-json"
+        "nlohmann-json",
+        "stduuid"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

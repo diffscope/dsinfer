@@ -11,7 +11,7 @@ namespace dsinfer {
         ~AcousticInference();
 
     public:
-        bool initialize(const JsonObject &args, Error *error) override;
+        bool initialize(const JsonValue &args, Error *error) override;
 
         bool start(const JsonValue &input, Error *error) override;
         bool stop() override;

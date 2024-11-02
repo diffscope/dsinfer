@@ -21,7 +21,7 @@ namespace dsinfer {
         };
 
     public:
-        virtual bool initialize(const JsonObject &args, Error *error) = 0;
+        virtual bool initialize(const JsonValue &args, Error *error) = 0;
 
         virtual bool start(const JsonValue &input, Error *error) = 0;
         virtual bool stop() = 0;

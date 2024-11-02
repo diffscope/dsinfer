@@ -12,9 +12,10 @@ namespace dsinfer {
         OnnxContext();
         ~OnnxContext();
 
+        static OnnxContext *getContext(int64_t contextId);
+
     public:
         int64_t id() const override;
-        static OnnxContext *getContext(int64_t contextId);
 
         bool insertObject(const std::string &key, const JsonValue &value) override;
         bool removeObject(const std::string &key) override;

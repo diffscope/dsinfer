@@ -6,6 +6,8 @@ Low level library for DiffSinger onnx model inference.
 
 + [nlohmann_json](https://github.com/nlohmann/json)
 + [qmsetup](https://github.com/stdware/qmsetup)
++ [stduuid](https://github.com/mariusbancila/stduuid)
++ [sha256](https://github.com/B-Con/crypto-algorithms)
 
 ## Functionalities
 

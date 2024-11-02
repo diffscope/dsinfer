@@ -1,9 +1,9 @@
 project(onnxdriver
     VERSION ${DSINFER_VERSION}
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
-file(GLOB_RECURSE _src *.h *.cpp)
+file(GLOB_RECURSE _src *.h *.c *.cpp)
 
 # Import onnxruntime
 set(_onnxruntime_dir ${DSINFER_SOURCE_DIR}/libs/onnxruntime)

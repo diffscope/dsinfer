@@ -8,7 +8,7 @@
 
 namespace dsinfer {
 
-    class DSINFER_EXPORT ConsoleOutput {
+    class DSINFER_EXPORT Console {
     public:
         enum Color {
             Default = -1,

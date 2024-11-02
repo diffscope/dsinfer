@@ -28,13 +28,13 @@ namespace dsinfer {
         idManager().remove(impl.contextId);
     }
 
+    OnnxContext *OnnxContext::getContext(int64_t contextId) {
+        return idManager().get(contextId);
+    }
+
     int64_t OnnxContext::id() const {
         __dsinfer_impl_t;
         return impl.contextId;
-    }
-
-    OnnxContext *OnnxContext::getContext(int64_t contextId) {
-        return idManager().get(contextId);
     }
 
     bool OnnxContext::insertObject(const std::string &key, const JsonValue &value) {

@@ -21,20 +21,31 @@ namespace dsinfer {
 
     OnnxSession::~OnnxSession() {
         __dsinfer_impl_t;
+
+        // Ensure close
+        std::ignore = impl.session.close();
         idManager().remove(impl.sessionId);
     }
 
-    bool OnnxSession::open(const std::filesystem::path &path, const JsonObject &args,
-                           Error *error) {
+    OnnxSession *OnnxSession::getSession(int64_t sessionId) {
+        return idManager().get(sessionId);
+    }
+
+    bool OnnxSession::open(const std::filesystem::path &path, const JsonValue &args, Error *error) {
         __dsinfer_impl_t;
         bool useCpuHint = false;
-        if (auto it = args.find("useCpuHint"); it != args.end()) {
+        auto obj = args.toObject();
+        if (auto it = obj.find("useCpuHint"); it != obj.end()) {
             if (it->second.isBool()) {
                 useCpuHint = it->second.toBool();
             }
         }
-
         return impl.session.open(path, useCpuHint, error);
+    }
+
+    bool OnnxSession::isOpen() const {
+        __dsinfer_impl_t;
+        return impl.session.isOpen();
     }
 
     bool OnnxSession::close(Error *error) {
@@ -47,13 +58,10 @@ namespace dsinfer {
         return impl.sessionId;
     }
 
-    OnnxSession *OnnxSession::getSession(int64_t sessionId) {
-        return idManager().get(sessionId);
-    }
-
     bool OnnxSession::isRunning() const {
         __dsinfer_impl_t;
-        return impl.session.isOpen();
+        // TODO: implement
+        return false;
     }
 
 }

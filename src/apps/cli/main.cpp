@@ -29,18 +29,18 @@ static void log_report_callback(int level, const char *category, const char *fmt
     auto tm = std::localtime(&t);
     auto dts = (std::stringstream() << std::put_time(tm, "%Y-%m-%d %H:%M:%S")).str();
 
-    ConsoleOutput::Color foreground, background;
+    Console::Color foreground, background;
     if (level <= Log::Verbose) {
-        foreground = ConsoleOutput::Default;
-        background = ConsoleOutput::White;
+        foreground = Console::Default;
+        background = Console::White;
     } else if (level <= Log::Information) {
-        foreground = ConsoleOutput::Blue;
+        foreground = Console::Blue;
         background = foreground;
     } else if (level <= Log::Warning) {
-        foreground = ConsoleOutput::Yellow;
+        foreground = Console::Yellow;
         background = foreground;
     } else {
-        foreground = ConsoleOutput::Red;
+        foreground = Console::Red;
         background = foreground;
     }
 
@@ -67,10 +67,10 @@ static void log_report_callback(int level, const char *category, const char *fmt
         default:
             break;
     }
-    ConsoleOutput::printf(foreground, ConsoleOutput::Default, "[%s] %-15s", dts.c_str(), category);
-    ConsoleOutput::printf(ConsoleOutput::Black, background, " %s ", sig);
-    ConsoleOutput::printf(ConsoleOutput::Default, ConsoleOutput::Default, "  ");
-    ConsoleOutput::vprintf(foreground, ConsoleOutput::Default, fmt, args);
+    Console::printf(foreground, Console::Default, "[%s] %-15s", dts.c_str(), category);
+    Console::printf(Console::Black, background, " %s ", sig);
+    Console::printf(Console::Default, Console::Default, "  ");
+    Console::vprintf(foreground, Console::Default, fmt, args);
 }
 
 struct Context {
@@ -129,20 +129,20 @@ struct Context {
 
     template <class... Args>
     static inline void info(const std::string &format, Args &&...args) {
-        DS::ConsoleOutput::printf(DS::ConsoleOutput::Default, DS::ConsoleOutput::Default, "%s\n",
-                                  DS::formatTextN(format, args...).c_str());
+        DS::Console::printf(DS::Console::Default, DS::Console::Default, "%s\n",
+                            DS::formatTextN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
-        DS::ConsoleOutput::printf(DS::ConsoleOutput::Yellow, DS::ConsoleOutput::Default, "%s\n",
-                                  DS::formatTextN(format, args...).c_str());
+        DS::Console::printf(DS::Console::Yellow, DS::Console::Default, "%s\n",
+                            DS::formatTextN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
-        DS::ConsoleOutput::printf(DS::ConsoleOutput::Red, DS::ConsoleOutput::Default, "%s\n",
-                                  DS::formatTextN(format, args...).c_str());
+        DS::Console::printf(DS::Console::Red, DS::Console::Default, "%s\n",
+                            DS::formatTextN(format, args...).c_str());
     }
 };
 

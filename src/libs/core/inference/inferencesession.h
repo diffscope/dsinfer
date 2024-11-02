@@ -14,9 +14,10 @@ namespace dsinfer {
         virtual ~InferenceSession();
 
     public:
-        virtual bool open(const std::filesystem::path &path, const JsonObject &args,
+        virtual bool open(const std::filesystem::path &path, const JsonValue &args,
                           Error *error) = 0;
         virtual bool close(Error *error) = 0;
+        virtual bool isOpen() const = 0;
 
     public:
         virtual int64_t id() const = 0;

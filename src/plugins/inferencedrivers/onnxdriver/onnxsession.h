@@ -10,14 +10,15 @@ namespace dsinfer {
         OnnxSession();
         ~OnnxSession();
 
+        static OnnxSession *getSession(int64_t sessionId);
+
     public:
-        bool open(const std::filesystem::path &path, const JsonObject &args, Error *error) override;
+        bool open(const std::filesystem::path &path, const JsonValue &args, Error *error) override;
         bool close(Error *error) override;
+        bool isOpen() const override;
 
     public:
         int64_t id() const override;
-        static OnnxSession *getSession(int64_t sessionId);
-
         bool isRunning() const override;
 
     protected:

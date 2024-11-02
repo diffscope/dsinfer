@@ -19,7 +19,7 @@ namespace dsinfer {
 
         explicit PrintScopeGuard(int foreground, int background)
             : consoleChanged(
-                  !(foreground == ConsoleOutput::Default && background == ConsoleOutput::Default)) {
+                  !(foreground == Console::Default && background == Console::Default)) {
             global_mtx().lock();
 #ifdef _WIN32
             _codepage = ::GetConsoleOutputCP();
@@ -27,57 +27,57 @@ namespace dsinfer {
 
             if (consoleChanged) {
                 WORD winColor = 0;
-                if (foreground != ConsoleOutput::Default) {
+                if (foreground != Console::Default) {
                     winColor |=
-                        (foreground & ConsoleOutput::Intensified) ? FOREGROUND_INTENSITY : 0;
+                        (foreground & Console::Intensified) ? FOREGROUND_INTENSITY : 0;
                     switch (foreground & 0xF) {
-                        case ConsoleOutput::Red:
+                        case Console::Red:
                             winColor |= FOREGROUND_RED;
                             break;
-                        case ConsoleOutput::Green:
+                        case Console::Green:
                             winColor |= FOREGROUND_GREEN;
                             break;
-                        case ConsoleOutput::Blue:
+                        case Console::Blue:
                             winColor |= FOREGROUND_BLUE;
                             break;
-                        case ConsoleOutput::Yellow:
+                        case Console::Yellow:
                             winColor |= FOREGROUND_RED | FOREGROUND_GREEN;
                             break;
-                        case ConsoleOutput::Purple:
+                        case Console::Purple:
                             winColor |= FOREGROUND_RED | FOREGROUND_BLUE;
                             break;
-                        case ConsoleOutput::Cyan:
+                        case Console::Cyan:
                             winColor |= FOREGROUND_GREEN | FOREGROUND_BLUE;
                             break;
-                        case ConsoleOutput::White:
+                        case Console::White:
                             winColor |= FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
                         default:
                             break;
                     }
                 }
-                if (background != ConsoleOutput::Default) {
+                if (background != Console::Default) {
                     winColor |=
-                        (background & ConsoleOutput::Intensified) ? BACKGROUND_INTENSITY : 0;
+                        (background & Console::Intensified) ? BACKGROUND_INTENSITY : 0;
                     switch (background & 0xF) {
-                        case ConsoleOutput::Red:
+                        case Console::Red:
                             winColor |= BACKGROUND_RED;
                             break;
-                        case ConsoleOutput::Green:
+                        case Console::Green:
                             winColor |= BACKGROUND_GREEN;
                             break;
-                        case ConsoleOutput::Blue:
+                        case Console::Blue:
                             winColor |= BACKGROUND_BLUE;
                             break;
-                        case ConsoleOutput::Yellow:
+                        case Console::Yellow:
                             winColor |= BACKGROUND_RED | BACKGROUND_GREEN;
                             break;
-                        case ConsoleOutput::Purple:
+                        case Console::Purple:
                             winColor |= BACKGROUND_RED | BACKGROUND_BLUE;
                             break;
-                        case ConsoleOutput::Cyan:
+                        case Console::Cyan:
                             winColor |= BACKGROUND_GREEN | BACKGROUND_BLUE;
                             break;
-                        case ConsoleOutput::White:
+                        case Console::White:
                             winColor |= BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE;
                         default:
                             break;
@@ -206,7 +206,7 @@ namespace dsinfer {
 #endif
     };
 
-    int ConsoleOutput::printf(int foreground, int background, const char *fmt, ...) {
+    int Console::printf(int foreground, int background, const char *fmt, ...) {
         PrintScopeGuard _guard(foreground, background);
 
         va_list args;
@@ -216,7 +216,7 @@ namespace dsinfer {
         return res;
     }
 
-    int ConsoleOutput::vprintf(int foreground, int background, const char *fmt, va_list args) {
+    int Console::vprintf(int foreground, int background, const char *fmt, va_list args) {
         PrintScopeGuard _guard(foreground, background);
         return std::vprintf(fmt, args);
     }
@@ -224,15 +224,15 @@ namespace dsinfer {
     static void log_default_callback(int level, const char *category, const char *fmt,
                                      va_list args) {
         std::ignore = category;
-        ConsoleOutput::Color color;
+        Console::Color color;
         if (level <= Log::Information) {
-            color = ConsoleOutput::Default;
+            color = Console::Default;
         } else if (level <= Log::Warning) {
-            color = ConsoleOutput::Yellow;
+            color = Console::Yellow;
         } else {
-            color = ConsoleOutput::Red;
+            color = Console::Red;
         }
-        ConsoleOutput::vprintf(color, ConsoleOutput::Default, fmt, args);
+        Console::vprintf(color, Console::Default, fmt, args);
     }
 
     static int m_level = Log::Information;
