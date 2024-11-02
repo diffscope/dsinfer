@@ -1,5 +1,5 @@
-#ifndef DSINFR_ONNXDRIVER_ENV_H
-#define DSINFR_ONNXDRIVER_ENV_H
+#ifndef DSINFER_ONNXDRIVER_ENV_H
+#define DSINFER_ONNXDRIVER_ENV_H
 
 #include <filesystem>
 
@@ -36,4 +36,4 @@ namespace dsinfer::onnxdriver {
 
 }
 
-#endif // DSINFR_ONNXDRIVER_ENV_H
+#endif // DSINFER_ONNXDRIVER_ENV_H

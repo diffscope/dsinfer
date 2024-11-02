@@ -1,5 +1,5 @@
-#ifndef DSINFR_ONNXDRIVER_IDUTIL
-#define DSINFR_ONNXDRIVER_IDUTIL
+#ifndef DSINFER_ONNXDRIVER_IDUTIL
+#define DSINFER_ONNXDRIVER_IDUTIL
 
 #include <map>
 #include <mutex>
@@ -52,4 +52,4 @@ namespace dsinfer {
 
 }
 
-#endif // DSINFR_ONNXDRIVER_IDUTIL
+#endif // DSINFER_ONNXDRIVER_IDUTIL

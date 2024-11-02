@@ -1,5 +1,5 @@
-#ifndef DSINFR_ONNXDRIVER_EXECUTIONPROVIDER_P_H
-#define DSINFR_ONNXDRIVER_EXECUTIONPROVIDER_P_H
+#ifndef DSINFER_ONNXDRIVER_EXECUTIONPROVIDER_P_H
+#define DSINFER_ONNXDRIVER_EXECUTIONPROVIDER_P_H
 
 #include <onnxruntime_cxx_api.h>
 
@@ -8,4 +8,4 @@ namespace dsinfer::onnxdriver {
     bool initDirectML(Ort::SessionOptions &options, int deviceIndex, std::string *errorMessage = nullptr);
 }
 
-#endif // DSINFR_ONNXDRIVER_EXECUTIONPROVIDER_P_H
+#endif // DSINFER_ONNXDRIVER_EXECUTIONPROVIDER_P_H

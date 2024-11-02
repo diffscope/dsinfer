@@ -1,5 +1,5 @@
-#ifndef DSINFR_ONNXDRIVER_VALUEMAP_H
-#define DSINFR_ONNXDRIVER_VALUEMAP_H
+#ifndef DSINFER_ONNXDRIVER_VALUEMAP_H
+#define DSINFER_ONNXDRIVER_VALUEMAP_H
 
 #include <map>
 #include <memory>
@@ -16,4 +16,4 @@ namespace dsinfer::onnxdriver {
     }
 }
 
-#endif // DSINFR_ONNXDRIVER_VALUEMAP_H
+#endif // DSINFER_ONNXDRIVER_VALUEMAP_H

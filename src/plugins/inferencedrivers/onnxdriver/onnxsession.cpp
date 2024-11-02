@@ -1,9 +1,6 @@
 #include "onnxsession.h"
 
-#include <map>
-#include <mutex>
-#include <shared_mutex>
-
+#include "internal/onnxdriver_logger.h"
 #include "internal/session.h"
 #include "internal/idutil.h"
 
@@ -27,6 +24,7 @@ namespace dsinfer {
         __dsinfer_impl_t;
         auto sessionId = idManager().add(this);
         impl.sessionId = sessionId;
+        onnxdriver_log().debug("OnnxSession [%1] - new session created", sessionId);
     }
 
     OnnxSession::~OnnxSession() {

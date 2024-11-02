@@ -1,5 +1,5 @@
-#ifndef SESSION_H
-#define SESSION_H
+#ifndef DSINFER_ONNXDRIVER_SESSION_H
+#define DSINFER_ONNXDRIVER_SESSION_H
 
 #include <map>
 #include <memory>
@@ -44,4 +44,4 @@ namespace dsinfer::onnxdriver {
 
 }
 
-#endif // SESSION_H
+#endif // DSINFER_ONNXDRIVER_SESSION_H

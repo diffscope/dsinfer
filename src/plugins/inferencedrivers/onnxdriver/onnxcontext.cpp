@@ -30,6 +30,7 @@ namespace dsinfer {
         __dsinfer_impl_t;
         auto contextId = idManager().add(this);
         impl.contextId = contextId;
+        onnxdriver_log().debug("OnnxContext [%1] - new context created", contextId);
     }
 
     OnnxContext::~OnnxContext() {
@@ -38,7 +39,8 @@ namespace dsinfer {
     }
 
     int64_t OnnxContext::id() const {
-        return reinterpret_cast<int64_t>(this);
+        __dsinfer_impl_t;
+        return impl.contextId;
     }
 
     OnnxContext *OnnxContext::getContext(int64_t contextId) {
@@ -61,7 +63,7 @@ namespace dsinfer {
                     Error error;
                     auto ortVal = onnxdriver::deserializeTensor(it_content->second.toObject(), &error);
                     if (!error.ok()) {
-                        onnxdriver_log().critical("OnnxContext - " + error.message());
+                        onnxdriver_log().critical("OnnxContext [%1] - %2", impl.contextId, error.message());
                         return false;
                     }
                     // Save Ort::Value to value map
@@ -69,7 +71,7 @@ namespace dsinfer {
                         std::unique_lock<std::shared_mutex> lock(impl.mtx);
                         impl.valueMap[key] = onnxdriver::makeSharedValue(std::move(ortVal));
                     }
-                    onnxdriver_log().info("OnnxContext - Inserted value \"%1\" to context", key);
+                    onnxdriver_log().info("OnnxContext [%1] - Inserted value \"%2\" to context", impl.contextId, key);
                     return true;
                 } else if (checkStringValue(content, "format", "array")) {
                     return false; // TODO: to be implemented
@@ -84,7 +86,7 @@ namespace dsinfer {
         std::unique_lock<std::shared_mutex> lock(impl.mtx);
         if (auto it = impl.valueMap.find(key); it != impl.valueMap.end()) {
             impl.valueMap.erase(it);
-            onnxdriver_log().info("OnnxContext - Removed value \"%1\" from context", key);
+            onnxdriver_log().info("OnnxContext [%1] - Removed value \"%2\" from context", impl.contextId, key);
             return true;
         }
         return false;
@@ -104,7 +106,7 @@ namespace dsinfer {
             Error error;
             auto jVal = onnxdriver::serializeTensor(*ortVal, &error);
             if (!error.ok()) {
-                onnxdriver_log().critical("OnnxContext - " + error.message());
+                onnxdriver_log().critical("OnnxContext [%1] - %2", impl.contextId, error.message());
                 return {};
             }
             return JsonObject{

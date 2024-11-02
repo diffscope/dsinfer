@@ -1,5 +1,5 @@
-#ifndef DSINFR_ONNXDRIVER_TENSORPARSER_H
-#define DSINFR_ONNXDRIVER_TENSORPARSER_H
+#ifndef DSINFER_ONNXDRIVER_TENSORPARSER_H
+#define DSINFER_ONNXDRIVER_TENSORPARSER_H
 
 #include <cstring>
 #include <numeric>
@@ -148,4 +148,4 @@ namespace dsinfer::onnxdriver {
     }
 }
 
-#endif // DSINFR_ONNXDRIVER_TENSORPARSER_H
+#endif // DSINFER_ONNXDRIVER_TENSORPARSER_H
