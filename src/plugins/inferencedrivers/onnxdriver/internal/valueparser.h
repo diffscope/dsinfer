@@ -9,20 +9,47 @@
 #include <dsinfer/error.h>
 #include <dsinfer/jsonvalue.h>
 
+namespace dsinfer {
+    inline bool checkStringValue(const JsonObject &obj, const std::string &key, const std::string &value) {
+        if (auto it = obj.find(key); it != obj.end()) {
+            if (!it->second.isString()) {
+                return false;
+            }
+            return it->second.toString() == value;
+        }
+        return false;
+    }
+
+    inline bool checkStringValues(const JsonObject &obj, const std::string &key, const std::initializer_list<std::string> &values) {
+        if (auto it = obj.find(key); it != obj.end()) {
+            if (!it->second.isString()) {
+                return false;
+            }
+            const auto valString = it->second.toString();
+            for (const auto &value : values) {
+                if (valString == value) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+}
+
 namespace dsinfer::onnxdriver {
 
     template <typename T>
     inline Ort::Value createTensorFromRawBytes(OrtAllocator *allocator,
                                                const std::vector<uint8_t> &data,
                                                const std::vector<int64_t> &shape,
-                                               dsinfer::Error *error = nullptr) {
+                                               Error *error = nullptr) {
         auto expectedDataLength = std::reduce(shape.begin(), shape.end(),
                                               int64_t{1}, std::multiplies<>());
         auto expectedBytes = expectedDataLength * sizeof(T);
         if (data.size() != expectedBytes) {
             if (error) {
-                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                        "Invalid input format: data size must match shape");
+                *error = Error(Error::InvalidFormat,
+                               "Invalid input format: data size must match shape");
             }
             return Ort::Value(nullptr);
         }
@@ -30,8 +57,8 @@ namespace dsinfer::onnxdriver {
         auto buffer = value.template GetTensorMutableData<uint8_t>();
         if (!buffer) {
             if (error) {
-                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                        "Failed to convert: ort tensor buffer is null");
+                *error = Error(Error::InvalidFormat,
+                               "Failed to convert: ort tensor buffer is null");
             }
             return Ort::Value(nullptr);
         }
@@ -39,15 +66,15 @@ namespace dsinfer::onnxdriver {
         return value;
     }
 
-    inline Ort::Value deserializeTensor(const dsinfer::JsonValue &input, dsinfer::Error *error = nullptr) {
+    inline Ort::Value deserializeTensor(const JsonValue &input, Error *error = nullptr) {
         const auto &jVal_data = input["value"];  // bytes
         const auto &jVal_type = input["type"];  // string
         const auto &jVal_shape = input["shape"];  // array
 
         if (!jVal_data.isBinary() || !jVal_type.isString() || !jVal_shape.isArray()) {
             if (error) {
-                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                        "Invalid input format");
+                *error = Error(Error::InvalidFormat,
+                               "Invalid input format");
             }
             return Ort::Value(nullptr);
         }
@@ -62,8 +89,8 @@ namespace dsinfer::onnxdriver {
         for (const auto &item: jArr_shape) {
             if (!item.isInt() && !item.isDouble()) {
                 if (error) {
-                    *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                            "Invalid input format: shape array elements must be numbers");
+                    *error = Error(Error::InvalidFormat,
+                                   "Invalid input format: shape array elements must be numbers");
                 }
                 return Ort::Value(nullptr);
             }
@@ -83,13 +110,13 @@ namespace dsinfer::onnxdriver {
 
         // unknown type
         if (error) {
-            *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                    "Invalid input format: unknown data type");
+            *error = Error(Error::InvalidFormat,
+                           "Invalid input format: unknown data type");
         }
         return Ort::Value(nullptr);
     }
 
-    inline dsinfer::JsonValue serializeTensor(const Ort::Value &tensor, dsinfer::Error *error = nullptr) {
+    inline JsonValue serializeTensor(const Ort::Value &tensor, Error *error = nullptr) {
         std::string dataType;
         size_t elemSize = 1;
         auto typeAndShapeInfo = tensor.GetTensorTypeAndShapeInfo();
@@ -114,18 +141,18 @@ namespace dsinfer::onnxdriver {
             }
             default:
                 if (error) {
-                    *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
-                                            "Failed to convert to JsonValue: unknown tensor type");
+                    *error = Error(Error::InvalidFormat,
+                                   "Failed to convert to JsonValue: unknown tensor type");
                 }
                 return false; // Unknown tensor type
         }
 
         // Serialize shape
-        dsinfer::JsonArray shapeArray;
+        JsonArray shapeArray;
         auto tensorShape = typeAndShapeInfo.GetShape();
         shapeArray.resize(tensorShape.size());
         for (size_t i = 0; i < tensorShape.size(); ++i) {
-            shapeArray[i] = dsinfer::JsonValue(tensorShape[i]);
+            shapeArray[i] = JsonValue(tensorShape[i]);
         }
 
         // Serialize data (as binary)
@@ -134,17 +161,38 @@ namespace dsinfer::onnxdriver {
         auto buffer = tensor.template GetTensorData<uint8_t>();
         if (!buffer) {
             if (error) {
-                *error = dsinfer::Error(dsinfer::Error::Type::InvalidFormat,
-                                        "Failed to convert to JsonValue: ort tensor buffer is null");
+                *error = Error(Error::InvalidFormat,
+                               "Failed to convert to JsonValue: ort tensor buffer is null");
             }
             return {};
         }
 
         return JsonObject {
-            {"value", dsinfer::JsonValue(std::vector<uint8_t>(buffer, buffer + bufferSize))},
+            {"value", JsonValue(std::vector<uint8_t>(buffer, buffer + bufferSize))},
             {"shape", shapeArray},
             {"type", dataType},
         };
+    }
+
+    inline Ort::Value parseInputContent(const JsonObject &content, Error *error = nullptr) {
+        if (auto it_content = content.find("data"); it_content != content.end()) {
+            if (checkStringValue(content, "format", "bytes")) {
+                return onnxdriver::deserializeTensor(it_content->second.toObject(), error);
+            } else if (checkStringValue(content, "format", "array")) {
+                // TODO: to be implemented
+                if (error) {
+                    *error = Error(Error::InvalidFormat,
+                                   "Array format is not implemented yet");
+                }
+                return Ort::Value(nullptr);
+            }
+        } else {
+            if (error) {
+                *error = Error(Error::InvalidFormat,
+                               "Failed to parse content");
+            }
+        }
+        return Ort::Value(nullptr);
     }
 }
 

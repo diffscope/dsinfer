@@ -15,16 +15,6 @@ namespace dsinfer {
         return manager;
     }
 
-    static inline bool checkStringValue(
-        const JsonObject &obj,
-        const std::string &key,
-        const std::string &value);
-
-    static inline bool checkStringValues(
-        const JsonObject &obj,
-        const std::string &key,
-        const std::initializer_list<std::string> &values);
-
     OnnxContext::OnnxContext()
             :_impl(std::make_unique<Impl>()) {
         __dsinfer_impl_t;
@@ -58,24 +48,16 @@ namespace dsinfer {
             if (!checkStringValue(content, "class", "Ort::Value")) {
                 return false;
             }
-            if (auto it_content = content.find("data"); it_content != content.end()) {
-                if (checkStringValue(content, "format", "bytes")) {
-                    Error error;
-                    auto ortVal = onnxdriver::deserializeTensor(it_content->second.toObject(), &error);
-                    if (!error.ok()) {
-                        onnxdriver_log().critical("OnnxContext [%1] - %2", impl.contextId, error.message());
-                        return false;
-                    }
-                    // Save Ort::Value to value map
-                    {
-                        std::unique_lock<std::shared_mutex> lock(impl.mtx);
-                        impl.valueMap[key] = onnxdriver::makeSharedValue(std::move(ortVal));
-                    }
-                    onnxdriver_log().info("OnnxContext [%1] - Inserted value \"%2\" to context", impl.contextId, key);
-                    return true;
-                } else if (checkStringValue(content, "format", "array")) {
-                    return false; // TODO: to be implemented
+            Error error;
+            auto ortVal = onnxdriver::parseInputContent(content, &error);
+            if (error.ok()) {
+                // Save Ort::Value to value map
+                {
+                    std::unique_lock<std::shared_mutex> lock(impl.mtx);
+                    impl.valueMap[key] = onnxdriver::makeSharedValue(std::move(ortVal));
                 }
+                onnxdriver_log().info("OnnxContext [%1] - Inserted value \"%2\" to context", impl.contextId, key);
+                return true;
             }
         }
         return false;
@@ -150,29 +132,6 @@ namespace dsinfer {
         return false;
     }
 
-    static inline bool checkStringValue(const JsonObject &obj, const std::string &key, const std::string &value) {
-        if (auto it = obj.find(key); it != obj.end()) {
-            if (!it->second.isString()) {
-                return false;
-            }
-            return it->second.toString() == value;
-        }
-        return false;
-    }
 
-    static inline bool checkStringValues(const JsonObject &obj, const std::string &key, const std::initializer_list<std::string> &values) {
-        if (auto it = obj.find(key); it != obj.end()) {
-            if (!it->second.isString()) {
-                return false;
-            }
-            const auto valString = it->second.toString();
-            for (const auto &value : values) {
-                if (valString == value) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
 }

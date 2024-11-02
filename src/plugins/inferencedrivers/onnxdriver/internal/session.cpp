@@ -20,7 +20,8 @@ namespace fs = std::filesystem;
 
 namespace dsinfer::onnxdriver {
 
-    inline ValueMap SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, ValueMap &inputValueMap, std::string *errorMessage);
+    template <typename ValueMapType>
+    inline ValueMapType SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, const ValueMapType &inputValueMap, Error *error);
 
     class Session::Impl {
     public:
@@ -105,9 +106,10 @@ namespace dsinfer::onnxdriver {
 
     bool Session::close() {
         __dsinfer_impl_t;
-        onnxdriver_log().debug("Session [%1] - close", path().filename());
         if (!impl.image)
             return false;
+
+        onnxdriver_log().debug("Session [%1] - close", path().filename());
 
         if (impl.image->deref() == 0) {
             impl.image = nullptr;
@@ -125,8 +127,9 @@ namespace dsinfer::onnxdriver {
         return impl.image != nullptr;
     }
 
-    inline ValueMap SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, ValueMap &inputValueMap, Error *error) {
-        // Here we don't use const reference because Ort::Value::CreateTensor requires a non-const buffer
+    template <typename ValueMapType>
+    inline ValueMapType SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, const ValueMapType &inputValueMap, Error *error) {
+        static_assert(std::is_same_v<ValueMapType, ValueMap> || std::is_same_v<ValueMapType, SharedValueMap>);
 
         auto filename = image ? image->path.filename() : "";
         onnxdriver_log().info("Session [%1] - Running inference", filename);
@@ -201,8 +204,14 @@ namespace dsinfer::onnxdriver {
 
             Ort::IoBinding binding(image->session);
 
-            for (auto &[name, value]: inputValueMap) {
-                binding.BindInput(name.c_str(), value);
+            if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
+                for (auto &[name, value]: inputValueMap) {
+                    binding.BindInput(name.c_str(), *value);
+                }
+            } else {
+                for (auto &[name, value]: inputValueMap) {
+                    binding.BindInput(name.c_str(), value);
+                }
             }
 
             const auto &outputNames = image->outputNames;
@@ -213,10 +222,16 @@ namespace dsinfer::onnxdriver {
             runOptions.UnsetTerminate();
             image->session.Run(runOptions, binding);
 
-            ValueMap outValueMap;
+            ValueMapType outValueMap;
             auto outputValues = binding.GetOutputValues();
-            for (size_t i = 0; i < outputValues.size(); ++i) {
-                outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
+            if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
+                for (size_t i = 0; i < outputValues.size(); ++i) {
+                    outValueMap.emplace(outputNames[i], makeSharedValue(std::move(outputValues[i])));
+                }
+            } else {
+                for (size_t i = 0; i < outputValues.size(); ++i) {
+                    outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
+                }
             }
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::steady_clock::now() - timeStart).count();
@@ -255,9 +270,14 @@ namespace dsinfer::onnxdriver {
         impl.runOptions.SetTerminate();
     }
 
-    ValueMap Session::run(ValueMap &inputValueMap, Error *error) {
+    ValueMap Session::run(const ValueMap &inputValueMap, Error *error) {
         __dsinfer_impl_t;
-        return SessionRunHelper(impl.image, impl.runOptions, inputValueMap, error);
+        return SessionRunHelper<ValueMap>(impl.image, impl.runOptions, inputValueMap, error);
+    }
+
+    SharedValueMap Session::run(const SharedValueMap &inputValueMap, Error *error) {
+        __dsinfer_impl_t;
+        return SessionRunHelper<SharedValueMap>(impl.image, impl.runOptions, inputValueMap, error);
     }
 
 }

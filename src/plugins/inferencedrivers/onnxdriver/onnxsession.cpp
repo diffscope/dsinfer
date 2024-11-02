@@ -1,4 +1,5 @@
 #include "onnxsession.h"
+#include "onnxsession_p.h"
 
 #include "internal/onnxdriver_logger.h"
 #include "internal/session.h"
@@ -10,15 +11,6 @@ namespace dsinfer {
         static IdManager<OnnxSession> manager;
         return manager;
     }
-
-    class OnnxSession::Impl {
-    public:
-        Impl() {
-        }
-
-        int64_t sessionId = 0;
-        onnxdriver::Session session;
-    };
 
     OnnxSession::OnnxSession() : _impl(std::make_unique<Impl>()) {
         __dsinfer_impl_t;

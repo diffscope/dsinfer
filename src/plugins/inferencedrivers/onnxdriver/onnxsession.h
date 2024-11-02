@@ -23,6 +23,8 @@ namespace dsinfer {
     protected:
         class Impl;
         std::unique_ptr<Impl> _impl;
+
+        friend class OnnxTask;
     };
 
 }

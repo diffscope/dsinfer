@@ -30,7 +30,8 @@ namespace dsinfer::onnxdriver {
         std::vector<std::string> inputNames() const;
         std::vector<std::string> outputNames() const;
 
-        ValueMap run(ValueMap &inputTensorMap, Error *error = nullptr);
+        ValueMap run(const ValueMap &inputTensorMap, Error *error = nullptr);
+        SharedValueMap run(const SharedValueMap &inputTensorMap, Error *error = nullptr);
 
         void terminate();
 

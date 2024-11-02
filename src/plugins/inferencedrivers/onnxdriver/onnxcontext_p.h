@@ -12,6 +12,14 @@ namespace dsinfer {
         mutable std::shared_mutex mtx;
         int64_t contextId = 0;
         onnxdriver::SharedValueMap valueMap;
+
+        std::shared_ptr<Ort::Value> getOrtValue(const std::string &key) {
+            std::shared_lock<std::shared_mutex> lock(mtx);
+            if (auto it = valueMap.find(key); it != valueMap.end()) {
+                return it->second;
+            }
+            return nullptr;
+        }
     };
 }
 
