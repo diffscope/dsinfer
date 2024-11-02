@@ -1,0 +1,263 @@
+#include "session.h"
+#include "sessionsystem.h"
+#include "sessionimage.h"
+#include "executionprovider.h"
+#include "env.h"
+#include "onnxdriver_common.h"
+#include "onnxdriver_logger.h"
+
+#include <dsinfer/dsinferglobal.h>
+
+#include <atomic>
+#include <cassert>
+#include <chrono>
+#include <cstdio>
+#include <mutex>
+#include <sstream>
+#include <unordered_set>
+
+namespace fs = std::filesystem;
+
+namespace dsinfer::onnxdriver {
+
+    inline ValueMap SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, ValueMap &inputValueMap, std::string *errorMessage);
+
+    class Session::Impl {
+    public:
+        SessionImage *image = nullptr;
+        Ort::RunOptions runOptions;
+    };
+
+    Session::Session() : _impl(std::make_unique<Impl>()) {
+    }
+
+    Session::~Session() {
+        close();
+    }
+
+    Session::Session(Session &&other) noexcept {
+        std::swap(_impl, other._impl);
+    }
+
+    Session &Session::operator=(Session &&other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        std::swap(_impl, other._impl);
+        return *this;
+    }
+
+    bool Session::open(const fs::path &path, bool useCpuHint, Error *error) {
+        __dsinfer_impl_t;
+        // TODO: If the same session is already opened before, useCpuHint will have no effect
+        //       due to SessionSystem will return the existing SessionImage instead creating a new one.
+        //       Should this be the desired behavior, or it needs to be fixed?
+
+        if (!Env::instance() || !Env::instance()->isLoaded()) {
+            onnxdriver_log().critical("Session - The environment is not initialized!");
+            return false;
+        }
+        if (!SessionSystem::instance()) {
+            onnxdriver_log().critical("Session - The session system is not initialized!");
+            return false;
+        }
+        if (isOpen()) {
+            onnxdriver_log().warning("Session - Session %1 is already open!", path.string());
+            return false;
+        }
+        onnxdriver_log().debug("Session - Try open " + path.string());
+        fs::path canonicalPath;
+        try {
+            canonicalPath = fs::canonical(path);
+            onnxdriver_log().debug("Session - The canonical path is " + canonicalPath.string());
+        } catch (const fs::filesystem_error &e) {
+            if (error) {
+                *error = Error(Error::FileNotFound, e.what());
+            }
+            return false;
+        }
+
+        if (!fs::is_regular_file(canonicalPath)) {
+            if (error) {
+                *error = Error(Error::FileNotFound, "Not a regular file");
+            }
+            return false;
+        }
+
+        std::string errorMessage;
+        if (auto image = SessionSystem::instance()->getImage(canonicalPath); image == nullptr) {
+            onnxdriver_log().debug("Session - The session image does not exist. Creating a new one...");
+            impl.image = SessionImage::create(path, useCpuHint, &errorMessage);
+        } else {
+            onnxdriver_log().debug("Session - The session image already exists. Increasing the reference count...");
+            impl.image = image;
+            impl.image->ref();
+        }
+
+        if (!impl.image) {
+            if (error) {
+                *error = Error(Error::SessionError, errorMessage);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool Session::close() {
+        __dsinfer_impl_t;
+        onnxdriver_log().debug("Session [%1] - close", path().filename());
+        if (!impl.image)
+            return false;
+
+        if (impl.image->deref() == 0) {
+            impl.image = nullptr;
+        }
+        return true;
+    }
+
+    fs::path Session::path() const {
+        __dsinfer_impl_t;
+        return impl.image ? impl.image->path : fs::path();
+    }
+
+    bool Session::isOpen() const {
+        __dsinfer_impl_t;
+        return impl.image != nullptr;
+    }
+
+    inline ValueMap SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions, ValueMap &inputValueMap, Error *error) {
+        // Here we don't use const reference because Ort::Value::CreateTensor requires a non-const buffer
+
+        auto filename = image ? image->path.filename() : "";
+        onnxdriver_log().info("Session [%1] - Running inference", filename);
+        auto timeStart = std::chrono::steady_clock::now();
+
+        if (!image) {
+            if (error) {
+                *error = Error(Error::SessionError, "Session is not open");
+            }
+            return {};
+        }
+
+        if (inputValueMap.empty()) {
+            if (error) {
+                *error = Error(Error::SessionError, "Input map is empty");
+            }
+            return {};
+        }
+
+        const auto &requiredInputNames = image->inputNames;
+        std::ostringstream msgStream;
+        msgStream << '[' << filename << ']' << ' ';
+
+        // Check for missing and extra input names. If found, return empty map and the error message.
+        {
+            bool flagMissing = false;
+            // Check for missing input names
+
+            for (const auto &requiredInputName: requiredInputNames) {
+                if (inputValueMap.find(requiredInputName) == inputValueMap.end()) {
+                    if (flagMissing) {
+                        // It isn't the first missing input name. Append a comma separator.
+                        msgStream << ',' << ' ';
+                    } else {
+                        // It's the first missing input name. Append the message intro.
+                        msgStream << "Missing input name(s): ";
+                        flagMissing = true;
+                    }
+                    msgStream << '"' << requiredInputName << '"';
+                }
+            }
+
+            // Check for extra input names
+            bool flagExtra = false;
+            std::unordered_set<std::string> requiredSet(requiredInputNames.begin(), requiredInputNames.end());
+            for (auto &it: std::as_const(inputValueMap)) {
+                auto &actualInputName = it.first;
+                if (requiredSet.find(actualInputName) == requiredSet.end()) {
+                    if (flagExtra) {
+                        msgStream << ',' << ' ';
+                    } else {
+                        if (flagMissing) {
+                            msgStream << ';' << ' ';
+                        }
+                        msgStream << "Extra input names(s): ";
+                        flagExtra = true;
+                    }
+                    msgStream << '"' << actualInputName << '"';
+                }
+            }
+
+            if (flagMissing || flagExtra) {
+                if (error) {
+                    *error = Error(Error::SessionError, msgStream.str());
+                }
+                return {};
+            }
+        }
+
+        try {
+            auto memInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+            Ort::IoBinding binding(image->session);
+
+            for (auto &[name, value]: inputValueMap) {
+                binding.BindInput(name.c_str(), value);
+            }
+
+            const auto &outputNames = image->outputNames;
+            for (const auto &name: outputNames) {
+                binding.BindOutput(name.c_str(), memInfo);
+            }
+
+            runOptions.UnsetTerminate();
+            image->session.Run(runOptions, binding);
+
+            ValueMap outValueMap;
+            auto outputValues = binding.GetOutputValues();
+            for (size_t i = 0; i < outputValues.size(); ++i) {
+                outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
+            }
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - timeStart).count();
+            auto elapsedSeconds = elapsed / 1000;
+            auto elapsedMs = static_cast<int>(elapsed % 1000);
+            char elapsedMsStr[4];
+            snprintf(elapsedMsStr, sizeof(elapsedMsStr), "%03d", elapsedMs);
+            onnxdriver_log().info("Session [%1] - Finished inference in %2.%3 seconds", filename, elapsedSeconds, elapsedMsStr);
+            return outValueMap;
+        } catch (const Ort::Exception &err) {
+            if (error) {
+                *error = Error(Error::SessionError, err.what());
+            }
+        }
+        return {};
+    }
+
+    std::vector<std::string> Session::inputNames() const {
+        __dsinfer_impl_t;
+        if (!impl.image) {
+            return {};
+        }
+        return impl.image->inputNames;
+    }
+
+    std::vector<std::string> Session::outputNames() const {
+        __dsinfer_impl_t;
+        if (!impl.image) {
+            return {};
+        }
+        return impl.image->outputNames;
+    }
+
+    void Session::terminate() {
+        __dsinfer_impl_t;
+        impl.runOptions.SetTerminate();
+    }
+
+    ValueMap Session::run(ValueMap &inputValueMap, Error *error) {
+        __dsinfer_impl_t;
+        return SessionRunHelper(impl.image, impl.runOptions, inputValueMap, error);
+    }
+
+}

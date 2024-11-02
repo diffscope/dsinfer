@@ -18,6 +18,7 @@ namespace dsinfer {
             RecursiveDependency,
             FeatureNotSupported,
             LibraryNotFound,
+            SessionError,
         };
 
         inline Error() : m_type(NoError) {
