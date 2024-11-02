@@ -5,9 +5,15 @@
 #include <dsinfer/error.h>
 
 #include "internal/onnxdriver_logger.h"
+#include "internal/idutil.h"
 #include "internal/valueparser.h"
 
 namespace dsinfer {
+
+    static IdManager<OnnxContext> &idManager() {
+        static IdManager<OnnxContext> manager;
+        return manager;
+    }
 
     static inline bool checkStringValue(
         const JsonObject &obj,
@@ -20,14 +26,23 @@ namespace dsinfer {
         const std::initializer_list<std::string> &values);
 
     OnnxContext::OnnxContext()
-        :_impl(std::make_unique<Impl>()) {
+            :_impl(std::make_unique<Impl>()) {
+        __dsinfer_impl_t;
+        auto contextId = idManager().add(this);
+        impl.contextId = contextId;
     }
 
     OnnxContext::~OnnxContext() {
+        __dsinfer_impl_t;
+        idManager().remove(impl.contextId);
     }
 
     int64_t OnnxContext::id() const {
         return reinterpret_cast<int64_t>(this);
+    }
+
+    OnnxContext *OnnxContext::getContext(int64_t contextId) {
+        return idManager().get(contextId);
     }
 
     bool OnnxContext::insertObject(const std::string &key, const JsonValue &value) {

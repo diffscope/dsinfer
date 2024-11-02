@@ -1,22 +1,37 @@
 #include "onnxsession.h"
-#include "internal/session.h"
 
-#include <onnxruntime_cxx_api.h>
+#include <map>
+#include <mutex>
+#include <shared_mutex>
+
+#include "internal/session.h"
+#include "internal/idutil.h"
 
 namespace dsinfer {
+
+    static IdManager<OnnxSession> &idManager() {
+        static IdManager<OnnxSession> manager;
+        return manager;
+    }
 
     class OnnxSession::Impl {
     public:
         Impl() {
         }
 
+        int64_t sessionId = 0;
         onnxdriver::Session session;
     };
 
     OnnxSession::OnnxSession() : _impl(std::make_unique<Impl>()) {
+        __dsinfer_impl_t;
+        auto sessionId = idManager().add(this);
+        impl.sessionId = sessionId;
     }
 
     OnnxSession::~OnnxSession() {
+        __dsinfer_impl_t;
+        idManager().remove(impl.sessionId);
     }
 
     bool OnnxSession::open(const std::filesystem::path &path, const JsonObject &args,
@@ -38,7 +53,12 @@ namespace dsinfer {
     }
 
     int64_t OnnxSession::id() const {
-        return reinterpret_cast<int64_t>(this);
+        __dsinfer_impl_t;
+        return impl.sessionId;
+    }
+
+    OnnxSession *OnnxSession::getSession(int64_t sessionId) {
+        return idManager().get(sessionId);
     }
 
     bool OnnxSession::isRunning() const {

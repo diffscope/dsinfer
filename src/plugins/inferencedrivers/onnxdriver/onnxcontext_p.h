@@ -10,6 +10,7 @@ namespace dsinfer {
     class OnnxContext::Impl {
     public:
         mutable std::shared_mutex mtx;
+        int64_t contextId = 0;
         onnxdriver::SharedValueMap valueMap;
     };
 }

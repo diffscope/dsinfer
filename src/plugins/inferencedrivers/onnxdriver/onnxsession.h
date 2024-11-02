@@ -16,6 +16,8 @@ namespace dsinfer {
 
     public:
         int64_t id() const override;
+        static OnnxSession *getSession(int64_t sessionId);
+
         bool isRunning() const override;
 
     protected:
