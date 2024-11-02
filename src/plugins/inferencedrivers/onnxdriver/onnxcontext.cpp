@@ -92,7 +92,14 @@ namespace dsinfer {
                 onnxdriver_log().critical("OnnxContext - " + error.message());
                 return {};
             }
-            return jVal;
+            return JsonObject{
+                {"type", "object"},
+                {"content", JsonObject{
+                    {"class", "Ort::Value"},
+                    {"format", "bytes"},
+                    {"data", jVal}}
+                }
+            };
         }
         return {};
     }
