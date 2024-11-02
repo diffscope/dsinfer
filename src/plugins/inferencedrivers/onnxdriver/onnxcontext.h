@@ -1,6 +1,8 @@
 #ifndef ONNXCONTEXT_H
 #define ONNXCONTEXT_H
 
+#include <memory>
+
 #include <dsinfer/inferencecontext.h>
 
 namespace dsinfer {
@@ -21,6 +23,12 @@ namespace dsinfer {
         void clearObjects() override;
 
         bool executeCommand(const JsonValue &input, JsonValue *output) override;
+
+    protected:
+        class Impl;
+        std::unique_ptr<Impl> _impl;
+
+        friend class OnnxTask;
     };
 
 }
