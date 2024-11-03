@@ -12,23 +12,22 @@ if(NOT IS_DIRECTORY ${_onnxruntime_dir})
     return()
 endif()
 
-option(ONNXDRIVER_ENABLE_DML "Enable DirectML execution provider" OFF)
-option(ONNXDRIVER_ENABLE_CUDA "Enable CUDA execution provider" OFF)
-
-if (ONNXDRIVER_ENABLE_DML)
+if (DSINFER_ENABLE_DIRECTML)
     set(_onnxdriver_ep_macro_dml "ONNXDRIVER_ENABLE_DML")
 endif()
 
-if (ONNXDRIVER_ENABLE_CUDA)
+if (DSINFER_ENABLE_CUDA)
     set(_onnxdriver_ep_macro_cuda "ONNXDRIVER_ENABLE_CUDA")
 endif()
 
 set(_onnxdriver_ep_macros ${_onnxdriver_ep_macro_dml} ${_onnxdriver_ep_macro_cuda})
 
+find_package(stduuid CONFIG REQUIRED)
+
 dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
     SOURCES ${_src}
     FEATURES cxx_std_17
-    LINKS dsinfer
+    LINKS dsinfer stduuid
     INCLUDE ${_onnxruntime_dir}/include
     INCLUDE_PRIVATE *
     PREFIX DSINFER_CORE

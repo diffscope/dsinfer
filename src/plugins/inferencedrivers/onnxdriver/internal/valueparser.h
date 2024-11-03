@@ -39,21 +39,23 @@ namespace dsinfer {
 namespace dsinfer::onnxdriver {
 
     template <typename T>
-    inline Ort::Value createTensorFromRawBytes(OrtAllocator *allocator,
-                                               const std::vector<uint8_t> &data,
-                                               const std::vector<int64_t> &shape,
-                                               Error *error = nullptr) {
-        auto expectedDataLength = std::reduce(shape.begin(), shape.end(),
+    inline Ort::Value createTensorFromBytes(OrtAllocator *allocator,
+                                            const uint8_t *data,
+                                            size_t dataSize,
+                                            const int64_t *shape,
+                                            size_t shapeSize,
+                                            Error *error = nullptr) {
+        auto expectedDataLength = std::reduce(shape, shape + shapeSize,
                                               int64_t{1}, std::multiplies<>());
         auto expectedBytes = expectedDataLength * sizeof(T);
-        if (data.size() != expectedBytes) {
+        if (dataSize != expectedBytes) {
             if (error) {
                 *error = Error(Error::InvalidFormat,
                                "Invalid input format: data size must match shape");
             }
             return Ort::Value(nullptr);
         }
-        auto value = Ort::Value::CreateTensor<T>(allocator, shape.data(), shape.size());
+        auto value = Ort::Value::CreateTensor<T>(allocator, shape, shapeSize);
         auto buffer = value.template GetTensorMutableData<uint8_t>();
         if (!buffer) {
             if (error) {
@@ -62,8 +64,71 @@ namespace dsinfer::onnxdriver {
             }
             return Ort::Value(nullptr);
         }
-        std::memcpy(buffer, data.data(), expectedBytes);
+        std::memcpy(buffer, data, expectedBytes);
         return value;
+    }
+
+    template <typename T>
+    inline Ort::Value createTensorFromJsonArray(const JsonArray &jsonArray,
+                                                const int64_t *shape,
+                                                size_t shapeSize,
+                                                Error *error = nullptr) {
+        static_assert(std::is_same_v<T, float> || std::is_same_v<T, int64_t> || std::is_same_v<T, bool>);
+
+        auto expectedDataLength = std::reduce(shape, shape + shapeSize,
+                                              int64_t{1}, std::multiplies<>());
+        if (jsonArray.size() != expectedDataLength) {
+            if (error) {
+                *error = Error(Error::InvalidFormat,
+                               "Invalid input format: data size must match shape");
+            }
+            return Ort::Value(nullptr);
+        }
+        Ort::AllocatorWithDefaultOptions allocator;
+        auto value = Ort::Value::CreateTensor<T>(allocator, shape, shapeSize);
+        auto buffer = value.template GetTensorMutableData<T>();
+        if (!buffer) {
+            if (error) {
+                *error = Error(Error::InvalidFormat,
+                               "Failed to convert: ort tensor buffer is null");
+            }
+            return Ort::Value(nullptr);
+        }
+
+        for (size_t i = 0; i < jsonArray.size(); ++i) {
+            // TODO: validate data type for jsonArray elements
+            if constexpr (std::is_same_v<T, float>) {
+                buffer[i] = static_cast<float>(jsonArray[i].toDouble());
+            } else if constexpr (std::is_same_v<T, int64_t>) {
+                buffer[i] = jsonArray[i].toInt64();
+            } else if constexpr (std::is_same_v<T, bool>) {
+                buffer[i] = jsonArray[i].toBool();
+            }
+        }
+        return value;
+    }
+
+    inline Ort::Value deserializeTensorFromBytes(const uint8_t *dataBuffer, size_t dataSize,
+                                                 const int64_t *shapeBuffer, size_t shapeSize,
+                                                 const std::string &dataType, Error *error) {
+        Ort::AllocatorWithDefaultOptions allocator;
+        if (dataType == "float" || dataType == "float32") {
+            return createTensorFromBytes<float>(allocator, dataBuffer, dataSize,
+                                                shapeBuffer, shapeSize, error);
+        } else if (dataType == "int64") {
+            return createTensorFromBytes<int64_t>(allocator, dataBuffer, dataSize,
+                                                  shapeBuffer, shapeSize, error);
+        } else if (dataType == "bool") {
+            return createTensorFromBytes<bool>(allocator, dataBuffer, dataSize,
+                                               shapeBuffer, shapeSize, error);
+        }
+
+        // unknown type
+        if (error) {
+            *error = Error(Error::InvalidFormat,
+                           "Invalid input format: unknown data type");
+        }
+        return Ort::Value(nullptr);
     }
 
     inline Ort::Value deserializeTensor(const JsonValue &input, Error *error = nullptr) {
@@ -71,21 +136,36 @@ namespace dsinfer::onnxdriver {
         const auto &jVal_type = input["type"];  // string
         const auto &jVal_shape = input["shape"];  // array
 
-        if (!jVal_data.isBinary() || !jVal_type.isString() || !jVal_shape.isArray()) {
+        if (!jVal_data.isBinary() && !jVal_data.isString() && !jVal_data.isArray()) {
             if (error) {
-                *error = Error(Error::InvalidFormat,
-                               "Invalid input format");
+                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
+                                        "Invalid input format: value must be binary, string or array");
             }
             return Ort::Value(nullptr);
         }
 
-        auto data = jVal_data.toBinary();
+        if (!jVal_type.isString()) {
+            if (error) {
+                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
+                                        "Invalid input format: type must be string");
+            }
+            return Ort::Value(nullptr);
+        }
+        if (!jVal_shape.isArray()) {
+            if (error) {
+                *error = dsinfer::Error(dsinfer::Error::InvalidFormat,
+                                        "Invalid input format: shape must be array");
+            }
+            return Ort::Value(nullptr);
+        }
+
+        // process type
         auto type = jVal_type.toString();
+
+        // process shape
         auto jArr_shape = jVal_shape.toArray();
         std::vector<int64_t> shape;
         shape.reserve(jArr_shape.size());
-
-        int64_t expectedDataLength = 1;
         for (const auto &item: jArr_shape) {
             if (!item.isInt() && !item.isDouble()) {
                 if (error) {
@@ -96,22 +176,30 @@ namespace dsinfer::onnxdriver {
             }
             auto shapeDimValue = item.toInt64();
             shape.push_back(shapeDimValue);
-            expectedDataLength *= shapeDimValue;
         }
 
-        Ort::AllocatorWithDefaultOptions allocator;
-        if (type == "float") {
-            return createTensorFromRawBytes<float>(allocator, data, shape, error);
-        } else if (type == "int64") {
-            return createTensorFromRawBytes<int64_t>(allocator, data, shape, error);
-        } else if (type == "bool") {
-            return createTensorFromRawBytes<bool>(allocator, data, shape, error);
-        }
-
-        // unknown type
-        if (error) {
-            *error = Error(Error::InvalidFormat,
-                           "Invalid input format: unknown data type");
+        // process value
+        if (jVal_data.isBinary()) {
+            auto data = jVal_data.toBinary();
+            return deserializeTensorFromBytes(data.data(), data.size(), shape.data(), shape.size(), type, error);
+        } else if (jVal_data.isString()) {
+            auto data = jVal_data.toString();
+            return deserializeTensorFromBytes(reinterpret_cast<uint8_t *>(data.data()), data.size(), shape.data(), shape.size(), type, error);
+        } else if (jVal_data.isArray()) {
+            auto dataArray = jVal_data.toArray();
+            if (type == "float" || type == "float32") {
+                return createTensorFromJsonArray<float>(dataArray, shape.data(), shape.size(), error);
+            } else if (type == "int64") {
+                return createTensorFromJsonArray<int64_t>(dataArray, shape.data(), shape.size(), error);
+            } else if (type == "bool") {
+                return createTensorFromJsonArray<bool>(dataArray, shape.data(), shape.size(), error);
+            } else {
+                // TODO: support more data types
+                if (error) {
+                    *error = Error(Error::InvalidFormat, "data type \"" + type + "\" is not supported!");
+                }
+                return Ort::Value(nullptr);
+            }
         }
         return Ort::Value(nullptr);
     }
@@ -176,15 +264,8 @@ namespace dsinfer::onnxdriver {
 
     inline Ort::Value parseInputContent(const JsonObject &content, Error *error = nullptr) {
         if (auto it_content = content.find("data"); it_content != content.end()) {
-            if (checkStringValue(content, "format", "bytes")) {
+            if (checkStringValues(content, "format", {"bytes", "array"})) {
                 return onnxdriver::deserializeTensor(it_content->second.toObject(), error);
-            } else if (checkStringValue(content, "format", "array")) {
-                // TODO: to be implemented
-                if (error) {
-                    *error = Error(Error::InvalidFormat,
-                                   "Array format is not implemented yet");
-                }
-                return Ort::Value(nullptr);
             }
         } else {
             if (error) {

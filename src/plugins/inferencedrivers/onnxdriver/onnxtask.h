@@ -19,6 +19,10 @@ namespace dsinfer {
         int64_t id() const override;
         State state() const override;
         JsonValue result() const override;
+
+    protected:
+        class Impl;
+        std::unique_ptr<Impl> _impl;
     };
 
 }

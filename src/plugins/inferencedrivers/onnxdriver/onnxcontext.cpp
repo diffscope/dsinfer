@@ -58,6 +58,9 @@ namespace dsinfer {
                 }
                 onnxdriver_log().info("OnnxContext [%1] - Inserted value \"%2\" to context", impl.contextId, key);
                 return true;
+            } else {
+                onnxdriver_log().critical("OnnxContext [%1] - Failed to insert value \"%2\" to context: %3", impl.contextId, key, error.what());
+                return false;
             }
         }
         return false;

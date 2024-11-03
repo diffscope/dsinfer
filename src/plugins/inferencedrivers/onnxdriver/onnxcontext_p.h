@@ -20,6 +20,12 @@ namespace dsinfer {
             }
             return nullptr;
         }
+
+        bool insertOrtValue(const std::string &key, std::shared_ptr<Ort::Value> ortValue) {
+            std::unique_lock<std::shared_mutex> lock(mtx);
+            valueMap[key] = std::move(ortValue);
+            return true;
+        }
     };
 }
 
