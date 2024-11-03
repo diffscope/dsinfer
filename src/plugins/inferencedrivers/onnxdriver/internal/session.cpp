@@ -68,9 +68,23 @@ namespace dsinfer::onnxdriver {
         }
 
         std::string final;
-        final.resize(64);
+        final.resize(32);
         sha256_final(&sha256_ctx, reinterpret_cast<unsigned char *>(final.data()));
         return final;
+    }
+
+    template <typename CharType>
+    static std::string bytesToHexString(const CharType *bytes, size_t bytesSize) {
+        static_assert(std::is_same_v<CharType, char> || std::is_same_v<CharType, unsigned char>,
+                      "CharType must be char or unsigned char.");
+        static constexpr const char* hexDigits = "0123456789abcdef";
+        std::string hexString(bytesSize * 2, '\0');
+        for (size_t i = 0; i < bytesSize; ++i) {
+            auto byte = static_cast<unsigned char>(bytes[i]);
+            hexString[i * 2] = hexDigits[(byte >> 4) & 0x0f];
+            hexString[i * 2 + 1] = hexDigits[byte & 0x0f];
+        }
+        return hexString;
     }
 
     bool Session::open(const fs::path &path, bool useCpuHint, Error *error) {
@@ -111,7 +125,8 @@ namespace dsinfer::onnxdriver {
         }
 
         auto sha256 = compute_sha256(path);
-        onnxdriver_log().debug("Session - SHA256 is %1", sha256);
+        auto sha256_str = bytesToHexString(sha256.data(), sha256.size());
+        onnxdriver_log().debug("Session - SHA256 is %1", sha256_str);
 
         // TODO: Check sha256 to determine if a same file has been loaded
 
