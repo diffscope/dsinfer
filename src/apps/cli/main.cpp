@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <ctime>
 #include <sstream>
+#include <thread>
 
 #include <zlib.h>
 
@@ -390,6 +391,11 @@ static int cmd_autoRemove(const SCL::ParseResult &result) {
     return 0;
 }
 
+static bool isApiLevelSupported(const std::string &cls, int level) {
+    std::ignore = cls;
+    return level == 1;
+}
+
 static int cmd_exec(const SCL::ParseResult &result) {
     updateLogger(result);
     auto paths = getCmdPaths(result);
@@ -449,13 +455,10 @@ static int cmd_exec(const SCL::ParseResult &result) {
 
     // Load package
     DS::LibrarySpec *lib;
-    {
-        DS::Error error;
-        lib = env.openLibrary(pkgPath, false, &error);
-        if (!lib) {
-            throw std::runtime_error(
-                stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
-        }
+
+    if (DS::Error error; lib = env.openLibrary(pkgPath, false, &error), !lib) {
+        throw std::runtime_error(
+            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
     if (auto error = lib->error(); !error.ok()) {
         throw std::runtime_error(
@@ -469,32 +472,38 @@ static int cmd_exec(const SCL::ParseResult &result) {
     }
 
     std::vector<DS::Inference *> inferences;
-    {
-        DS::Error error;
-        inferences = singerSpec->createInferences(&error);
-        if (!error.ok()) {
-            throw std::runtime_error(
-                stdc::formatTextN(R"(failed to create inferences: %1)", error.message()));
-        }
+    if (DS::Error error; inferences = singerSpec->createInferences(&error), !error.ok()) {
+        throw std::runtime_error(
+            stdc::formatTextN(R"(failed to create inferences: %1)", error.message()));
     }
 
     // Check inference api levels
-    // DS::InferenceContext ctx;
-    // DS::JsonValue args = {
-    //     {"ctx", ctx->id(),}
-    // };
-    // for (const auto &inference : std::as_const(inferences)) {
-    //     auto spec = inference->spec();
-    //     if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
-    //         // Not supported
-    //     }
+    for (const auto &inference : std::as_const(inferences)) {
+        auto spec = inference->spec();
+        if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
+            throw std::runtime_error(stdc::formatTextN(R"(inference "%1" level %2 not supported)",
+                                                       spec->className(), spec->apiLevel()));
+        }
+    }
 
-    //     inference->start(args, nullptr);
-    //     args = inference->result();
-    //     // process args
-    // }
-    // (void) inferences;
+    // Execute inferences
+    if (false) {
+        std::unique_ptr<DS::InferenceContext> ic(driver->createContext());
+        DS::JsonObject args = {
+            {"ctx", ic->id()},
+        };
+        for (const auto &inference : std::as_const(inferences)) {
+            DS::Error error;
+            if (!inference->start(args, &error)) {
+                // TODO: error
+            }
 
+            // Wait for finished
+            while (inference->state() == DS::Inference::Running) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+        }
+    }
     return 0;
 }
 

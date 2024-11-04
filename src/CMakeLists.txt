@@ -182,6 +182,11 @@ if(DSINFER_INSTALL)
         WRITE_CONFIG_OPTIONS NO_CHECK_REQUIRED_COMPONENTS_MACRO
     )
 
+    # Install copyright
+    install(FILES ../LICENSE
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/${DSINFER_INSTALL_NAME}
+    )
+
     if(WIN32)
         set(_lib_dir bin)
     else()
