@@ -19,7 +19,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
         auto start_time = cho::high_resolution_clock::now();
 
         // Load file
-        dsutils::PhonemeDictionary dicts[100];
+        dsutils::PhonemeDictionary dicts[10];
         const auto &filepath = stdc::utf8ToPath(cmdline[1]);
         for (auto &dict : dicts) {
             if (!dict.load(filepath)) {

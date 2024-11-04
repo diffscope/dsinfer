@@ -4,6 +4,7 @@
 #include <ctime>
 #include <sstream>
 #include <thread>
+#include <sstream>
 
 #include <zlib.h>
 
@@ -34,7 +35,10 @@ static void log_report_callback(int level, const char *category, const char *fmt
 
     auto t = std::time(nullptr);
     auto tm = std::localtime(&t);
-    auto dts = (std::stringstream() << std::put_time(tm, "%Y-%m-%d %H:%M:%S")).str();
+
+    std::stringstream ss;
+    ss << std::put_time(tm, "%Y-%m-%d %H:%M:%S");
+    auto dts = ss.str();
 
     Console::Color foreground, background;
     if (level <= Log::Verbose) {

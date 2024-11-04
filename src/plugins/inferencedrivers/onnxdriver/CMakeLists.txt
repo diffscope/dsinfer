@@ -27,7 +27,8 @@ find_package(stduuid CONFIG REQUIRED)
 dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
     SOURCES ${_src}
     FEATURES cxx_std_17
-    LINKS dsinfer stduuid
+    LINKS dsinfer
+    LINKS_PRIVATE stduuid
     INCLUDE ${_onnxruntime_dir}/include
     INCLUDE_PRIVATE *
     PREFIX DSINFER_CORE

@@ -38,7 +38,8 @@ namespace dsinfer {
         class LibraryMap {
         public:
             std::list<LibraryData> libraries;
-            std::unordered_map<std::filesystem::path, decltype(libraries)::iterator> pathIndexes;
+            std::unordered_map<std::filesystem::path::string_type, decltype(libraries)::iterator>
+                pathIndexes;
             std::unordered_map<std::string,
                                std::unordered_map<VersionNumber, decltype(libraries)::iterator>>
                 idIndexes;
