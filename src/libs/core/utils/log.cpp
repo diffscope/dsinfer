@@ -4,11 +4,12 @@
 
 namespace dsinfer {
 
-    using namespace stdc;
-
     static void log_default_callback(int level, const char *category, const char *fmt,
                                      va_list args) {
         std::ignore = category;
+
+        using stdc::Console;
+
         Console::Color color;
         if (level <= Log::Information) {
             color = Console::Default;

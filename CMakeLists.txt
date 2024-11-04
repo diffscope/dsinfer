@@ -5,6 +5,7 @@ project(dsinfer VERSION 0.0.1.0 LANGUAGES CXX)
 # ----------------------------------
 # Build Options
 # ----------------------------------
+option(DSINFER_BUILD_TESTS "Build test cases" OFF)
 option(DSINFER_INSTALL "Install library" ON)
 option(DSINFER_ENABLE_DIRECTML "Enable DirectML provider" OFF)
 option(DSINFER_ENABLE_CUDA "Enable CUDA provider" OFF)

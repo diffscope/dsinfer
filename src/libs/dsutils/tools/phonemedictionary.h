@@ -24,7 +24,7 @@ namespace dsutils {
             inline int count() const {
                 return m_cnt;
             }
-            void read(std::string_view out[], int cnt) const;
+            DSUTILS_EXPORT void read(std::string_view out[], int cnt) const;
 
         private:
             inline Entry(const char *buf, int cnt) : m_buf(buf), m_cnt(cnt) {

@@ -65,7 +65,7 @@ macro(dsinfer_add_library _target)
     target_include_directories(${_target} PRIVATE .)
 
     # Library name
-    if(${_target} MATCHES "^dsinfer(.+)")
+    if(_target MATCHES "^dsinfer(.+)")
         set(_name ${CMAKE_MATCH_1})
         set_target_properties(${_target} PROPERTIES EXPORT_NAME ${_name})
     else()
@@ -140,7 +140,7 @@ macro(dsinfer_add_plugin _target _category)
     target_include_directories(${_target} PRIVATE .)
 
     # Library name
-    if(${_target} MATCHES "^dsinfer(.+)")
+    if(_target MATCHES "^dsinfer(.+)")
         set(_name ${CMAKE_MATCH_1})
         set_target_properties(${_target} PROPERTIES EXPORT_NAME ${_name})
     else()
@@ -170,6 +170,10 @@ add_subdirectory(libs)
 add_subdirectory(plugins)
 
 add_subdirectory(apps)
+
+if(DSINFER_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 
 if(DSINFER_INSTALL)
     qm_basic_install(
