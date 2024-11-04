@@ -181,4 +181,22 @@ if(DSINFER_INSTALL)
         EXPORT ${DSINFER_INSTALL_NAME}Targets
         WRITE_CONFIG_OPTIONS NO_CHECK_REQUIRED_COMPONENTS_MACRO
     )
+
+    if(WIN32)
+        set(_lib_dir bin)
+    else()
+        set(_lib_dir lib)
+    endif()
+
+    # if(WIN32)
+    # set(_extra_search_path ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    # else()
+    # set(_extra_search_path ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    # endif()
+    qm_import(Deploy)
+    qm_deploy_directory(${CMAKE_INSTALL_PREFIX}
+        LIBRARY_DIR ${_lib_dir}
+        EXTRA_SEARCHING_PATHS ${_extra_search_path}
+        VERBOSE
+    )
 endif()
