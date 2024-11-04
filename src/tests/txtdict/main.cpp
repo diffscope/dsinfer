@@ -8,6 +8,23 @@
 
 namespace cho = std::chrono;
 
+// static std::string formatMemoryUsage(size_t bytes) {
+//     const char *units[] = {
+//         "B",
+//         "KB",
+//         "MB",
+//         "GB",
+//     };
+//     double size = static_cast<double>(bytes);
+//     int unitIndex = 0;
+
+//     while (size >= 1024 && unitIndex < 3) {
+//         size /= 1024;
+//         unitIndex++;
+//     }
+//     return std::to_string(size) + " " + units[unitIndex];
+// }
+
 int main(int /*argc*/, char * /*argv*/[]) {
     auto cmdline = stdc::System::commandLineArguments();
     if (cmdline.size() != 2) {
@@ -34,6 +51,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
         stdc::u8println("Press Enter to continue...");
         std::ignore = std::getchar();
+
+        // stdc::u8println("Memory Usage: %1",
+        // formatMemoryUsage(stdc::System::processMemoryUsage())); stdc::u8println();
 
         {
             int i = 0;
