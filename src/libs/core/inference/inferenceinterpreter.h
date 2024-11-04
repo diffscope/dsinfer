@@ -1,7 +1,6 @@
 #ifndef INFERENCEINTERPRETER_H
 #define INFERENCEINTERPRETER_H
 
-#include <dsinfer/plugin.h>
 #include <dsinfer/inferencespec.h>
 #include <dsinfer/inference.h>
 
@@ -23,7 +22,7 @@ namespace dsinfer {
                                   Error *error) = 0;
 
     public:
-        DSINFER_DISABLE_COPY(InferenceInterpreter)
+        STDCORELIB_DISABLE_COPY(InferenceInterpreter)
     };
 
 }

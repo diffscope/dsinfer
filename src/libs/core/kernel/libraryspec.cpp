@@ -6,9 +6,10 @@
 #include <sstream>
 #include <unordered_set>
 
+#include <stdcorelib/format.h>
+
 #include "contributeregistry.h"
 #include "contributespec.h"
-#include "format.h"
 #include "algorithms.h"
 
 namespace fs = std::filesystem;
@@ -84,7 +85,7 @@ namespace dsinfer {
     bool LibrarySpec::Impl::parse(const std::filesystem::path &dir,
                                   const std::map<std::string, ContributeRegistry *> &regs,
                                   std::vector<ContributeSpec *> *outContributes, Error *error) {
-        __dsinfer_decl_t;
+        __stdc_decl_t;
 
         std::string id_;
         VersionNumber version_;
@@ -113,7 +114,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: missing "id" field)", descPath),
+                    stdc::formatTextN(R"(%1: missing "id" field)", descPath),
                 };
                 return false;
             }
@@ -121,7 +122,7 @@ namespace dsinfer {
             if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: "id" field has invalid value)", descPath),
+                    stdc::formatTextN(R"(%1: "id" field has invalid value)", descPath),
                 };
                 return false;
             }
@@ -132,7 +133,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: missing "version" field)", descPath),
+                    stdc::formatTextN(R"(%1: missing "version" field)", descPath),
                 };
                 return false;
             }
@@ -140,7 +141,7 @@ namespace dsinfer {
             if (version_.isEmpty()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: invalid version)", descPath),
+                    stdc::formatTextN(R"(%1: invalid version)", descPath),
                 };
                 return false;
             }
@@ -153,7 +154,7 @@ namespace dsinfer {
                 if (compatVersion_ > version_) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: invalid compat version)", descPath),
+                        stdc::formatTextN(R"(%1: invalid compat version)", descPath),
                     };
                     return false;
                 }
@@ -186,7 +187,7 @@ namespace dsinfer {
         {
             auto it = obj.find("readme");
             if (it != obj.end()) {
-                readme_ = pathFromString(it->second.toString());
+                readme_ = stdc::utf8ToPath(it->second.toString());
             }
         }
         // url
@@ -203,7 +204,7 @@ namespace dsinfer {
                 if (!it->second.isArray()) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: "dependencies" field has invalid value)", descPath),
+                        stdc::formatTextN(R"(%1: "dependencies" field has invalid value)", descPath),
                     };
                     return false;
                 }
@@ -214,7 +215,7 @@ namespace dsinfer {
                     if (!readDependency(item, &dep, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(R"(%1: invalid "dependencies" field entry %2: %3)",
+                            stdc::formatTextN(R"(%1: invalid "dependencies" field entry %2: %3)",
                                         descPath, dependencies_.size() + 1, errorMessage),
                         };
                         return false;
@@ -243,7 +244,7 @@ namespace dsinfer {
                     if (it2 == regs.end()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            formatTextN(R"(unknown contribute "%1")", contributeKey),
+                            stdc::formatTextN(R"(unknown contribute "%1")", contributeKey),
                         };
                         goto out_failed;
                     }
@@ -252,7 +253,7 @@ namespace dsinfer {
                     if (!pair.second.isArray()) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(
+                            stdc::formatTextN(
                                 R"(contribute "%1" field has invalid value in library manifest)",
                                 contributeKey),
                         };
@@ -272,7 +273,7 @@ namespace dsinfer {
                         if (idSet.count(contributeId)) {
                             *error = {
                                 Error::InvalidFormat,
-                                formatTextN(R"(contribute "%1" object has duplicated id "%2")",
+                                stdc::formatTextN(R"(contribute "%1" object has duplicated id "%2")",
                                             pair.first, contributeId),
                             };
                             goto out_failed;
@@ -310,7 +311,7 @@ namespace dsinfer {
         if (!file.is_open()) {
             *error = {
                 Error::FileNotFound,
-                formatTextN(R"("%1": failed to open library manifest)", descPath),
+                stdc::formatTextN(R"("%1": failed to open library manifest)", descPath),
             };
             return false;
         }
@@ -323,14 +324,14 @@ namespace dsinfer {
         if (!error2.empty()) {
             *error = {
                 Error::InvalidFormat,
-                formatTextN(R"("%1": invalid library manifest format: %2)", descPath, error2),
+                stdc::formatTextN(R"("%1": invalid library manifest format: %2)", descPath, error2),
             };
             return false;
         }
         if (!root.isObject()) {
             *error = {
                 Error::InvalidFormat,
-                formatTextN(R"("%1": invalid library manifest format)", descPath),
+                stdc::formatTextN(R"("%1": invalid library manifest format)", descPath),
             };
             return false;
         }
@@ -352,52 +353,52 @@ namespace dsinfer {
     }
 
     std::filesystem::path LibrarySpec::path() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.path;
     }
 
     std::string LibrarySpec::id() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.id;
     }
 
     VersionNumber LibrarySpec::version() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.version;
     }
 
     VersionNumber LibrarySpec::compatVersion() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.compatVersion;
     }
 
     DisplayText LibrarySpec::description() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.description;
     }
 
     DisplayText LibrarySpec::vendor() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.vendor;
     }
 
     DisplayText LibrarySpec::copyright() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.copyright;
     }
 
     std::filesystem::path LibrarySpec::readme() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.readme;
     }
 
     std::string LibrarySpec::url() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.url;
     }
 
     std::vector<ContributeSpec *> LibrarySpec::contributes(int type) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto it = impl.contributes.find(type);
         if (it == impl.contributes.end()) {
             return {};
@@ -413,7 +414,7 @@ namespace dsinfer {
     }
 
     ContributeSpec *LibrarySpec::contribute(int type, const std::string &id) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto it = impl.contributes.find(type);
         if (it == impl.contributes.end()) {
             return nullptr;
@@ -428,22 +429,22 @@ namespace dsinfer {
     }
 
     const std::vector<LibraryDependency> &LibrarySpec::dependencies() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.dependencies;
     }
 
     Error LibrarySpec::error() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.err;
     }
 
     bool LibrarySpec::isLoaded() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.loaded;
     }
 
     Environment *LibrarySpec::env() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.env;
     }
 

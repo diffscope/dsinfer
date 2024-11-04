@@ -42,14 +42,14 @@ namespace dsinfer {
 
     OnnxTask::OnnxTask()
             :_impl(std::make_unique<Impl>()) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto taskId = idManager().add(this);
         impl.taskId = taskId;
         onnxdriver_log().debug("OnnxTask [%1] - new task created", taskId);
     }
 
     OnnxTask::~OnnxTask() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
 
         idManager().remove(impl.taskId);
     }
@@ -59,7 +59,7 @@ namespace dsinfer {
     }
 
     bool OnnxTask::start(const JsonValue &input, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!input.isObject()) {
             if (error) {
                 *error = Error(Error::InvalidFormat, "Invalid task input format: input value is not object");
@@ -231,7 +231,7 @@ namespace dsinfer {
     }
 
     bool OnnxTask::stop(Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!impl.sessionObj) {
             return false;
         }
@@ -240,7 +240,7 @@ namespace dsinfer {
     }
 
     int64_t OnnxTask::id() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.taskId;
     }
 
@@ -250,7 +250,7 @@ namespace dsinfer {
     }
 
     JsonValue OnnxTask::result() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return JsonArray(impl.result);
     }
 

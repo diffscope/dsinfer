@@ -33,7 +33,7 @@ namespace dsinfer {
     }
 
     bool OnnxDriver::initialize(const JsonValue &args, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (impl.shared_env) {
             if (error) {
                 *error = {

@@ -7,8 +7,9 @@ set(RC_DESCRIPTION "DiffSinger Inference Command Line Tool")
 file(GLOB_RECURSE _src *.h *.cpp)
 add_executable(${PROJECT_NAME} ${_src})
 
+find_package(ZLIB REQUIRED)
 find_package(syscmdline CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE dsinfer syscmdline::syscmdline)
+target_link_libraries(${PROJECT_NAME} PRIVATE dsinfer syscmdline::syscmdline ZLIB::ZLIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${DSINFER_BUILD_INCLUDE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE .)

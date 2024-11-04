@@ -1,7 +1,8 @@
 #include "inferencespec.h"
 #include "inferencespec_p.h"
 
-#include "format.h"
+#include <stdcorelib/format.h>
+
 #include "libraryspec.h"
 
 #include <fstream>
@@ -81,7 +82,7 @@ namespace dsinfer {
                 return false;
             }
 
-            configPath = pathFromString(configPathString);
+            configPath = stdc::utf8ToPath(configPathString);
             if (configPath.is_relative()) {
                 configPath = basePath / configPath;
             }
@@ -94,7 +95,7 @@ namespace dsinfer {
             if (!file.is_open()) {
                 *error = {
                     Error::FileNotFound,
-                    formatTextN(R"(%1: failed to open inference manifest)", configPath),
+                    stdc::formatTextN(R"(%1: failed to open inference manifest)", configPath),
                 };
                 return false;
             }
@@ -107,14 +108,14 @@ namespace dsinfer {
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: invalid inference manifest format: %2)", configPath, error2),
+                    stdc::formatTextN(R"(%1: invalid inference manifest format: %2)", configPath, error2),
                 };
                 return false;
             }
             if (!root.isObject()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: invalid inference manifest format)", configPath),
+                    stdc::formatTextN(R"(%1: invalid inference manifest format)", configPath),
                 };
                 return false;
             }
@@ -128,7 +129,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: missing "$version" field)", configPath),
+                    stdc::formatTextN(R"(%1: missing "$version" field)", configPath),
                 };
                 return false;
             }
@@ -136,7 +137,7 @@ namespace dsinfer {
             if (fmtVersion_ > VersionNumber(1)) {
                 *error = {
                     Error::FeatureNotSupported,
-                    formatTextN(R"(%1: format version "%2" is not supported)", configPath,
+                    stdc::formatTextN(R"(%1: format version "%2" is not supported)", configPath,
                                 fmtVersion_.toString()),
                 };
                 return false;
@@ -158,7 +159,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: missing "level" field)", configPath),
+                    stdc::formatTextN(R"(%1: missing "level" field)", configPath),
                 };
                 return false;
             }
@@ -166,7 +167,7 @@ namespace dsinfer {
             if (apiLevel_ == 0) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: "level" field has invalid value)", configPath),
+                    stdc::formatTextN(R"(%1: "level" field has invalid value)", configPath),
                 };
                 return false;
             }
@@ -178,7 +179,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: "schema" field has invalid value)", configPath),
+                        stdc::formatTextN(R"(%1: "schema" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -192,7 +193,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
+                        stdc::formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -214,42 +215,42 @@ namespace dsinfer {
     InferenceSpec::~InferenceSpec() = default;
 
     std::filesystem::path InferenceSpec::path() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.path;
     }
 
     std::string InferenceSpec::className() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.className;
     }
 
     DisplayText InferenceSpec::name() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.name;
     }
 
     int InferenceSpec::apiLevel() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.apiLevel;
     }
 
     JsonObject InferenceSpec::schema() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.schema;
     }
 
     JsonObject InferenceSpec::configuration() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.configuration;
     }
 
     Inference *InferenceSpec::create(const JsonObject &options, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.interp->create(this, options, error);
     }
 
     bool InferenceSpec::validate(const JsonValue &options, std::string *error) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.interp->validate(this, options, error);
     }
 

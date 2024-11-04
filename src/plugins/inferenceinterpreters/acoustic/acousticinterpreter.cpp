@@ -2,7 +2,7 @@
 
 #include "acousticinference.h"
 
-#include <dsinfer/format.h>
+#include <stdcorelib/format.h>
 
 namespace dsinfer {
 
@@ -33,7 +33,7 @@ namespace dsinfer {
         }
         *error = {
             Error::FeatureNotSupported,
-            formatTextN("acoustic api level %1 not supported", spec->apiLevel()),
+            stdc::formatTextN("acoustic api level %1 not supported", spec->apiLevel()),
         };
         return nullptr;
     }

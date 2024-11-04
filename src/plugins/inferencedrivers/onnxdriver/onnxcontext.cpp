@@ -17,14 +17,14 @@ namespace dsinfer {
 
     OnnxContext::OnnxContext()
             :_impl(std::make_unique<Impl>()) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto contextId = idManager().add(this);
         impl.contextId = contextId;
         onnxdriver_log().debug("OnnxContext [%1] - new context created", contextId);
     }
 
     OnnxContext::~OnnxContext() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         idManager().remove(impl.contextId);
     }
 
@@ -33,12 +33,12 @@ namespace dsinfer {
     }
 
     int64_t OnnxContext::id() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.contextId;
     }
 
     bool OnnxContext::insertObject(const std::string &key, const JsonValue &value) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto obj = value.toObject();
         if (!checkStringValue(obj, "type", "object")) {
             return false;
@@ -67,7 +67,7 @@ namespace dsinfer {
     }
 
     bool OnnxContext::removeObject(const std::string &key) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.mtx);
         if (auto it = impl.valueMap.find(key); it != impl.valueMap.end()) {
             impl.valueMap.erase(it);
@@ -78,13 +78,13 @@ namespace dsinfer {
     }
 
     bool OnnxContext::containsObject(const std::string &key) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.mtx);
         return impl.valueMap.find(key) != impl.valueMap.end();
     }
 
     JsonValue OnnxContext::getObject(const std::string &key) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.mtx);
         if (auto it = impl.valueMap.find(key); it != impl.valueMap.end()) {
             auto ortVal = it->second;
@@ -107,7 +107,7 @@ namespace dsinfer {
     }
 
     void OnnxContext::clearObjects() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.mtx);
         impl.valueMap.clear();
     }

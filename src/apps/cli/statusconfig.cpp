@@ -3,9 +3,10 @@
 #include <fstream>
 #include <sstream>
 
+#include <stdcorelib/format.h>
+
 #include <dsinfer/jsonvalue.h>
 #include <dsinfer/contributespec.h>
-#include <dsinfer/format.h>
 
 using namespace dsinfer;
 
@@ -124,7 +125,7 @@ namespace cli {
 
                 // id
                 pkgObj["id"] =
-                    formatTextN("%1[%2]", packageItem.id, packageItem.version.toString());
+                    stdc::formatTextN("%1[%2]", packageItem.id, packageItem.version.toString());
 
                 // relativeLocation
                 pkgObj["relativeLocation"] = packageItem.relativeLocation;

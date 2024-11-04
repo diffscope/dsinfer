@@ -4,30 +4,11 @@
 #include <cstdlib>
 #include <cstdarg>
 
-#include <dsinfer/format.h>
+#include <stdcorelib/format.h>
+
+#include <dsinfer/dsinferglobal.h>
 
 namespace dsinfer {
-
-    class DSINFER_EXPORT Console {
-    public:
-        enum Color {
-            Default = -1,
-            Black = 0x0,
-            Red = 0x1,
-            Green = 0x2,
-            Blue = 0x4,
-            Yellow = Red | Green,
-            Purple = Red | Blue,
-            Cyan = Green | Blue,
-            White = Red | Green | Blue,
-            Intensified = 0x100,
-        };
-
-        static int printf(int foreground, int background, const char *fmt, ...)
-            DSINFER_PRINTF_FORMAT(3, 4);
-
-        static int vprintf(int foreground, int background, const char *fmt, va_list args);
-    };
 
     class DSINFER_EXPORT Log {
     public:
@@ -52,11 +33,11 @@ namespace dsinfer {
         template <class... Args>
         static inline void print(int level, const char *category, const std::string &format,
                                  Args &&...args) {
-            printf(level, category, "%s\n", formatTextN(format, args...).c_str());
+            printf(level, category, "%s\n", stdc::formatTextN(format, args...).c_str());
         }
 
         static void printf(int level, const char *category, const char *fmt, ...)
-            DSINFER_PRINTF_FORMAT(3, 4);
+            STDCORELIB_PRINTF_FORMAT(3, 4);
 
         static void vprintf(int level, const char *category, const char *fmt, va_list args);
 

@@ -8,11 +8,12 @@
 
 #include <dsinfer/environment.h>
 #include <dsinfer/contributespec.h>
-#include <dsinfer/private/pluginfactory_p.h>
+
+#include <stdcorelib/private/pluginfactory_p.h>
 
 namespace dsinfer {
 
-    class Environment::Impl : public PluginFactory::Impl {
+    class Environment::Impl : public stdc::PluginFactory::Impl {
     public:
         explicit Impl(Environment *decl);
         ~Impl();
@@ -51,10 +52,12 @@ namespace dsinfer {
             VersionNumber compatVersion;
         };
         bool libraryPathsDirty = false;
-        std::unordered_map<std::string, std::map<VersionNumber, LibraryBrief>> cachedLibraryIndexesMap;
+        std::unordered_map<std::string, std::map<VersionNumber, LibraryBrief>>
+            cachedLibraryIndexesMap;
 
         // temp
-        std::unordered_map<std::string, std::unordered_map<VersionNumber, std::filesystem::path>> pendingLibraries;
+        std::unordered_map<std::string, std::unordered_map<VersionNumber, std::filesystem::path>>
+            pendingLibraries;
 
         mutable std::shared_mutex env_mtx;
     };

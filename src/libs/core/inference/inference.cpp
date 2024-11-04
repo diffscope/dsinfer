@@ -11,12 +11,12 @@ namespace dsinfer {
     Inference::~Inference() = default;
 
     const InferenceSpec *Inference::spec() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.spec;
     }
 
     Environment *Inference::env() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.spec->env();
     }
 

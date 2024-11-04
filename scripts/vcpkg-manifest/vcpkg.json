@@ -3,7 +3,9 @@
     "dependencies": [
         "qmsetup",
         "nlohmann-json",
-        "stduuid"
+        "stduuid",
+        "stdcorelib",
+        "zlib"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

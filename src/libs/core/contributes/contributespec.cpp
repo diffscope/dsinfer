@@ -3,7 +3,7 @@
 
 #include <regex>
 
-#include "format.h"
+#include <stdcorelib/format.h>
 
 namespace dsinfer {
 
@@ -15,12 +15,12 @@ namespace dsinfer {
             if (m_id.empty()) {
                 return m_library;
             }
-            return formatTextN("%1/%2", m_library, m_id);
+            return stdc::formatTextN("%1/%2", m_library, m_id);
         }
         if (m_id.empty()) {
-            return formatTextN("%1[%2]", m_library, m_version.toString());
+            return stdc::formatTextN("%1[%2]", m_library, m_version.toString());
         }
-        return formatTextN("%1[%2]/%3", m_library, m_version.toString(), m_id);
+        return stdc::formatTextN("%1[%2]/%3", m_library, m_version.toString(), m_id);
     }
 
     ContributeIdentifier ContributeIdentifier::fromString(const std::string &token) {
@@ -78,22 +78,22 @@ namespace dsinfer {
     ContributeSpec::~ContributeSpec() = default;
 
     int ContributeSpec::type() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.type;
     }
 
     ContributeSpec::State ContributeSpec::state() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.state;
     }
 
     LibrarySpec *ContributeSpec::parent() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.parent;
     }
 
     std::string ContributeSpec::id() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.id;
     }
 

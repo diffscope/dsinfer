@@ -1,6 +1,7 @@
 #ifndef DSINFER_ONNXDRIVER_ENV_H
 #define DSINFER_ONNXDRIVER_ENV_H
 
+#include <memory>
 #include <filesystem>
 
 #include "onnxdriver_common.h"

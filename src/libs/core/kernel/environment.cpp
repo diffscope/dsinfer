@@ -3,9 +3,10 @@
 
 #include <mutex>
 
+#include <stdcorelib/format.h>
+
 #include "inferenceregistry.h"
 #include "singerregistry.h"
-#include "format.h"
 #include "algorithms.h"
 
 #include "libraryspec_p.h"
@@ -15,7 +16,7 @@ namespace fs = std::filesystem;
 
 namespace dsinfer {
 
-    Environment::Impl::Impl(Environment *decl) : PluginFactory::Impl(decl) {
+    Environment::Impl::Impl(Environment *decl) : stdc::PluginFactory::Impl(decl) {
         registries.resize(2);
         registries[ContributeSpec::Inference] = new InferenceRegistry(decl);
         registries[ContributeSpec::Singer] = new SingerRegistry(decl);
@@ -31,7 +32,7 @@ namespace dsinfer {
     }
 
     void Environment::Impl::closeAllLoadedLibraries() {
-        __dsinfer_decl_t;
+        __stdc_decl_t;
         while (!loadedLibraryMap.libraries.empty()) {
             auto spec = loadedLibraryMap.libraries.back().spec;
             std::ignore = decl.closeLibrary(spec);
@@ -105,12 +106,12 @@ namespace dsinfer {
     Environment::~Environment() = default;
 
     ContributeRegistry *Environment::registry(int type) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.registries[type];
     }
 
     void Environment::addLibraryPaths(const std::vector<std::filesystem::path> &paths) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
         for (const auto &path : paths) {
             if (!fs::is_directory(path)) {
@@ -123,7 +124,7 @@ namespace dsinfer {
         }
     }
     void Environment::setLibraryPaths(const std::vector<std::filesystem::path> &paths) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
         impl.libraryPaths.clear();
         for (const auto &path : paths) {
@@ -137,7 +138,7 @@ namespace dsinfer {
         }
     }
     const std::vector<std::filesystem::path> &Environment::libraryPaths() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
         return impl.libraryPaths;
     }
@@ -152,13 +153,13 @@ namespace dsinfer {
 
     LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, bool noLoad,
                                           Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
 
         auto canonicalPath = getCanonicalPath(path);
         if (canonicalPath.empty() || !fs::is_directory(canonicalPath)) {
             *error = {
                 Error::FileNotFound,
-                formatTextN(R"(invalid library path "%1")", path),
+                stdc::formatTextN(R"(invalid library path "%1")", path),
             };
             return nullptr;
         }
@@ -227,7 +228,7 @@ namespace dsinfer {
                         auto lib = *it2->second;
                         error1 = {
                             Error::FileDuplicated,
-                            formatTextN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
+                            stdc::formatTextN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
                                         spec->id(), spec->version().toString(), lib.spec->path()),
                         };
                         goto out_dup;
@@ -244,7 +245,7 @@ namespace dsinfer {
                     if (it2 != versionMap.end()) {
                         error1 = {
                             Error::RecursiveDependency,
-                            formatTextN(
+                            stdc::formatTextN(
                                 R"(recursive depencency chain detected: library "%1[%2]" in %3 is being loaded)",
                                 spec->id(), spec->version().toString(), it2->second),
                         };
@@ -335,7 +336,7 @@ namespace dsinfer {
                 // Not found
                 error1 = {
                     Error::LibraryNotFound,
-                    formatTextN(R"(required library "%1[%2]" not found)", dep.id,
+                    stdc::formatTextN(R"(required library "%1[%2]" not found)", dep.id,
                                 dep.version.toString()),
                 };
                 goto out_deps;
@@ -460,7 +461,7 @@ namespace dsinfer {
     }
 
     bool Environment::closeLibrary(LibrarySpec *spec) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
 
         if (!spec->isLoaded()) {
             std::unique_lock<std::shared_mutex> lock(impl.env_mtx);
@@ -540,7 +541,7 @@ namespace dsinfer {
 
     LibrarySpec *Environment::findLibrary(const std::string &id,
                                           const VersionNumber &version) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
         auto &libMap = impl.loadedLibraryMap;
         auto it = libMap.idIndexes.find(id);
@@ -557,7 +558,7 @@ namespace dsinfer {
     }
 
     std::vector<LibrarySpec *> Environment::findLibraries(const std::string &id) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
         auto &libMap = impl.loadedLibraryMap;
         auto it = libMap.idIndexes.find(id);
@@ -575,7 +576,7 @@ namespace dsinfer {
     }
 
     std::vector<LibrarySpec *> Environment::libraries() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx);
         auto &list = impl.loadedLibraryMap.libraries;
 

@@ -1,12 +1,13 @@
 #ifndef INFERENCEDRIVERPLUGIN_H
 #define INFERENCEDRIVERPLUGIN_H
 
-#include <dsinfer/plugin.h>
+#include <stdcorelib/plugin.h>
+
 #include <dsinfer/inferencedriver.h>
 
 namespace dsinfer {
 
-    class DSINFER_EXPORT InferenceDriverPlugin : public Plugin {
+    class DSINFER_EXPORT InferenceDriverPlugin : public stdc::Plugin {
     public:
         InferenceDriverPlugin();
         ~InferenceDriverPlugin();
@@ -19,7 +20,7 @@ namespace dsinfer {
         virtual InferenceDriver *create() = 0;
 
     public:
-        DSINFER_DISABLE_COPY(InferenceDriverPlugin)
+        STDCORELIB_DISABLE_COPY(InferenceDriverPlugin)
     };
 
 }

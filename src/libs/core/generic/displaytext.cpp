@@ -80,13 +80,13 @@ namespace dsinfer {
     DisplayText &DisplayText::operator=(DisplayText &&rhs) noexcept = default;
 
     DisplayText &DisplayText::operator=(const std::string &text) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         impl.defaultText = text;
         return *this;
     }
 
     DisplayText &DisplayText::operator=(const JsonValue &value) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         impl.assign(value);
         return *this;
     }

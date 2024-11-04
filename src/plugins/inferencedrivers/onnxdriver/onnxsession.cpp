@@ -13,14 +13,14 @@ namespace dsinfer {
     }
 
     OnnxSession::OnnxSession() : _impl(std::make_unique<Impl>()) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         auto sessionId = idManager().add(this);
         impl.sessionId = sessionId;
         onnxdriver_log().debug("OnnxSession [%1] - new session created", sessionId);
     }
 
     OnnxSession::~OnnxSession() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
 
         // Ensure close
         std::ignore = impl.session.close();
@@ -32,7 +32,7 @@ namespace dsinfer {
     }
 
     bool OnnxSession::open(const std::filesystem::path &path, const JsonValue &args, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         bool useCpuHint = false;
         auto obj = args.toObject();
         if (auto it = obj.find("useCpuHint"); it != obj.end()) {
@@ -44,22 +44,22 @@ namespace dsinfer {
     }
 
     bool OnnxSession::isOpen() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.session.isOpen();
     }
 
     bool OnnxSession::close(Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.session.close();
     }
 
     int64_t OnnxSession::id() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.sessionId;
     }
 
     bool OnnxSession::isRunning() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         // TODO: implement
         return false;
     }

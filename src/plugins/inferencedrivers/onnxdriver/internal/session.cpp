@@ -88,7 +88,7 @@ namespace dsinfer::onnxdriver {
     }
 
     bool Session::open(const fs::path &path, bool useCpuHint, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         // TODO: If the same session is already opened before, useCpuHint will have no effect
         //       due to SessionSystem will return the existing SessionImage instead of creating a
         //       new one. Should this be the desired behavior, or it needs to be fixed?
@@ -152,7 +152,7 @@ namespace dsinfer::onnxdriver {
     }
 
     bool Session::close() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!impl.image)
             return false;
 
@@ -165,12 +165,12 @@ namespace dsinfer::onnxdriver {
     }
 
     fs::path Session::path() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.image ? impl.image->path : fs::path();
     }
 
     bool Session::isOpen() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.image != nullptr;
     }
 
@@ -304,7 +304,7 @@ namespace dsinfer::onnxdriver {
     }
 
     std::vector<std::string> Session::inputNames() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!impl.image) {
             return {};
         }
@@ -312,7 +312,7 @@ namespace dsinfer::onnxdriver {
     }
 
     std::vector<std::string> Session::outputNames() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!impl.image) {
             return {};
         }
@@ -320,17 +320,17 @@ namespace dsinfer::onnxdriver {
     }
 
     void Session::terminate() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         impl.runOptions.SetTerminate();
     }
 
     ValueMap Session::run(const ValueMap &inputValueMap, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return SessionRunHelper<ValueMap>(impl.image, impl.runOptions, inputValueMap, error);
     }
 
     SharedValueMap Session::run(const SharedValueMap &inputValueMap, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return SessionRunHelper<SharedValueMap>(impl.image, impl.runOptions, inputValueMap, error);
     }
 

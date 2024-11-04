@@ -4,9 +4,10 @@
 #include <mutex>
 #include <unordered_map>
 
+#include <stdcorelib/format.h>
+
 #include "inferencespec_p.h"
 #include "contributeregistry_p.h"
-#include "format.h"
 #include "inferencedriverplugin.h"
 #include "inferenceinterpreterplugin.h"
 
@@ -29,7 +30,7 @@ namespace dsinfer {
 
     std::vector<InferenceSpec *>
         InferenceRegistry::findInferences(const ContributeIdentifier &identifier) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::vector<InferenceSpec *> res;
         auto temp = impl.findContributes(identifier);
         res.reserve(res.size());
@@ -40,7 +41,7 @@ namespace dsinfer {
     }
 
     std::vector<InferenceSpec *> InferenceRegistry::inferences() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx());
         std::vector<InferenceSpec *> res;
         res.reserve(impl.contributes.size());
@@ -51,13 +52,13 @@ namespace dsinfer {
     }
 
     InferenceDriver *InferenceRegistry::driver() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
         return impl.driver;
     }
 
     InferenceDriver *InferenceRegistry::takeDriver() {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
         auto org = impl.driver;
         impl.driver = nullptr;
@@ -65,7 +66,7 @@ namespace dsinfer {
     }
 
     void InferenceRegistry::setDriver(InferenceDriver *driver) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
         delete impl.driver;
         impl.driver = driver;
@@ -86,7 +87,7 @@ namespace dsinfer {
 
     ContributeSpec *InferenceRegistry::parseSpec(const std::filesystem::path &basePath,
                                                  const JsonValue &config, Error *error) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (!config.isObject()) {
             *error = {
                 Error::InvalidFormat,
@@ -104,7 +105,7 @@ namespace dsinfer {
 
     bool InferenceRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state,
                                      Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         switch (state) {
             case ContributeSpec::Initialized: {
                 auto inferenceSpec = static_cast<InferenceSpec *>(spec);
@@ -121,7 +122,7 @@ namespace dsinfer {
                     if (!plugin) {
                         *error = {
                             Error::FeatureNotSupported,
-                            formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
+                            stdc::formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
                                         inferenceSpec->className(), inferenceSpec->id()),
                         };
                         return false;
@@ -134,7 +135,7 @@ namespace dsinfer {
                 if (interp->apiLevel() < inferenceSpec->apiLevel()) {
                     *error = {
                         Error::FeatureNotSupported,
-                        formatTextN(
+                        stdc::formatTextN(
                             R"(required interpreter "%1" of api level %2 doesn't support inference "%3" of api level %4)",
                             inferenceSpec->className(), interp->apiLevel(), inferenceSpec->id(),
                             inferenceSpec->apiLevel()),
@@ -147,7 +148,7 @@ namespace dsinfer {
                 if (!interp->validate(inferenceSpec, &errMsg)) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
+                        stdc::formatTextN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
                                     errMsg),
                     };
                     return false;

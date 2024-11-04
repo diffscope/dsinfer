@@ -43,18 +43,18 @@ namespace dsinfer {
     ContributeRegistry::~ContributeRegistry() = default;
 
     int ContributeRegistry::type() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.type;
     }
 
     Environment *ContributeRegistry::env() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.env;
     }
 
     bool ContributeRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state,
                                       Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         switch (state) {
             case ContributeSpec::Initialized: {
                 std::unique_lock<std::shared_mutex> lock(impl.env_mtx());

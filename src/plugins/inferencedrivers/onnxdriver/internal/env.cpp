@@ -3,8 +3,8 @@
 #include <memory>
 #include <utility>
 
-#include <dsinfer/sharedlibrary.h>
-#include <dsinfer/format.h>
+#include <stdcorelib/format.h>
+#include <stdcorelib/library.h>
 
 #include <onnxruntime_cxx_api.h>
 
@@ -22,17 +22,17 @@ namespace dsinfer::onnxdriver {
         bool load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
             onnxdriver_log().info("Env - Loading onnx environment");
 
-            SharedLibrary dylib;
+            stdc::Library dylib;
 
             /**
              *  1. Load Ort shared library and create handle
              */
             onnxdriver_log().debug("Env - Loading ORT shared library from %1", path);
 #ifdef _WIN32
-            auto orgLibPath = SharedLibrary::setLibraryPath(path.parent_path());
+            auto orgLibPath = stdc::Library::setLibraryPath(path.parent_path());
 #endif
-            if (!dylib.open(path, SharedLibrary::ResolveAllSymbolsHint)) {
-                std::string msg = formatTextN("Load library failed: %1 [%2]", dylib.lastError(), path);
+            if (!dylib.open(path, stdc::Library::ResolveAllSymbolsHint)) {
+                std::string msg = stdc::formatTextN("Load library failed: %1 [%2]", dylib.lastError(), path);
                 onnxdriver_log().critical("Env - %1", msg);
                 if (errorMessage) {
                     *errorMessage = std::move(msg);
@@ -40,7 +40,7 @@ namespace dsinfer::onnxdriver {
                 return false;
             }
 #ifdef _WIN32
-            SharedLibrary::setLibraryPath(orgLibPath);
+            stdc::Library::setLibraryPath(orgLibPath);
 #endif
 
             /**
@@ -49,7 +49,7 @@ namespace dsinfer::onnxdriver {
             onnxdriver_log().debug("Env - Getting ORT API handle");
             auto handle = (OrtApiBase * (ORT_API_CALL *) ()) dylib.resolve("OrtGetApiBase");
             if (!handle) {
-                std::string msg = formatTextN("Failed to get API handle: %1 [%2]", dylib.lastError(), path);
+                std::string msg = stdc::formatTextN("Failed to get API handle: %1 [%2]", dylib.lastError(), path);
                 onnxdriver_log().critical("Env - %1", msg);
                 if (errorMessage) {
                     *errorMessage = std::move(msg);
@@ -64,7 +64,7 @@ namespace dsinfer::onnxdriver {
             auto apiBase = handle();
             auto api = apiBase->GetApi(ORT_API_VERSION);
             if (!api) {
-                std::string msg = formatTextN("%1: failed to get API instance");
+                std::string msg = stdc::formatTextN("%1: failed to get API instance");
                 onnxdriver_log().critical("Env - %1", msg);
                 if (errorMessage) {
                     *errorMessage = std::move(msg);
@@ -93,7 +93,7 @@ namespace dsinfer::onnxdriver {
             return true;
         }
 
-        SharedLibrary lib;
+        stdc::Library lib;
 
         // Metadata
         bool loaded = false;
@@ -118,9 +118,9 @@ namespace dsinfer::onnxdriver {
     }
 
     bool Env::load(const fs::path &path, ExecutionProvider ep, std::string *errorMessage) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         if (impl.loaded) {
-            std::string msg = formatTextN(R"(Library "%1" has been loaded [%2])", impl.ortPath, path);
+            std::string msg = stdc::formatTextN(R"(Library "%1" has been loaded [%2])", impl.ortPath, path);
             onnxdriver_log().warning("Env - %1", msg);
             if (errorMessage) {
                 *errorMessage = std::move(msg);
@@ -131,7 +131,7 @@ namespace dsinfer::onnxdriver {
     }
 
     bool Env::isLoaded() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.loaded;
     }
 
@@ -140,27 +140,27 @@ namespace dsinfer::onnxdriver {
     }
 
     fs::path Env::runtimePath() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.ortPath;
     }
 
     ExecutionProvider Env::executionProvider() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.executionProvider;
     }
 
     int Env::deviceIndex() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.deviceIndex;
     }
 
     void Env::setDeviceIndex(int deviceIndex) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         impl.deviceIndex = deviceIndex;
     }
 
     std::string Env::versionString() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.ortApiBase ? impl.ortApiBase->GetVersionString() : std::string();
     }
 

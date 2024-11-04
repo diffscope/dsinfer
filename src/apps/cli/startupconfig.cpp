@@ -3,8 +3,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <stdcorelib/format.h>
+
 #include <dsinfer/jsonvalue.h>
-#include <dsinfer/format.h>
 
 using namespace dsinfer;
 
@@ -45,7 +46,7 @@ namespace cli {
                 if (pathStr.empty()) {
                     continue;
                 }
-                paths_.emplace_back(pathFromString(pathStr));
+                paths_.emplace_back(stdc::utf8ToPath(pathStr));
             }
         } while (false);
 

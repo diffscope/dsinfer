@@ -3,8 +3,9 @@
 
 #include <filesystem>
 
+#include <stdcorelib/pluginfactory.h>
+
 #include <dsinfer/error.h>
-#include <dsinfer/pluginfactory.h>
 #include <dsinfer/versionnumber.h>
 
 namespace dsinfer {
@@ -13,7 +14,7 @@ namespace dsinfer {
 
     class ContributeRegistry;
 
-    class DSINFER_EXPORT Environment : public PluginFactory {
+    class DSINFER_EXPORT Environment : public stdc::PluginFactory {
     public:
         Environment();
         ~Environment();

@@ -21,7 +21,7 @@ namespace dsinfer {
         virtual InferenceContext *createContext() = 0;
 
     public:
-        DSINFER_DISABLE_COPY(InferenceDriver)
+        STDCORELIB_DISABLE_COPY(InferenceDriver)
     };
 
 }

@@ -1,9 +1,10 @@
 #include "singerregistry.h"
 #include "contributeregistry_p.h"
 
+#include <stdcorelib/format.h>
+
 #include "singerspec_p.h"
 #include "inferenceregistry.h"
-#include "format.h"
 
 namespace dsinfer {
 
@@ -24,7 +25,7 @@ namespace dsinfer {
 
     std::vector<SingerSpec *>
         SingerRegistry::findSingers(const ContributeIdentifier &identifier) const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::vector<SingerSpec *> res;
         auto temp = impl.findContributes(identifier);
         res.reserve(res.size());
@@ -35,7 +36,7 @@ namespace dsinfer {
     }
 
     std::vector<SingerSpec *> SingerRegistry::singers() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         std::shared_lock<std::shared_mutex> lock(impl.env_mtx());
         return {impl.singers.begin(), impl.singers.end()};
     }
@@ -63,7 +64,7 @@ namespace dsinfer {
     }
 
     bool SingerRegistry::loadSpec(ContributeSpec *spec, ContributeSpec::State state, Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         switch (state) {
             case ContributeSpec::Initialized: {
                 // Fix imports
@@ -91,7 +92,7 @@ namespace dsinfer {
                     if (inferences.empty()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            formatTextN(R"(required inference "%1" of singer "%2" not found)",
+                            stdc::formatTextN(R"(required inference "%1" of singer "%2" not found)",
                                         imp.inference.toString(), singerSpec->id()),
                         };
                     }
@@ -102,7 +103,7 @@ namespace dsinfer {
                     if (!inference->validate(imp.options, &errMsg)) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(
+                            stdc::formatTextN(
                                 R"(inference "%1" of singer "%2" validate failed: %3)",
                                 imp.inference.toString(), singerSpec->id(), errMsg),
                         };

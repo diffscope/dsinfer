@@ -1,9 +1,9 @@
 #include "singerspec.h"
 #include "singerspec_p.h"
 
-#include <fstream>
+#include <stdcorelib/format.h>
 
-#include "format.h"
+#include <fstream>
 
 namespace fs = std::filesystem;
 
@@ -46,13 +46,13 @@ namespace dsinfer {
         // for (const auto &item : arr) {
         //     if (!item.isString()) {
         //         *errorMessage =
-        //             formatTextN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
+        //             stdc::formatTextN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
         //         return false;
         //     }
         //     auto role = item.toString();
         //     if (role.empty()) {
         //         *errorMessage =
-        //             formatTextN(R"(empty item in roles field entry %1)", res.roles.size() + 1);
+        //             stdc::formatTextN(R"(empty item in roles field entry %1)", res.roles.size() + 1);
         //         return false;
         //     }
         //     res.roles.emplace_back(role);
@@ -140,7 +140,7 @@ namespace dsinfer {
                 return false;
             }
 
-            configPath = pathFromString(configPathString);
+            configPath = stdc::utf8ToPath(configPathString);
             if (configPath.is_relative()) {
                 configPath = basePath / configPath;
             }
@@ -153,7 +153,7 @@ namespace dsinfer {
             if (!file.is_open()) {
                 *error = {
                     Error::FileNotFound,
-                    formatTextN(R"(%1: failed to open singer manifest)", configPath),
+                    stdc::formatTextN(R"(%1: failed to open singer manifest)", configPath),
                 };
                 return false;
             }
@@ -166,14 +166,14 @@ namespace dsinfer {
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: invalid singer manifest format: %2)", configPath, error2),
+                    stdc::formatTextN(R"(%1: invalid singer manifest format: %2)", configPath, error2),
                 };
                 return false;
             }
             if (!root.isObject()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: invalid singer manifest format)", configPath),
+                    stdc::formatTextN(R"(%1: invalid singer manifest format)", configPath),
                 };
                 return false;
             }
@@ -187,7 +187,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    formatTextN(R"(%1: missing "$version" field)", configPath),
+                    stdc::formatTextN(R"(%1: missing "$version" field)", configPath),
                 };
                 return false;
             }
@@ -195,7 +195,7 @@ namespace dsinfer {
             if (fmtVersion_ > VersionNumber(1)) {
                 *error = {
                     Error::FeatureNotSupported,
-                    formatTextN(R"(%1: format version "%1" is not supported)",
+                    stdc::formatTextN(R"(%1: format version "%1" is not supported)",
                                 fmtVersion_.toString()),
                 };
                 return false;
@@ -215,21 +215,21 @@ namespace dsinfer {
         {
             auto it = configObj.find("avatar");
             if (it != configObj.end()) {
-                avatar_ = pathFromString(it->second.toString());
+                avatar_ = stdc::utf8ToPath(it->second.toString());
             }
         }
         // background
         {
             auto it = configObj.find("background");
             if (it != configObj.end()) {
-                background_ = pathFromString(it->second.toString());
+                background_ = stdc::utf8ToPath(it->second.toString());
             }
         }
         // demoAudio
         {
             auto it = configObj.find("demoAudio");
             if (it != configObj.end()) {
-                demoAudio_ = pathFromString(it->second.toString());
+                demoAudio_ = stdc::utf8ToPath(it->second.toString());
             }
         }
         // imports
@@ -239,7 +239,7 @@ namespace dsinfer {
                 if (!it->second.isArray()) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: "imports" field has invalid value)", configPath),
+                        stdc::formatTextN(R"(%1: "imports" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -250,7 +250,7 @@ namespace dsinfer {
                     if (!readSingerImport(item, &singerImport, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
-                            formatTextN(R"(%1: invalid "imports" field entry %2: %3)", configPath,
+                            stdc::formatTextN(R"(%1: invalid "imports" field entry %2: %3)", configPath,
                                         imports_.size() + 1, errorMessage),
                         };
                         return false;
@@ -266,7 +266,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
+                        stdc::formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -289,47 +289,47 @@ namespace dsinfer {
     SingerSpec::~SingerSpec() = default;
 
     std::filesystem::path SingerSpec::path() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.path;
     }
 
     std::string SingerSpec::model() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.model;
     }
 
     DisplayText SingerSpec::name() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.name;
     }
 
     std::filesystem::path SingerSpec::avatar() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.avatar;
     }
 
     std::filesystem::path SingerSpec::background() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.background;
     }
 
     std::filesystem::path SingerSpec::demoAudio() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.demoAudio;
     }
 
     const std::vector<SingerImport> &SingerSpec::imports() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.imports;
     }
 
     JsonObject SingerSpec::configuration() const {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return impl.configuration;
     }
 
     std::vector<Inference *> SingerSpec::createInferences(Error *error) {
-        __dsinfer_impl_t;
+        __stdc_impl_t;
         return {};
     }
 

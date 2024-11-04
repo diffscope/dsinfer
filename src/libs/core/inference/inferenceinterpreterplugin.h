@@ -1,12 +1,13 @@
 #ifndef INFERENCEINTERPRETERPLUGIN_H
 #define INFERENCEINTERPRETERPLUGIN_H
 
-#include <dsinfer/plugin.h>
+#include <stdcorelib/plugin.h>
+
 #include <dsinfer/inferenceinterpreter.h>
 
 namespace dsinfer {
 
-    class DSINFER_EXPORT InferenceInterpreterPlugin : public Plugin {
+    class DSINFER_EXPORT InferenceInterpreterPlugin : public stdc::Plugin {
     public:
         InferenceInterpreterPlugin();
         ~InferenceInterpreterPlugin();
@@ -19,7 +20,7 @@ namespace dsinfer {
         virtual InferenceInterpreter *create() = 0;
 
     public:
-        DSINFER_DISABLE_COPY(InferenceInterpreterPlugin)
+        STDCORELIB_DISABLE_COPY(InferenceInterpreterPlugin)
     };
 
 }

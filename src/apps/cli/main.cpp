@@ -4,6 +4,11 @@
 #include <ctime>
 #include <sstream>
 
+#include <zlib.h>
+
+#include <stdcorelib/format.h>
+#include <stdcorelib/console.h>
+
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
 #include <dsinfer/singerregistry.h>
@@ -24,6 +29,7 @@ namespace DS = dsinfer;
 
 static void log_report_callback(int level, const char *category, const char *fmt, va_list args) {
     using namespace DS;
+    using namespace stdc;
 
     auto t = std::time(nullptr);
     auto tm = std::localtime(&t);
@@ -86,7 +92,7 @@ struct Context {
 
     Context() {
         // Get basic directories
-        appDir = DS::pathFromString(SCL::appDirectory());
+        appDir = stdc::utf8ToPath(SCL::appDirectory());
         defaultPluginDir =
             appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
 
@@ -129,20 +135,23 @@ struct Context {
 
     template <class... Args>
     static inline void info(const std::string &format, Args &&...args) {
-        DS::Console::printf(DS::Console::Default, DS::Console::Default, "%s\n",
-                            DS::formatTextN(format, args...).c_str());
+        using namespace stdc;
+        Console::printf(Console::Default, Console::Default, "%s\n",
+                        formatTextN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
-        DS::Console::printf(DS::Console::Yellow, DS::Console::Default, "%s\n",
-                            DS::formatTextN(format, args...).c_str());
+        using namespace stdc;
+        Console::printf(Console::Yellow, Console::Default, "%s\n",
+                        formatTextN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
-        DS::Console::printf(DS::Console::Red, DS::Console::Default, "%s\n",
-                            DS::formatTextN(format, args...).c_str());
+        using namespace stdc;
+        Console::printf(Console::Red, Console::Default, "%s\n",
+                        formatTextN(format, args...).c_str());
     }
 };
 
@@ -150,7 +159,7 @@ static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
     std::vector<std::filesystem::path> paths;
     auto pathsResult = result.option("--paths").values();
     for (const auto &item : std::as_const(pathsResult)) {
-        auto path = fs::absolute(DS::pathFromString(item.toString()));
+        auto path = fs::absolute(stdc::utf8ToPath(item.toString()));
         if (!fs::is_directory(path)) {
             continue;
         }
@@ -213,11 +222,12 @@ static int cmd_stat(const SCL::ParseResult &result) {
             identifier.id().empty()) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
-        } else if (auto path = DS::pathFromString(idStr);
+        } else if (auto path = stdc::utf8ToPath(idStr);
                    fs::is_regular_file(path / _TSTR("desc.json"))) {
             pkgPath = fs::canonical(path);
         } else {
-            throw std::runtime_error(DS::formatTextN(R"(invalid package identifier "%1")", idStr));
+            throw std::runtime_error(
+                stdc::formatTextN(R"(invalid package identifier "%1")", idStr));
         }
     }
 
@@ -230,7 +240,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     if (pkgPath.empty()) {
         pkgPath = searchPackage(paths, pkgId, pkgVersion);
         if (pkgPath.empty()) {
-            throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
+            throw std::runtime_error(stdc::formatTextN(R"(package "%1" not found)", idStr));
         }
     }
 
@@ -238,7 +248,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     DS::LibrarySpec *lib;
     if (DS::Error error; !(lib = env.openLibrary(pkgPath, false, &error))) {
         throw std::runtime_error(
-            DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
 
     Context::info("ID: %1", lib->id());
@@ -346,14 +356,15 @@ static int cmd_list(const SCL::ParseResult &result) {
     // Print
     for (int i = 0; i < infoList.size(); ++i) {
         const auto &info = infoList[i];
-        std::string line = DS::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
+        std::string line =
+            stdc::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
         if (!info.valid) {
             Context::critical("%1 (invalid)", line);
             continue;
         }
 
         if (!info.singers.empty()) {
-            line += "; singers: " + DS::join(info.singers, ", ");
+            line += "; singers: " + stdc::join(info.singers, ", ");
         }
         if (!info.operative) {
             Context::warning("%1 (inoperative)", line);
@@ -397,7 +408,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
         } else {
-            throw std::runtime_error(DS::formatTextN(R"(invalid singer identifier "%1")", idStr));
+            throw std::runtime_error(stdc::formatTextN(R"(invalid singer identifier "%1")", idStr));
         }
     }
 
@@ -411,7 +422,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     // Search package
     fs::path pkgPath = searchPackage(paths, pkgId, pkgVersion);
     if (pkgPath.empty()) {
-        throw std::runtime_error(DS::formatTextN(R"(package "%1" not found)", idStr));
+        throw std::runtime_error(stdc::formatTextN(R"(package "%1" not found)", idStr));
     }
 
     auto inferenceReg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
@@ -421,7 +432,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
     auto driver = inferenceReg->createDriver(realDriverId.c_str());
     if (!driver) {
-        throw std::runtime_error(DS::formatTextN(R"(failed to load driver "%1")", realDriverId));
+        throw std::runtime_error(stdc::formatTextN(R"(failed to load driver "%1")", realDriverId));
     }
 
     // Initialize driver
@@ -430,8 +441,8 @@ static int cmd_exec(const SCL::ParseResult &result) {
         if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit, true)
                                                    : ctx.startupConfig.driver.init,
                                 &error)) {
-            throw std::runtime_error(DS::formatTextN(R"(failed to initialize driver "%1": %2)",
-                                                     realDriverId, error.message()));
+            throw std::runtime_error(stdc::formatTextN(R"(failed to initialize driver "%1": %2)",
+                                                       realDriverId, error.message()));
         }
     }
     inferenceReg->setDriver(driver);
@@ -443,18 +454,18 @@ static int cmd_exec(const SCL::ParseResult &result) {
         lib = env.openLibrary(pkgPath, false, &error);
         if (!lib) {
             throw std::runtime_error(
-                DS::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+                stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
         }
     }
     if (auto error = lib->error(); !error.ok()) {
         throw std::runtime_error(
-            DS::formatTextN(R"(failed to load package "%1": %2)", pkgPath, error.message()));
+            stdc::formatTextN(R"(failed to load package "%1": %2)", pkgPath, error.message()));
     }
 
     auto singerSpec = lib->contribute(DS::ContributeSpec::Singer, singerId)->cast<DS::SingerSpec>();
     if (!singerSpec) {
-        throw std::runtime_error(DS::formatTextN(R"(singer "%1" not found in package "%2[%3]")",
-                                                 singerId, pkgId, pkgVersion.toString()));
+        throw std::runtime_error(stdc::formatTextN(R"(singer "%1" not found in package "%2[%3]")",
+                                                   singerId, pkgId, pkgVersion.toString()));
     }
 
     std::vector<DS::Inference *> inferences;
@@ -463,7 +474,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
         inferences = singerSpec->createInferences(&error);
         if (!error.ok()) {
             throw std::runtime_error(
-                DS::formatTextN(R"(failed to create inferences: %1)", error.message()));
+                stdc::formatTextN(R"(failed to create inferences: %1)", error.message()));
         }
     }
 
@@ -489,6 +500,21 @@ static int cmd_exec(const SCL::ParseResult &result) {
 
 static int cmd_pack(const SCL::ParseResult &result) {
     updateLogger(result);
+
+    const auto &pkgPath = stdc::utf8ToPath(result.value(0).toString());
+
+    Context ctx;
+    auto &env = ctx.env;
+
+    // Try to load
+    if (DS::Error error; !env.openLibrary(pkgPath, false, &error)) {
+        throw std::runtime_error(
+            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+    }
+
+    // TODO: Calculate CRC
+    printf("Compress: %p", compress);
+
     return 0;
 }
 
@@ -617,7 +643,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef _WIN32
         if (typeid(e) == typeid(fs::filesystem_error)) {
-            msg = DS::ansiToUtf8(e.what());
+            msg = stdc::ansiToUtf8(e.what());
         }
 #endif
 
