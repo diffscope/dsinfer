@@ -1,6 +1,7 @@
 #include "phonemedictionary.h"
 
 #include <fstream>
+#include <algorithm>
 
 namespace dsutils {
 
@@ -23,26 +24,20 @@ namespace dsutils {
             return false;
         }
         m_filebuf[file_size] = '\n';
+        m_map.clear();
 
         // Parse the buffer
-        if (m_map.size() > 0) {
-            m_map.clear();
-        }
-
         const auto buffer_begin = m_filebuf.data();
         const auto buffer_end = buffer_begin + m_filebuf.size();
 
         // Estimate line numbers if the file is too large
         static constexpr const size_t larget_file_size = 1 * 1024 * 1024;
         if (file_size > larget_file_size) {
-            size_t line_cnt = 1;
-            for (auto p = buffer_begin; p < buffer_end; ++p) {
-                if (*p == '\n')
-                    line_cnt++;
-            }
+            size_t line_cnt = std::count(buffer_begin, buffer_end, '\n') + 1;
             m_map.reserve(line_cnt);
         }
 
+        // Traverse lines
         {
             auto start = buffer_begin;
             while (start < buffer_end) {
@@ -85,7 +80,7 @@ namespace dsutils {
                 }
 
                 std::string_view key(start, value_start - 1 - start);
-                m_map[key] = Entry(int(value_start - buffer_begin), value_cnt);
+                m_map[key] = Entry{int(value_start - buffer_begin), value_cnt};
                 start = p + 1;
             }
         }
@@ -93,10 +88,10 @@ namespace dsutils {
     }
 
     void PhonemeDictionary::readEntry(Entry entry, std::string_view out[], int cnt) const {
-        auto p = m_filebuf.data() + entry.offset();
+        auto p = m_filebuf.data() + entry.offset;
         auto q = p;
         int i = 0;
-        int min = std::min(cnt, entry.count());
+        int min = std::min(cnt, entry.count);
         while (i < min) {
             if (*q == '\0') {
                 out[i++] = p;

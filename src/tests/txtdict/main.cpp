@@ -11,20 +11,23 @@ namespace cho = std::chrono;
 
 int main(int /*argc*/, char * /*argv*/[]) {
     auto cmdline = stdc::System::commandLineArguments();
-    if (cmdline.size() != 2) {
-        stdc::u8println("Usage: %1 <dict>", stdc::System::applicationName());
+    if (cmdline.size() < 2) {
+        stdc::u8println("Usage: %1 <dict> [count]", stdc::System::applicationName());
         return 1;
     }
 
     {
+        const auto &filepath = stdc::utf8ToPath(cmdline[1]);
+        int len = cmdline.size() >= 3 ? std::stoi(cmdline.at(2)) : 1;
+
         auto start_time = cho::high_resolution_clock::now();
 
         // Load file
-        dsutils::PhonemeDictionary dicts[1];
-        const auto &filepath = stdc::utf8ToPath(cmdline[1]);
+        stdc::VarLengthArray<dsutils::PhonemeDictionary, 1024> dicts(len);
         for (auto &dict : dicts) {
             if (!dict.load(filepath)) {
                 stdc::u8println("Failed to read dictionary \"%1\".", filepath);
+                return EXIT_FAILURE;
             }
         }
 
