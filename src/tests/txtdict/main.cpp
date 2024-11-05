@@ -9,6 +9,19 @@
 
 namespace cho = std::chrono;
 
+static std::string join(std::string_view v[], int size, const std::string_view &delimiter) {
+    if (size == 0) {
+        return {};
+    }
+    std::string res;
+    for (int i = 0; i < size - 1; ++i) {
+        res.append(v[i]);
+        res.append(delimiter);
+    }
+    res.append(v[size - 1]);
+    return res;
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
     auto cmdline = stdc::System::commandLineArguments();
     if (cmdline.size() < 2) {
@@ -44,9 +57,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
             auto &dict = dicts[0];
             auto it = dict.get().begin();
             for (; i < 10; ++i, ++it) {
-                stdc::VarLengthArray<std::string_view> values(2);
-                dict.readEntry(it->second, values.data(), 2);
-                stdc::u8println("Phoneme %1: %2 - %3 %4", i, it->first, values[0], values[1]);
+                stdc::VarLengthArray<std::string_view> values(it->second.count);
+                dict.readEntry(it->second, values.data());
+                stdc::u8println("Phoneme %1: %2 - %3", i, it->first,
+                                join(values.data(), values.size(), " ").c_str());
             }
         }
     }

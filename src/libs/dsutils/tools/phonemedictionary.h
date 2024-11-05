@@ -25,7 +25,7 @@ namespace dsutils {
             int offset;
             int count;
         };
-        void readEntry(Entry entry, std::string_view out[], int cnt) const;
+        void readEntry(Entry entry, std::string_view out[]) const;
 
     protected:
         std::vector<char> m_filebuf;
