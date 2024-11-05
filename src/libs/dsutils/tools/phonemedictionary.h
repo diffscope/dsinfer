@@ -2,6 +2,7 @@
 #define PHONEMEDICTIONARY_H
 
 #include <filesystem>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -16,20 +17,19 @@ namespace dsutils {
         }
 
         struct Entry {
-            Entry() : m_buf(nullptr), m_cnt(0) {
+            Entry() : m_off(0), m_cnt(0) {
             }
-            inline const char *buffer() {
-                return m_buf;
+            inline int offset() {
+                return m_off;
             }
             inline int count() const {
                 return m_cnt;
             }
-            DSUTILS_EXPORT void read(std::string_view out[], int cnt) const;
 
         private:
-            inline Entry(const char *buf, int cnt) : m_buf(buf), m_cnt(cnt) {
+            inline Entry(int off, int cnt) : m_off(off), m_cnt(cnt) {
             }
-            const char *m_buf;
+            int m_off;
             int m_cnt;
             friend class PhonemeDictionary;
         };
@@ -40,11 +40,12 @@ namespace dsutils {
             return m_map;
         }
 
+        void readEntry(Entry entry, std::string_view out[], int cnt) const;
+
     protected:
         std::vector<char> m_filebuf;
         std::unordered_map<std::string_view, Entry> m_map;
     };
-
 }
 
 #endif // PHONEMEDICTIONARY_H

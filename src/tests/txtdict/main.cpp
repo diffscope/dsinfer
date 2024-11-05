@@ -1,4 +1,5 @@
 #include <chrono>
+#include <string_view>
 
 #include <stdcorelib/system.h>
 #include <stdcorelib/console.h>
@@ -7,23 +8,6 @@
 #include <dsutils/phonemedictionary.h>
 
 namespace cho = std::chrono;
-
-// static std::string formatMemoryUsage(size_t bytes) {
-//     const char *units[] = {
-//         "B",
-//         "KB",
-//         "MB",
-//         "GB",
-//     };
-//     double size = static_cast<double>(bytes);
-//     int unitIndex = 0;
-
-//     while (size >= 1024 && unitIndex < 3) {
-//         size /= 1024;
-//         unitIndex++;
-//     }
-//     return std::to_string(size) + " " + units[unitIndex];
-// }
 
 int main(int /*argc*/, char * /*argv*/[]) {
     auto cmdline = stdc::System::commandLineArguments();
@@ -36,7 +20,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
         auto start_time = cho::high_resolution_clock::now();
 
         // Load file
-        dsutils::PhonemeDictionary dicts[10];
+        dsutils::PhonemeDictionary dicts[1];
         const auto &filepath = stdc::utf8ToPath(cmdline[1]);
         for (auto &dict : dicts) {
             if (!dict.load(filepath)) {
@@ -52,15 +36,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
         stdc::u8println("Press Enter to continue...");
         std::ignore = std::getchar();
 
-        // stdc::u8println("Memory Usage: %1",
-        // formatMemoryUsage(stdc::System::processMemoryUsage())); stdc::u8println();
-
         {
             int i = 0;
-            auto it = dicts[0].get().begin();
+            auto &dict = dicts[0];
+            auto it = dict.get().begin();
             for (; i < 10; ++i, ++it) {
-                VLA_NEW(std::string_view, values, 2);
-                it->second.read(values, 2);
+                stdc::VarLengthArray<std::string_view> values(2);
+                dict.readEntry(it->second, values.data(), 2);
                 stdc::u8println("Phoneme %1: %2 - %3 %4", i, it->first, values[0], values[1]);
             }
         }

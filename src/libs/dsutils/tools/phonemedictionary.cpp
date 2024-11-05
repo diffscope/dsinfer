@@ -4,20 +4,6 @@
 
 namespace dsutils {
 
-    void PhonemeDictionary::Entry::read(std::string_view out[], int cnt) const {
-        auto p = m_buf;
-        auto q = m_buf;
-        int i = 0;
-        int min = std::min(cnt, m_cnt);
-        while (i < min) {
-            if (*q == '\0') {
-                out[i++] = p;
-                p = q + 1;
-            }
-            q++;
-        }
-    }
-
     bool PhonemeDictionary::load(const std::filesystem::path &path, std::string *error) {
         std::ifstream file(path, std::ios::in | std::ios::binary);
         if (!file.is_open()) {
@@ -27,22 +13,37 @@ namespace dsutils {
         }
 
         file.seekg(0, std::ios::end);
-        std::streamsize size = file.tellg();
+        std::streamsize file_size = file.tellg();
         file.seekg(0, std::ios::beg);
 
-        m_filebuf.resize(size + 1); // +1 for null terminator
-        if (!file.read(m_filebuf.data(), size)) {
+        m_filebuf.resize(file_size + 1); // +1 for null terminator
+        if (!file.read(m_filebuf.data(), file_size)) {
             if (error)
                 *error = "failed to read file";
             return false;
         }
-        m_filebuf[size] = '\n';
+        m_filebuf[file_size] = '\n';
 
         // Parse the buffer
-        m_map.clear();
+        if (m_map.size() > 0) {
+            m_map.clear();
+        }
+
+        const auto buffer_begin = m_filebuf.data();
+        const auto buffer_end = buffer_begin + m_filebuf.size();
+
+        // Estimate line numbers if the file is too large
+        static constexpr const size_t larget_file_size = 1 * 1024 * 1024;
+        if (file_size > larget_file_size) {
+            size_t line_cnt = 1;
+            for (auto p = buffer_begin; p < buffer_end; ++p) {
+                if (*p == '\n')
+                    line_cnt++;
+            }
+            m_map.reserve(line_cnt);
+        }
+
         {
-            auto buffer_begin = m_filebuf.data();
-            auto buffer_end = buffer_begin + m_filebuf.size();
             auto start = buffer_begin;
             while (start < buffer_end) {
                 while (start < buffer_end && (*start == '\r' || *start == '\n')) {
@@ -84,11 +85,25 @@ namespace dsutils {
                 }
 
                 std::string_view key(start, value_start - 1 - start);
-                m_map[key] = Entry(value_start, value_cnt);
+                m_map[key] = Entry(int(value_start - buffer_begin), value_cnt);
                 start = p + 1;
             }
         }
         return true;
+    }
+
+    void PhonemeDictionary::readEntry(Entry entry, std::string_view out[], int cnt) const {
+        auto p = m_filebuf.data() + entry.offset();
+        auto q = p;
+        int i = 0;
+        int min = std::min(cnt, entry.count());
+        while (i < min) {
+            if (*q == '\0') {
+                out[i++] = p;
+                p = q + 1;
+            }
+            q++;
+        }
     }
 
 }
