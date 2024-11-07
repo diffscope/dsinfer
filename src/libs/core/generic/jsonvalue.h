@@ -90,8 +90,8 @@ namespace dsinfer {
         int toInt(int defaultValue = 0) const;
         int64_t toInt64(int64_t defaultValue = 0) const;
         double toDouble(double defaultValue = 0) const;
-        std::string toString(const std::string &defaultValue = {}) const;
-        std::vector<uint8_t> toBinary(const std::vector<uint8_t> &defaultValue = {}) const;
+        const std::string &toString(const std::string &defaultValue = {}) const;
+        const std::vector<uint8_t> &toBinary(const std::vector<uint8_t> &defaultValue = {}) const;
         _Array toArray(const _Array &defaultValue = {}, bool copy = false) const;
         _Object toObject(const _Object &defaultValue = {}, bool copy = false) const;
 

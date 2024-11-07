@@ -211,14 +211,14 @@ namespace dsinfer {
         }
         return defaultValue;
     }
-    std::string JsonValue::toString(const std::string &defaultValue) const {
+    const std::string &JsonValue::toString(const std::string &defaultValue) const {
         auto &json = _data->data();
         if (json.is_string()) {
-            return json.get<std::string>();
+            return json.get_ref<const std::string &>();
         }
         return defaultValue;
     }
-    std::vector<uint8_t> JsonValue::toBinary(const std::vector<uint8_t> &defaultValue) const {
+    const std::vector<uint8_t> &JsonValue::toBinary(const std::vector<uint8_t> &defaultValue) const {
         auto &json = _data->data();
         if (json.is_binary()) {
             return json.get_binary();
