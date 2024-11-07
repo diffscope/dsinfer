@@ -9,7 +9,7 @@
 
 namespace dsinfer {
 
-    class JsonValueContainter;
+    class JsonValueContainer;
 
     class DSINFER_EXPORT JsonValue {
     public:
@@ -115,7 +115,7 @@ namespace dsinfer {
         static JsonValue fromCbor(const std::vector<uint8_t> &cbor, std::string *error = nullptr);
 
     protected:
-        std::shared_ptr<JsonValueContainter> _data;
+        std::shared_ptr<JsonValueContainer> _data;
     };
 
     using JsonObject = JsonValue::_Object;

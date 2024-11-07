@@ -4,12 +4,12 @@
 
 namespace dsinfer {
 
-    class JsonValueContainter {
+    class JsonValueContainer {
     public:
         nlohmann::json json;
     };
 
-    JsonValue::JsonValue(Type type) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(Type type) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         switch (type) {
             case Null: {
@@ -49,54 +49,54 @@ namespace dsinfer {
         }
     }
 
-    JsonValue::JsonValue(bool b) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(bool b) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = b;
     }
 
-    JsonValue::JsonValue(double n) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(double n) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = n;
     }
 
-    JsonValue::JsonValue(int n) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(int n) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = n;
     }
 
-    JsonValue::JsonValue(int64_t n) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(int64_t n) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = n;
     }
 
-    JsonValue::JsonValue(const std::string &s) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const std::string &s) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = s;
     }
 
-    JsonValue::JsonValue(const char *s) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const char *s) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = s;
     }
 
-    JsonValue::JsonValue(const std::vector<uint8_t> &bytes) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const std::vector<uint8_t> &bytes) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = nlohmann::json::binary_t(bytes);
     }
 
-    JsonValue::JsonValue(const uint8_t *data, int size) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const uint8_t *data, int size) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         json = std::vector<uint8_t>(data, data + size);
     }
 
-    JsonValue::JsonValue(const _Array &a) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const _Array &a) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         for (const auto &item : a) {
             json.push_back(item._data->json);
         }
     }
 
-    JsonValue::JsonValue(const _Object &o) : _data(new JsonValueContainter()) {
+    JsonValue::JsonValue(const _Object &o) : _data(std::make_shared<JsonValueContainer>()) {
         auto &json = _data->json;
         for (const auto &it : o) {
             json[it.first] = it.second._data->json;
@@ -171,9 +171,9 @@ namespace dsinfer {
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_integer:
                 return json.get<int64_t>();
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_unsigned:
-                return uint64_t(json.get<uint64_t>());
+                return int64_t(json.get<uint64_t>());
             case nlohmann::json_abi_v3_11_3::detail::value_t::number_float:
-                return uint64_t(json.get<double>());
+                return int64_t(json.get<double>());
             default:
                 break;
         }
@@ -239,22 +239,25 @@ namespace dsinfer {
         if (json.is_object()) {
             auto it = json.find(key);
             if (it == json.end()) {
-                return {};
+                return {Undefined};
             }
             JsonValue val;
             val._data->json = it.value();
             return val;
         }
-        return {};
+        return {Undefined};
     }
     JsonValue JsonValue::operator[](int i) const {
         auto &json = _data->json;
         if (json.is_array()) {
+            if (i >= json.size() || i < 0) {
+                return {Undefined};
+            }
             JsonValue val;
             val._data->json = json[i];
             return val;
         }
-        return {};
+        return {Undefined};
     }
     bool JsonValue::operator==(const JsonValue &other) const {
         return _data->json == other._data->json;
