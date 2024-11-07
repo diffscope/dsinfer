@@ -4,8 +4,9 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
+
+#include <sparsepp/spp.h>
 
 #include <dsutils/dsutilsglobal.h>
 
@@ -27,9 +28,16 @@ namespace dsutils {
         };
         void readEntry(Entry entry, std::string_view out[]) const;
 
+        struct hash {
+            size_t operator()(const char *key) const noexcept {
+                return std::hash<std::string_view>()(std::string_view(key, std::strlen(key)));
+            }
+        };
+
     protected:
         std::vector<char> m_filebuf;
-        std::unordered_map<std::string_view, Entry> m_map;
+
+        spp::sparse_hash_map<char *, Entry, hash> m_map;
     };
 }
 

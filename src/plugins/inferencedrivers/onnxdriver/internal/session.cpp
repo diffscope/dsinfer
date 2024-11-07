@@ -17,7 +17,7 @@
 #include <fstream>
 #include <unordered_set>
 
-#include "sha256.h"
+#include <hash-library/sha256.h>
 
 namespace fs = std::filesystem;
 
@@ -52,7 +52,7 @@ namespace dsinfer::onnxdriver {
         return *this;
     }
 
-    static std::string compute_sha256(const fs::path &path) {
+    static std::vector<uint8_t> compute_sha256(const fs::path &path) {
         std::ifstream file(path, std::ios::binary);
         if (!file) {
             return {};
@@ -61,15 +61,13 @@ namespace dsinfer::onnxdriver {
         static constexpr const size_t buffer_size = 4096; // Process 4KB each time
         char buffer[buffer_size];
 
-        SHA256_CTX sha256_ctx;
-        sha256_init(&sha256_ctx);
+        SHA256 sha256_ctx;
         while (file.read(buffer, buffer_size) || file.gcount() > 0) {
-            sha256_update(&sha256_ctx, reinterpret_cast<unsigned char *>(buffer), file.gcount());
+            sha256_ctx.add(buffer, file.gcount());
         }
-
-        std::string final;
+        std::vector<uint8_t> final;
         final.resize(32);
-        sha256_final(&sha256_ctx, reinterpret_cast<unsigned char *>(final.data()));
+        sha256_ctx.getHash(final.data());
         return final;
     }
 
@@ -77,7 +75,7 @@ namespace dsinfer::onnxdriver {
     static std::string bytesToHexString(const CharType *bytes, size_t bytesSize) {
         static_assert(std::is_same_v<CharType, char> || std::is_same_v<CharType, unsigned char>,
                       "CharType must be char or unsigned char.");
-        static constexpr const char* hexDigits = "0123456789abcdef";
+        static constexpr const char *hexDigits = "0123456789abcdef";
         std::string hexString(bytesSize * 2, '\0');
         for (size_t i = 0; i < bytesSize; ++i) {
             auto byte = static_cast<unsigned char>(bytes[i]);

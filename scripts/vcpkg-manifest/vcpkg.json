@@ -5,7 +5,9 @@
         "nlohmann-json",
         "stduuid",
         "stdcorelib",
-        "zlib"
+        "zlib",
+        "hash-library",
+        "sparsepp"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

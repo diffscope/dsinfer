@@ -61,7 +61,7 @@ namespace dsutils {
 
                         case '\r':
                         case '\n':
-                            goto out_failed;
+                            goto out_next_line;
 
                         default:
                             break;
@@ -70,9 +70,7 @@ namespace dsutils {
                 }
 
                 // Tab not found
-                if (!value_start) {
-                    goto out_failed;
-                }
+                goto out_next_line;
 
             out_tab_find:
                 // Find space or line break
@@ -96,12 +94,11 @@ namespace dsutils {
                 }
 
             out_success: {
-                std::string_view key(start, value_start - 1 - start);
-                m_map[key] = Entry{int(value_start - buffer_begin), value_cnt};
+                // std::string_sview key(start, value_start - 1 - start);
+                m_map[start] = Entry{int(value_start - buffer_begin), value_cnt};
                 start = p + 1;
             }
-
-            out_failed: {}
+            out_next_line: {}
             }
         }
         return true;

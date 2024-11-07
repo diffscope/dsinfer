@@ -1,9 +1,9 @@
 project(onnxdriver
     VERSION ${DSINFER_VERSION}
-    LANGUAGES C CXX
+    LANGUAGES CXX
 )
 
-file(GLOB_RECURSE _src *.h *.c *.cpp)
+file(GLOB_RECURSE _src *.h *.cpp)
 
 # Import onnxruntime
 set(_onnxruntime_dir ${DSINFER_SOURCE_DIR}/libs/onnxruntime)
@@ -23,12 +23,13 @@ endif()
 set(_onnxdriver_ep_macros ${_onnxdriver_ep_macro_dml} ${_onnxdriver_ep_macro_cuda})
 
 find_package(stduuid CONFIG REQUIRED)
+find_package(unofficial-hash-library CONFIG REQUIRED)
 
 dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
     SOURCES ${_src}
     FEATURES cxx_std_17
     LINKS dsinfer
-    LINKS_PRIVATE stduuid
+    LINKS_PRIVATE stduuid unofficial::hash-library
     INCLUDE ${_onnxruntime_dir}/include
     INCLUDE_PRIVATE *
     PREFIX DSINFER_CORE
