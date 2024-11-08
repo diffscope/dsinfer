@@ -1,5 +1,4 @@
 #include <chrono>
-#include <string_view>
 
 #include <stdcorelib/system.h>
 #include <stdcorelib/console.h>
@@ -8,19 +7,6 @@
 #include <dsutils/phonemedictionary.h>
 
 namespace cho = std::chrono;
-
-static std::string join(std::string_view v[], int size, const std::string_view &delimiter) {
-    if (size == 0) {
-        return {};
-    }
-    std::string res;
-    for (int i = 0; i < size - 1; ++i) {
-        res.append(v[i]);
-        res.append(delimiter);
-    }
-    res.append(v[size - 1]);
-    return res;
-}
 
 int main(int /*argc*/, char * /*argv*/[]) {
     auto cmdline = stdc::System::commandLineArguments();
@@ -52,17 +38,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
         stdc::u8println("Press Enter to continue...");
         std::ignore = std::getchar();
 
-        {
-            int i = 0;
-            auto &dict = dicts[0];
-            auto it = dict.get().begin();
-            for (; i < 10; ++i, ++it) {
-                stdc::VarLengthArray<std::string_view> values(it->second.count);
-                dict.readEntry(it->second, values.data());
-                stdc::u8println("Phoneme %1: %2 - %3", i, it->first,
-                                join(values.data(), values.size(), " ").c_str());
-            }
-        }
+        dicts[0].print_front(10);
     }
     return 0;
 }

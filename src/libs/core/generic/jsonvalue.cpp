@@ -7,6 +7,11 @@ namespace dsinfer {
     class JsonValueContainer {
     public:
         nlohmann::json json;
+
+        void func() {
+            auto it = json.begin();
+            it++;
+        }
     };
 
     JsonValue::JsonValue(Type type) : _data(std::make_shared<JsonValueContainer>()) {

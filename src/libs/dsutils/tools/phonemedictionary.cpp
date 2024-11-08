@@ -3,7 +3,47 @@
 #include <fstream>
 #include <algorithm>
 
+#include <stdcorelib/pimpl.h>
+#include <stdcorelib/console.h>
+
+#include <sparsepp/spp.h>
+
 namespace dsutils {
+
+    struct const_char_hash {
+    public:
+        size_t operator()(const char *key) const noexcept {
+            return std::hash<std::string_view>()(std::string_view(key, std::strlen(key)));
+        }
+    };
+
+    class PhonemeDictionary::Impl {
+    public:
+        struct Entry {
+            int offset;
+            int count;
+        };
+        std::vector<char> filebuf;
+        spp::sparse_hash_map<char *, Entry, const_char_hash> map;
+
+        void readEntry(Entry entry, std::string_view out[]) const {
+            auto p = filebuf.data() + entry.offset;
+            auto q = p;
+            int i = 0;
+            while (i < entry.count) {
+                if (*q == '\0') {
+                    out[i++] = p;
+                    p = q + 1;
+                }
+                q++;
+            }
+        }
+    };
+
+    PhonemeDictionary::PhonemeDictionary() : _impl(std::make_shared<Impl>()) {
+    }
+
+    PhonemeDictionary::~PhonemeDictionary() = default;
 
     bool PhonemeDictionary::load(const std::filesystem::path &path, std::string *error) {
         std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -13,29 +53,33 @@ namespace dsutils {
             return false;
         }
 
+        __stdc_impl_t;
+        auto &filebuf = impl.filebuf;
+        auto &map = impl.map;
+
         file.seekg(0, std::ios::end);
         std::streamsize file_size = file.tellg();
         file.seekg(0, std::ios::beg);
 
-        m_filebuf.resize(file_size + 1); // +1 for terminator
-        if (!file.read(m_filebuf.data(), file_size)) {
+        filebuf.resize(file_size + 1); // +1 for terminator
+        if (!file.read(filebuf.data(), file_size)) {
             if (error)
                 *error = "failed to read file";
-            m_filebuf.clear();
+            filebuf.clear();
             return false;
         }
-        m_filebuf[file_size] = '\n'; // add terminating line break
-        m_map.clear();
+        filebuf[file_size] = '\n'; // add terminating line break
+        map.clear();
 
         // Parse the buffer
-        const auto buffer_begin = m_filebuf.data();
-        const auto buffer_end = buffer_begin + m_filebuf.size();
+        const auto buffer_begin = filebuf.data();
+        const auto buffer_end = buffer_begin + filebuf.size();
 
         // Estimate line numbers if the file is too large
         static constexpr const size_t larget_file_size = 1 * 1024 * 1024;
         if (file_size > larget_file_size) {
             size_t line_cnt = std::count(buffer_begin, buffer_end, '\n') + 1;
-            m_map.reserve(line_cnt);
+            map.reserve(line_cnt);
         }
 
         // Traverse lines
@@ -95,7 +139,7 @@ namespace dsutils {
 
             out_success: {
                 // std::string_sview key(start, value_start - 1 - start);
-                m_map[start] = Entry{int(value_start - buffer_begin), value_cnt};
+                map[start] = Impl::Entry{int(value_start - buffer_begin), value_cnt};
                 start = p + 1;
             }
             out_next_line: {}
@@ -104,16 +148,46 @@ namespace dsutils {
         return true;
     }
 
-    void PhonemeDictionary::readEntry(Entry entry, std::string_view out[]) const {
-        auto p = m_filebuf.data() + entry.offset;
-        auto q = p;
-        int i = 0;
-        while (i < entry.count) {
-            if (*q == '\0') {
-                out[i++] = p;
-                p = q + 1;
-            }
-            q++;
+    stdc::VarLengthArray<std::string_view> PhonemeDictionary::find(const char *key) const {
+        __stdc_impl_t;
+        auto &filebuf = impl.filebuf;
+        auto &map = impl.map;
+
+        auto it = map.find(const_cast<char *>(key));
+        if (it == map.end()) {
+            return {};
+        }
+        auto &entry = it->second;
+        stdc::VarLengthArray<std::string_view> out(entry.count);
+        impl.readEntry(it->second, out.data());
+        return out;
+    }
+
+    static std::string join(std::string_view v[], int size, const std::string_view &delimiter) {
+        if (size == 0) {
+            return {};
+        }
+        std::string res;
+        for (int i = 0; i < size - 1; ++i) {
+            res.append(v[i]);
+            res.append(delimiter);
+        }
+        res.append(v[size - 1]);
+        return res;
+    }
+
+    void PhonemeDictionary::print_front(int size) const {
+        __stdc_impl_t;
+        auto &map = impl.map;
+        size = std::min<int>(size, map.size());
+
+        auto it = map.begin();
+        for (int i = 0; i < size; ++i, ++it) {
+            const auto &entry = it->second;
+            stdc::VarLengthArray<std::string_view> values(entry.count);
+            impl.readEntry(entry, values.data());
+            stdc::u8println("Phoneme %1: %2 - %3", i, it->first,
+                            join(values.data(), values.size(), " ").c_str());
         }
     }
 

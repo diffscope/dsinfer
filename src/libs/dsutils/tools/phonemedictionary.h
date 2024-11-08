@@ -4,9 +4,10 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include <sparsepp/spp.h>
+
+#include <stdcorelib/vla.h>
 
 #include <dsutils/dsutilsglobal.h>
 
@@ -14,30 +15,17 @@ namespace dsutils {
 
     class DSUTILS_EXPORT PhonemeDictionary {
     public:
-        PhonemeDictionary() = default;
-        ~PhonemeDictionary() = default;
+        PhonemeDictionary();
+        ~PhonemeDictionary();
 
         bool load(const std::filesystem::path &path, std::string *error = nullptr);
-        const auto &get() const {
-            return m_map;
-        }
+        stdc::VarLengthArray<std::string_view> find(const char *key) const;
 
-        struct Entry {
-            int offset;
-            int count;
-        };
-        void readEntry(Entry entry, std::string_view out[]) const;
-
-        struct hash {
-            size_t operator()(const char *key) const noexcept {
-                return std::hash<std::string_view>()(std::string_view(key, std::strlen(key)));
-            }
-        };
+        void print_front(int size) const;
 
     protected:
-        std::vector<char> m_filebuf;
-
-        spp::sparse_hash_map<char *, Entry, hash> m_map;
+        class Impl;
+        std::shared_ptr<Impl> _impl;
     };
 }
 
