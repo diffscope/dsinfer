@@ -1,5 +1,6 @@
 #include "onnxtask.h"
 
+#include <atomic>
 #include <mutex>
 #include <unordered_set>
 #include <random>
@@ -34,7 +35,25 @@ namespace dsinfer {
 
     class OnnxTask::Impl {
     public:
+        class ScopedStateUpdater {
+        public:
+            inline explicit ScopedStateUpdater(Impl *impl, State targetState = State::Failed)
+                : m_impl(impl), m_targetState(targetState) {}
+
+            inline ~ScopedStateUpdater() {
+                m_impl->state = m_targetState;
+            }
+
+            inline void setTargetState(State targetState) {
+                m_targetState = targetState;
+            }
+        private:
+            Impl *m_impl;
+            State m_targetState;
+        };
+
         int64_t taskId = 0;
+        std::atomic<State> state = State::Terminated;
         OnnxSession *sessionObj = nullptr;
         OnnxContext *contextObj = nullptr;
         std::vector<JsonValue> result;
@@ -55,11 +74,19 @@ namespace dsinfer {
     }
 
     bool OnnxTask::initialize(const JsonValue &args, Error *error) {
+        __stdc_impl_t;
+        impl.result.clear();
+        impl.state = State::Idle;
         return true;
     }
 
     bool OnnxTask::start(const JsonValue &input, Error *error) {
         __stdc_impl_t;
+        // When leaving the function, the state will be automatically set to Failed,
+        // unless calling setTargetState.
+        Impl::ScopedStateUpdater stateUpdater(&impl, State::Failed);
+        impl.state = State::Running;
+
         if (!input.isObject()) {
             if (error) {
                 *error = Error(Error::InvalidFormat, "Invalid task input format: input value is not object");
@@ -164,8 +191,20 @@ namespace dsinfer {
                         }
                         return false;
                     }
-                    valueMap[key] = ortValueObj;
+                    auto inputName = it_name->second.toString();
+                    if (inputName.empty()) {
+                        if (error) {
+                            *error = Error(Error::InvalidFormat,
+                                           "Input name is empty");
+                        }
+                        return false;
+                    }
+                    valueMap[inputName] = ortValueObj;
                 } else {
+                    if (error) {
+                        *error = Error(Error::InvalidFormat,
+                                       R"(Please specify key in object["data"]["value"] string field.)");
+                    }
                     return false;
                 }
             } else {
@@ -236,6 +275,7 @@ namespace dsinfer {
                 return false;
             }
         }
+        stateUpdater.setTargetState(State::Idle);
         return true;
     }
 
@@ -245,6 +285,7 @@ namespace dsinfer {
             return false;
         }
         impl.sessionObj->_impl->session.terminate();
+        impl.state = State::Terminated;
         return true;
     }
 
@@ -254,8 +295,8 @@ namespace dsinfer {
     }
 
     InferenceTask::State OnnxTask::state() const {
-        // TODO: to be implemented
-        return InferenceTask::Terminated;
+        __stdc_impl_t;
+        return impl.state;
     }
 
     JsonValue OnnxTask::result() const {
