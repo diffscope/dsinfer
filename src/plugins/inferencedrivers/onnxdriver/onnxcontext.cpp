@@ -89,7 +89,7 @@ namespace dsinfer {
         if (auto it = impl.valueMap.find(key); it != impl.valueMap.end()) {
             auto ortVal = it->second;
             Error error;
-            auto jVal = onnxdriver::serializeTensor(*ortVal, &error);
+            auto jVal = onnxdriver::serializeTensorAsBytes(*ortVal, &error);
             if (!error.ok()) {
                 onnxdriver_log().critical("OnnxContext [%1] - %2", impl.contextId, error.message());
                 return {};
@@ -113,23 +113,28 @@ namespace dsinfer {
     }
 
     bool OnnxContext::executeCommand(const JsonValue &input, JsonValue *output) {
-        // const auto &obj = input.toObject();
-        // auto it = obj.find("command");
-        // if (it == obj.end()) {
-        //     *output = R"(no command)";
-        //     return false;
-        // }
+        __stdc_impl_t;
+        const auto &obj = input.toObject();
+        auto it = obj.find("command");
+        if (it == obj.end()) {
+            *output = R"(no command)";
+            return false;
+        }
 
-        // auto cmd = it->second.toString();
-        // if (cmd == "remove") {
-        //     it = obj.find("key");
-        //     if (it == obj.end()) {
-        //         *output = R"(no key)";
-        //         return false;
-        //     }
-        //     *output = "ok";
-        //     return removeObject(it->second.toString());
-        // }
+        auto cmd = it->second.toString();
+        if (cmd == "list") {
+            if (!output) {
+                return false;
+            }
+            std::shared_lock<std::shared_mutex> lock(impl.mtx);
+            std::vector<JsonValue> keyList;
+            keyList.reserve(impl.valueMap.size());
+            for (const auto &key : std::as_const(impl.valueMap)) {
+                keyList.emplace_back(key.first);
+            }
+            *output = JsonArray{keyList};
+            return true;
+        }
 
         // No need to implement
         return false;

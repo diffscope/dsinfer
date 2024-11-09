@@ -191,7 +191,7 @@ namespace dsinfer {
                 auto format = outputDataObj["format"].toString();
                 if (format == "bytes") {
                     Error err_;
-                    auto jVal = onnxdriver::serializeTensor(*it->second, &err_);
+                    auto jVal = onnxdriver::serializeTensorAsBytes(*it->second, &err_);
                     if (!err_.ok()) {
                         if (error) {
                             *error = std::move(err_);
@@ -204,19 +204,28 @@ namespace dsinfer {
                         {"data", jVal}
                     });
                 } else if (format == "array") {
-                    // TODO: implement array
-                    if (error) {
-                        *error = Error(Error::InvalidFormat,
-                                       "output format \"array\" is not implemented yet!");
+                    Error err_;
+                    auto jVal = onnxdriver::serializeTensorAsArray(*it->second, &err_);
+                    if (!err_.ok()) {
+                        if (error) {
+                            *error = std::move(err_);
+                        }
+                        return false;
                     }
-                    return false;
+                    impl.result.emplace_back(JsonObject {
+                        {"name", name},
+                        {"format", "array"},
+                        {"data", jVal}
+                    });
                 } else if (format == "reference") {
                     auto uuidKey = generate_uuid();
                     impl.contextObj->_impl->insertOrtValue(uuidKey, it->second);
                     impl.result.emplace_back(JsonObject {
                         {"name", name},
                         {"format", "reference"},
-                        {"data", uuidKey}
+                        {"data", JsonObject {
+                            {"value", uuidKey}
+                        }}
                     });
                 }
             } else {

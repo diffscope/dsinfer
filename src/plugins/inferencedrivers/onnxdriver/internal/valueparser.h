@@ -204,11 +204,19 @@ namespace dsinfer::onnxdriver {
         return Ort::Value(nullptr);
     }
 
-    inline JsonValue serializeTensor(const Ort::Value &tensor, Error *error = nullptr) {
+    inline JsonValue serializeTensorAsBytes(const Ort::Value &tensor, Error *error = nullptr) {
         std::string dataType;
         size_t elemSize = 1;
         auto typeAndShapeInfo = tensor.GetTensorTypeAndShapeInfo();
         auto type = typeAndShapeInfo.GetElementType();
+
+        // Serialize shape
+        JsonArray shapeArray;
+        auto tensorShape = typeAndShapeInfo.GetShape();
+        shapeArray.resize(tensorShape.size());
+        for (size_t i = 0; i < tensorShape.size(); ++i) {
+            shapeArray[i] = JsonValue(tensorShape[i]);
+        }
 
         // Serialize type
         switch (type) {
@@ -235,14 +243,6 @@ namespace dsinfer::onnxdriver {
                 return false; // Unknown tensor type
         }
 
-        // Serialize shape
-        JsonArray shapeArray;
-        auto tensorShape = typeAndShapeInfo.GetShape();
-        shapeArray.resize(tensorShape.size());
-        for (size_t i = 0; i < tensorShape.size(); ++i) {
-            shapeArray[i] = JsonValue(tensorShape[i]);
-        }
-
         // Serialize data (as binary)
         auto bufferSize = typeAndShapeInfo.GetElementCount() * elemSize;
 
@@ -257,6 +257,85 @@ namespace dsinfer::onnxdriver {
 
         return JsonObject {
             {"value", JsonValue(std::vector<uint8_t>(buffer, buffer + bufferSize))},
+            {"shape", shapeArray},
+            {"type", dataType},
+        };
+    }
+
+    inline JsonValue serializeTensorAsArray(const Ort::Value &tensor, Error *error = nullptr) {
+        std::string dataType;
+        auto typeAndShapeInfo = tensor.GetTensorTypeAndShapeInfo();
+        auto type = typeAndShapeInfo.GetElementType();
+
+        // Serialize shape
+        JsonArray shapeArray;
+        auto tensorShape = typeAndShapeInfo.GetShape();
+        shapeArray.resize(tensorShape.size());
+        for (size_t i = 0; i < tensorShape.size(); ++i) {
+            shapeArray[i] = JsonValue(tensorShape[i]);
+        }
+
+        // Serialize type and data
+        JsonArray dataArray;
+        auto elemCount = typeAndShapeInfo.GetElementCount();
+        dataArray.reserve(elemCount);
+
+        switch (type) {
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: {
+            dataType = "float";
+            auto buffer = tensor.template GetTensorData<float>();
+            if (!buffer) {
+                if (error) {
+                    *error = Error(Error::InvalidFormat,
+                                   "Failed to convert to JsonValue: ort tensor buffer is null");
+                }
+                return {};
+            }
+            for (size_t i = 0; i < elemCount; ++i) {
+                dataArray.emplace_back(buffer[i]);
+            }
+            break;
+        }
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: {
+            dataType = "int64";
+            auto buffer = tensor.template GetTensorData<int64_t>();
+            if (!buffer) {
+                if (error) {
+                    *error = Error(Error::InvalidFormat,
+                                   "Failed to convert to JsonValue: ort tensor buffer is null");
+                }
+                return {};
+            }
+            for (size_t i = 0; i < elemCount; ++i) {
+                dataArray.emplace_back(buffer[i]);
+            }
+            break;
+        }
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: {
+            dataType = "bool";
+            auto buffer = tensor.template GetTensorData<bool>();
+            if (!buffer) {
+                if (error) {
+                    *error = Error(Error::InvalidFormat,
+                                   "Failed to convert to JsonValue: ort tensor buffer is null");
+                }
+                return {};
+            }
+            for (size_t i = 0; i < elemCount; ++i) {
+                dataArray.emplace_back(buffer[i]);
+            }
+            break;
+        }
+        default:
+            if (error) {
+                *error = Error(Error::InvalidFormat,
+                               "Failed to convert to JsonValue: unknown tensor type");
+            }
+            return false; // Unknown tensor type
+        }
+
+        return JsonObject {
+            {"value", dataArray},
             {"shape", shapeArray},
             {"type", dataType},
         };
