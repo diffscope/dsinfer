@@ -2,80 +2,18 @@
 
 #include <array>
 
+#include "valueutils.h"
+
 namespace DS = dsinfer;
+
+using ValueUtils::toInputDataArray;
+using ValueUtils::toInputDataBytes;
 
 enum class DataFormat {
     Array,
     Bytes,
     Reference,
 };
-
-
-template <typename T>
-static inline const char *type_to_string() {
-    static_assert(std::is_same_v<T, float> ||
-                      std::is_same_v<T, int64_t> ||
-                      std::is_same_v<T, bool>,
-                  "T must be one of the following types: float, int64_t, bool.");
-    const char *elemType;
-    if constexpr (std::is_same_v<T, float>) {
-        elemType = "float";
-    } else if constexpr (std::is_same_v<T, int64_t>) {
-        elemType = "int64";
-    } else if constexpr (std::is_same_v<T, bool>) {
-        elemType = "bool";
-    } else {
-        elemType = "";
-    }
-    return elemType;
-}
-
-template <typename T>
-static inline DS::JsonValue to_input_data_array(const char *name, const T *buffer, size_t size) {
-    static_assert(std::is_same_v<T, float> ||
-                  std::is_same_v<T, int64_t> ||
-                  std::is_same_v<T, bool>,
-                  "T must be one of the following types: float, int64_t, bool.");
-    auto elemType = type_to_string<T>();
-
-    DS::JsonArray value;
-    value.reserve(size);
-    for (size_t i = 0; i < size; ++i) {
-        value.emplace_back(buffer[i]);
-    }
-    return DS::JsonObject {
-        {"name", name},
-        {"format", "array"},
-        {"data", DS::JsonObject {
-            {"type", elemType},
-            {"shape", DS::JsonArray {int64_t(1), int64_t(size)}},
-            {"value", value}
-        }}
-    };
-}
-
-template <typename T>
-static inline DS::JsonValue to_input_data_bytes(const char *name, const T *buffer, size_t size) {
-    static_assert(std::is_same_v<T, float> ||
-                  std::is_same_v<T, int64_t> ||
-                  std::is_same_v<T, bool>,
-                  "T must be one of the following types: float, int64_t, bool.");
-    auto elemType = type_to_string<T>();
-
-    const uint8_t *bytesBuffer = reinterpret_cast<const uint8_t *>(buffer);
-    size_t bytesCount = size * sizeof(T);
-
-    return DS::JsonObject {
-        {"name", name},
-        {"format", "bytes"},
-        {"data", DS::JsonObject {
-            {"type", elemType},
-            {"shape", DS::JsonArray {int64_t(1), int64_t(size)}},
-            {"value", DS::JsonValue(std::vector<uint8_t>(
-                                   bytesBuffer, bytesBuffer + bytesCount))}
-        }}
-    };
-}
 
 static constexpr const char *dataformat_to_string(DataFormat format) {
     if (format == DataFormat::Array) {
@@ -121,18 +59,18 @@ static inline DS::JsonValue generate_float_testdata(int64_t session_id,
     DS::JsonArray inputJsonArr;
     inputJsonArr.reserve(2);
     if (formatInfo.input1_format == DataFormat::Array) {
-        inputJsonArr.emplace_back(to_input_data_array(
-            nameInfo.input1_name, hardcoded_data_1.data(), hardcoded_data_1.size()));
+        inputJsonArr.emplace_back(toInputDataArray(nameInfo.input1_name, hardcoded_data_1.data(),
+                                                   hardcoded_data_1.size()));
     } else if (formatInfo.input1_format == DataFormat::Bytes) {
-        inputJsonArr.emplace_back(to_input_data_bytes(
-            nameInfo.input1_name, hardcoded_data_1.data(), hardcoded_data_1.size()));
+        inputJsonArr.emplace_back(toInputDataBytes(nameInfo.input1_name, hardcoded_data_1.data(),
+                                                   hardcoded_data_1.size()));
     }
     if (formatInfo.input2_format == DataFormat::Array) {
-        inputJsonArr.emplace_back(to_input_data_array(
-            nameInfo.input2_name, hardcoded_data_2.data(), hardcoded_data_2.size()));
+        inputJsonArr.emplace_back(toInputDataArray(nameInfo.input2_name, hardcoded_data_2.data(),
+                                                   hardcoded_data_2.size()));
     } else if (formatInfo.input2_format == DataFormat::Bytes) {
-        inputJsonArr.emplace_back(to_input_data_bytes(
-            nameInfo.input2_name, hardcoded_data_2.data(), hardcoded_data_2.size()));
+        inputJsonArr.emplace_back(toInputDataBytes(nameInfo.input2_name, hardcoded_data_2.data(),
+                                                   hardcoded_data_2.size()));
     }
     auto outFormatStr = dataformat_to_string(formatInfo.output_format);
     return DS::JsonObject {

@@ -1,6 +1,8 @@
 #include "onnxtest.h"
 
+#include <cstdint>
 #include <fstream>
+#include <limits>
 
 #include <stdcorelib/console.h>
 #include <stdcorelib/pimpl.h>
@@ -37,7 +39,28 @@
 
 namespace fs = std::filesystem;
 namespace DS = dsinfer;
+namespace VU = ValueUtils;
 
+
+template <typename T>
+bool insertObjectHelper(DS::Log::Category &logger, DS::InferenceContext *context, const char *key, const std::vector<T> &inputData) {
+    logger.info(R"(Inserting new object "%1" to OnnxContext %2)", key, context->id());
+    bool ok = context->insertObject(key, VU::toContextObj<T>(inputData));
+    if (!ok) {
+        logger.critical(R"(Failed to insert object "%1" to OnnxContext %2)", key, context->id());
+        return false;
+    }
+
+    // Getting objects from context
+    auto obj = context->getObject(key);
+    auto objContent = obj["content"];
+    if (objContent.isUndefined()) {
+        logger.critical(R"(Failed to get object "%1" from OnnxContext %2: "content" is missing)", key, context->id());
+        return false;
+    }
+    logger.debug(R"(Content of "%1": %2)", key, VU::inferValueStringify(objContent));
+    return true;
+}
 
 class OnnxTest::Impl {
 public:
@@ -106,7 +129,6 @@ bool OnnxTest::testTask() {
     DS::Error error;
     bool ok = true;
 
-    ValueUtils vu(&logger);
     // ========== Utility Functions ==========
     // Create new session
     const auto newSession = [&](const fs::path &modelPath,
@@ -170,43 +192,37 @@ bool OnnxTest::testTask() {
     logger.info("OnnxContext %1 created", context->id());
 
     // Insert objects to context
-    auto generateInputObj = [](const std::vector<float> &input_data) {
-        auto buffer = reinterpret_cast<const uint8_t *>(input_data.data());
-        auto bufferSize = input_data.size() * sizeof(float);
-        return DS::JsonObject {
-            {"type",    "object"                                                                },
-            {"content",
-             DS::JsonObject{
-                 {"class", "Ort::Value"},
-                 {"format", "bytes"},
-                 {"data",
-                  DS::JsonObject{{"type", "float"},
-                                 {"shape", DS::JsonArray{(float) input_data.size()}},
-                                 {"value", std::vector<uint8_t>(buffer, buffer + bufferSize)}}}}}
-        };
-    };
 
-    logger.info("Inserting new object %1 to OnnxContext %2", "input1", context->id());
-    ok = context->insertObject("input1", generateInputObj({1.0f, 2.0f, 3.0f, 4.0f}));
-    if (!ok) {
-        logger.critical("Failed to insert object %1 to OnnxContext %2", "input1", context->id());
+    if (!insertObjectHelper<float>(logger, context.get(),
+                                   "test_input1",
+                                   {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f})) {
         return false;
     }
-
-    logger.info("Inserting new object %1 to OnnxContext %2", "input2", context->id());
-    ok = context->insertObject("input2", generateInputObj({5.0f, 6.0f, 7.0f, 8.0f}));
-    if (!ok) {
-        logger.critical("Failed to insert object %1 to OnnxContext %2", "input2", context->id());
+    if (!insertObjectHelper<float>(logger, context.get(),
+                                   "test_input2",
+                                   {3.0f, 6.0f, 7.0f, -8.0f, -9.0f, 12.0f})) {
         return false;
     }
-
-    // Getting objects from context
-    auto obj_input1 = context->getObject("input1");
-    logger.debug("Content of input1: %1", vu.inferValueStringify(obj_input1["content"]));
+    if (!insertObjectHelper<float>(logger, context.get(),
+                                   "pitch",
+                                   {66.2008, 66.1732, 66.1448, 66.1164, 66.072, 66.0396})) {
+        return false;
+    }
+    if (!insertObjectHelper<int64_t>(logger, context.get(),
+                                     "tokens",
+                                     {15, 24, 16, 8, 32, 19})) {
+        return false;
+    }
+    if (!insertObjectHelper<bool>(logger, context.get(),
+                                     "retake",
+                                     {false, false, true, true, true, true})) {
+        return false;
+    }
 
     // ========== Test OnnxTask ==========
-    for (int dataId = 1; dataId < TestInferData::count() + 1; ++dataId) {
-        logger.info("Running OnnxTask test case %1/%2", dataId, TestInferData::count());
+    auto totalCases = TestInferData::count() + 1; // 1 extra case
+    for (int dataId = 1; dataId <= totalCases; ++dataId) {
+        logger.info("Running OnnxTask test case %1/%2", dataId, totalCases);
         // Create OnnxTask
         logger.info("Creating OnnxTask");
         std::shared_ptr<DS::InferenceTask> task(impl.driver->createTask());
@@ -228,10 +244,45 @@ bool OnnxTest::testTask() {
         //    _TSTR("test_data/input_data/input-two_float_vectors-1.json"));
         //auto inputFormat = vu.jsonValueFromPath(taskInputJsonPath);
 
-        auto inputFormat = TestInferData::generate(
-            dataId,
-            (dataId % 2) ? session1->id() : session2->id(),
-            context->id());
+        DS::JsonValue inputFormat;
+        if (dataId <= TestInferData::count()) {
+            inputFormat = TestInferData::generate(dataId, session1->id(), context->id());
+        } else {
+            inputFormat = DS::JsonObject {
+                {"session", session1->id()},
+                {"context", context->id()},
+                {
+                    "input", DS::JsonArray {
+                        DS::JsonObject {
+                            {"name", "input1"},
+                            {"format", "reference"},
+                            {
+                                "data", DS::JsonObject {
+                                    {"value", "test_input1"}
+                                },
+                            }
+                        },
+                        DS::JsonObject {
+                            {"name", "input2"},
+                            {"format", "reference"},
+                            {
+                                "data", DS::JsonObject {
+                                    {"value", "test_input2"}
+                                }
+                            },
+                        }
+                    },
+                },
+                {
+                    "output", DS::JsonArray {
+                        DS::JsonObject {
+                            {"name", "output"},
+                            {"format", "reference"}
+                        }
+                    }
+                }
+            };
+        }
         if (inputFormat.isUndefined()) {
             return false;
         }
@@ -256,7 +307,7 @@ bool OnnxTest::testTask() {
             auto inputArray = inputFormatInput.toArray();
             for (size_t i = 0; i < inputArray.size(); ++i) {
                 logger.debug("[%1/%2] %3", i + 1, inputArray.size(),
-                             vu.inferValueStringify(inputArray[i]));
+                             VU::inferValueStringify(inputArray[i]));
             }
         } while (false);
 
@@ -273,7 +324,7 @@ bool OnnxTest::testTask() {
         auto resultArr = result.toArray();
         for (size_t i = 0; i < resultArr.size(); ++i) {
             logger.debug("[%1/%2] %3", i + 1, resultArr.size(),
-                         vu.inferValueStringify(resultArr[i]));
+                         VU::inferValueStringify(resultArr[i]));
             if (resultArr[i]["format"].toString() == "reference") {
                 auto key = resultArr[i]["data"]["value"].toString();
                 logger.debug("Getting key \"%1\" from context %2", key, contextId);
@@ -282,10 +333,17 @@ bool OnnxTest::testTask() {
                     logger.critical("Context %1 not found in contextMap!", contextId);
                 }
                 auto obj = it->second->getObject(key);
-                logger.debug(vu.inferValueStringify(obj["content"]));
+                logger.debug(VU::inferValueStringify(obj["content"]));
             }
         }
     }
+
+    logger.info("Finished OnnxTask test cases");
+
+    // Check OnnxContext keys
+    DS::JsonValue cmdOutput;
+    context->executeCommand(DS::JsonObject {{"command", "list"}}, &cmdOutput);
+    logger.debug("OnnxContext keys: %1", cmdOutput.toJson());
 
     // Close OnnxSession
     {
