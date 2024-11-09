@@ -1,12 +1,13 @@
-#include <memory>
-
 #include "executionprovider.h"
 
+#include <memory>
+
 #ifdef ONNXDRIVER_ENABLE_DML
-#include <dml_provider_factory.h>
+#  include <dml_provider_factory.h>
 #endif
 
 namespace dsinfer::onnxdriver {
+
     bool initCUDA(Ort::SessionOptions &options, int deviceIndex, std::string *errorMessage) {
 #ifdef ONNXDRIVER_ENABLE_CUDA
         if (!options) {
@@ -125,4 +126,5 @@ namespace dsinfer::onnxdriver {
         return false;
 #endif
     }
+
 }

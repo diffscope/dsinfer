@@ -22,12 +22,12 @@ void log_report_callback(int level, const char *category, const char *fmt, va_li
 #endif
     auto dts = (std::stringstream() << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S")).str();
 
-    stdc::Console::Color foreground, background;
+    int foreground, background;
     if (level <= DS::Log::Verbose) {
         foreground = stdc::Console::Default;
         background = stdc::Console::White;
     } else if (level <= DS::Log::Information) {
-        foreground = stdc::Console::Blue;
+        foreground = stdc::Console::Blue | stdc::Console::Intensified;
         background = foreground;
     } else if (level <= DS::Log::Warning) {
         foreground = stdc::Console::Yellow;

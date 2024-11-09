@@ -24,7 +24,7 @@ namespace dsinfer::onnxdriver {
         Session &operator=(Session &&other) noexcept;
 
     public:
-        bool open(const std::filesystem::path &path, bool useCpuHint, Error *error);
+        bool open(const std::filesystem::path &path, int hints, Error *error);
         bool close();
 
         std::vector<std::string> inputNames() const;

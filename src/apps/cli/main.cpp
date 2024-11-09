@@ -40,12 +40,12 @@ static void log_report_callback(int level, const char *category, const char *fmt
     ss << std::put_time(tm, "%Y-%m-%d %H:%M:%S");
     auto dts = ss.str();
 
-    Console::Color foreground, background;
+    int foreground, background;
     if (level <= Log::Verbose) {
         foreground = Console::Default;
         background = Console::White;
     } else if (level <= Log::Information) {
-        foreground = Console::Blue;
+        foreground = stdc::Console::Blue | stdc::Console::Intensified;
         background = foreground;
     } else if (level <= Log::Warning) {
         foreground = Console::Yellow;

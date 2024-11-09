@@ -1,193 +1,79 @@
 #include "session.h"
-#include "sessionsystem.h"
-#include "sessionimage.h"
-#include "executionprovider.h"
-#include "env.h"
-#include "onnxdriver_common.h"
-#include "onnxdriver_logger.h"
 
-#include <dsinfer/dsinferglobal.h>
-
-#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
-#include <mutex>
+#include <shared_mutex>
 #include <sstream>
 #include <fstream>
 #include <unordered_set>
+#include <algorithm>
+#include <cassert>
+
+#include <dsinfer/dsinferglobal.h>
 
 #include <hash-library/sha256.h>
+
+#include "onnxdriver_logger.h"
+#include "env.h"
+#include "sessionimage.h"
 
 namespace fs = std::filesystem;
 
 namespace dsinfer::onnxdriver {
 
-    template <typename ValueMapType>
-    inline ValueMapType SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions,
-                                         const ValueMapType &inputValueMap, Error *error);
+    struct SessionSystem {
+        struct ImageData {
+            SessionImage *image;
+            int count;
+        };
 
-    class Session::Impl {
-    public:
-        SessionImage *image = nullptr;
-        Ort::RunOptions runOptions;
+        struct ImageGroup {
+            std::filesystem::path path;
+            std::streamsize size = 0;
+            std::vector<uint8_t> sha256;
+            std::map<int, ImageData> images; // hint -> [ image, count ]
+        };
+
+        struct Sha256SizeKey {
+            std::streamsize size;
+            std::vector<uint8_t> sha256;
+
+            bool operator<(const Sha256SizeKey &other) const {
+                if (size == other.size) {
+                    return std::lexicographical_compare(sha256.begin(), sha256.end(),
+                                                        other.sha256.begin(), other.sha256.end());
+                }
+                return size < other.size;
+            }
+        };
+
+        std::list<ImageGroup> image_list;
+
+        using ListIterator = decltype(image_list)::iterator;
+
+        std::map<std::filesystem::path::string_type, ListIterator> path_map;
+        std::map<Sha256SizeKey, ListIterator> sha256_size_map;
+
+        std::shared_mutex mtx;
+
+        static SessionSystem &global() {
+            static SessionSystem instance;
+            return instance;
+        }
     };
 
-    Session::Session() : _impl(std::make_unique<Impl>()) {
-    }
-
-    Session::~Session() {
-        close();
-    }
-
-    Session::Session(Session &&other) noexcept {
-        std::swap(_impl, other._impl);
-    }
-
-    Session &Session::operator=(Session &&other) noexcept {
-        if (this == &other) {
-            return *this;
-        }
-        std::swap(_impl, other._impl);
-        return *this;
-    }
-
-    static std::vector<uint8_t> compute_sha256(const fs::path &path) {
-        std::ifstream file(path, std::ios::binary);
-        if (!file) {
-            return {};
-        }
-
-        static constexpr const size_t buffer_size = 4096; // Process 4KB each time
-        char buffer[buffer_size];
-
-        SHA256 sha256_ctx;
-        while (file.read(buffer, buffer_size) || file.gcount() > 0) {
-            sha256_ctx.add(buffer, file.gcount());
-        }
-        std::vector<uint8_t> final;
-        final.resize(32);
-        sha256_ctx.getHash(final.data());
-        return final;
-    }
-
-    template <typename CharType>
-    static std::string bytesToHexString(const CharType *bytes, size_t bytesSize) {
-        static_assert(std::is_same_v<CharType, char> || std::is_same_v<CharType, unsigned char>,
-                      "CharType must be char or unsigned char.");
-        static constexpr const char *hexDigits = "0123456789abcdef";
-        std::string hexString(bytesSize * 2, '\0');
-        for (size_t i = 0; i < bytesSize; ++i) {
-            auto byte = static_cast<unsigned char>(bytes[i]);
-            hexString[i * 2] = hexDigits[(byte >> 4) & 0x0f];
-            hexString[i * 2 + 1] = hexDigits[byte & 0x0f];
-        }
-        return hexString;
-    }
-
-    bool Session::open(const fs::path &path, bool useCpuHint, Error *error) {
-        __stdc_impl_t;
-        // TODO: If the same session is already opened before, useCpuHint will have no effect
-        //       due to SessionSystem will return the existing SessionImage instead of creating a
-        //       new one. Should this be the desired behavior, or it needs to be fixed?
-
-        if (!Env::instance() || !Env::instance()->isLoaded()) {
-            onnxdriver_log().critical("Session - The environment is not initialized!");
-            return false;
-        }
-        if (!SessionSystem::instance()) {
-            onnxdriver_log().critical("Session - The session system is not initialized!");
-            return false;
-        }
-        if (isOpen()) {
-            onnxdriver_log().warning("Session - Session %1 is already open!", path.string());
-            return false;
-        }
-        onnxdriver_log().debug("Session - Try open " + path.string());
-        fs::path canonicalPath;
-        try {
-            canonicalPath = fs::canonical(path);
-            onnxdriver_log().debug("Session - The canonical path is " + canonicalPath.string());
-        } catch (const fs::filesystem_error &e) {
-            if (error) {
-                *error = Error(Error::FileNotFound, e.what());
-            }
-            return false;
-        }
-
-        if (!fs::is_regular_file(canonicalPath)) {
-            if (error) {
-                *error = Error(Error::FileNotFound, "Not a regular file");
-            }
-            return false;
-        }
-
-        auto sha256 = compute_sha256(path);
-        auto sha256_str = bytesToHexString(sha256.data(), sha256.size());
-        onnxdriver_log().debug("Session - SHA256 is %1", sha256_str);
-
-        // TODO: Check sha256 to determine if a same file has been loaded
-
-        std::string errorMessage;
-        if (auto image = SessionSystem::instance()->getImage(canonicalPath); image == nullptr) {
-            onnxdriver_log().debug(
-                "Session - The session image does not exist. Creating a new one...");
-            impl.image = SessionImage::create(path, useCpuHint, &errorMessage);
-        } else {
-            onnxdriver_log().debug(
-                "Session - The session image already exists. Increasing the reference count...");
-            impl.image = image;
-            impl.image->ref();
-        }
-
-        if (!impl.image) {
-            if (error) {
-                *error = Error(Error::SessionError, errorMessage);
-            }
-            return false;
-        }
-        return true;
-    }
-
-    bool Session::close() {
-        __stdc_impl_t;
-        if (!impl.image)
-            return false;
-
-        onnxdriver_log().debug("Session [%1] - close", path().filename());
-
-        if (impl.image->deref() == 0) {
-            impl.image = nullptr;
-        }
-        return true;
-    }
-
-    fs::path Session::path() const {
-        __stdc_impl_t;
-        return impl.image ? impl.image->path : fs::path();
-    }
-
-    bool Session::isOpen() const {
-        __stdc_impl_t;
-        return impl.image != nullptr;
-    }
-
     template <typename ValueMapType>
-    inline ValueMapType SessionRunHelper(SessionImage *image, Ort::RunOptions &runOptions,
+    inline ValueMapType SessionRunHelper(const std::filesystem::path &path, SessionImage *image,
+                                         Ort::RunOptions &runOptions,
                                          const ValueMapType &inputValueMap, Error *error) {
         static_assert(std::is_same_v<ValueMapType, ValueMap> ||
                       std::is_same_v<ValueMapType, SharedValueMap>);
 
-        auto filename = image ? image->path.filename() : "";
+        auto filename = path.filename();
+
         onnxdriver_log().info("Session [%1] - Running inference", filename);
         auto timeStart = std::chrono::steady_clock::now();
-
-        if (!image) {
-            if (error) {
-                *error = Error(Error::SessionError, "Session is not open");
-            }
-            return {};
-        }
 
         if (inputValueMap.empty()) {
             if (error) {
@@ -301,6 +187,247 @@ namespace dsinfer::onnxdriver {
         return {};
     }
 
+    class Session::Impl {
+    public:
+        Ort::RunOptions runOptions;
+
+        SessionSystem::ImageGroup *group = nullptr;
+        SessionImage *image = nullptr;
+        int hints = 0;
+    };
+
+    Session::Session() : _impl(std::make_unique<Impl>()) {
+    }
+
+    Session::~Session() {
+        close();
+    }
+
+    Session::Session(Session &&other) noexcept {
+        std::swap(_impl, other._impl);
+    }
+
+    Session &Session::operator=(Session &&other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        std::swap(_impl, other._impl);
+        return *this;
+    }
+
+    static bool getFileInfo(const fs::path &path, std::vector<uint8_t> &binaryResult,
+                            std::string &stringResult, std::streamsize &sizeResult) {
+        std::ifstream file(path, std::ios::binary);
+        if (!file) {
+            return false;
+        }
+
+        // get size
+        file.seekg(0, std::ios::end);
+        sizeResult = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        static constexpr const size_t buffer_size = 4096; // Process 4KB each time
+        char buffer[buffer_size];
+
+        SHA256 sha256_ctx;
+        while (file.read(buffer, buffer_size) || file.gcount() > 0) {
+            sha256_ctx.add(buffer, file.gcount());
+        }
+
+        // get str
+        stringResult = sha256_ctx.getHash();
+
+        // get binary
+        binaryResult.resize(32);
+        sha256_ctx.getHash(binaryResult.data());
+        return true;
+    }
+
+    bool Session::open(const fs::path &path, int hints, Error *error) {
+        __stdc_impl_t;
+
+        if (isOpen()) {
+            onnxdriver_log().warning("Session - Session %1 is already open!", path.string());
+            return false;
+        }
+
+        if (!Env::instance() || !Env::instance()->isLoaded()) {
+            onnxdriver_log().critical("Session - The environment is not initialized!");
+            return false;
+        }
+
+        // Open
+        onnxdriver_log().debug("Session - Try open " + path.string());
+        fs::path canonical_path;
+        try {
+            canonical_path = fs::canonical(path);
+            onnxdriver_log().debug("Session - The canonical path is " + canonical_path.string());
+        } catch (const fs::filesystem_error &e) {
+            if (error) {
+                *error = Error(Error::FileNotFound, e.what());
+            }
+            return false;
+        }
+        if (!fs::is_regular_file(canonical_path)) {
+            if (error) {
+                *error = Error(Error::FileNotFound, "not a regular file");
+            }
+            return false;
+        }
+
+        // Ready to load
+        auto &session_system = SessionSystem::global();
+        std::unique_lock<std::shared_mutex> lock(session_system.mtx);
+        SessionImage *image = nullptr;
+        std::vector<uint8_t> sha256;
+        std::streamsize size;
+
+        // Search path
+        SessionSystem::ImageGroup *image_group = nullptr;
+        if (auto it = session_system.path_map.find(canonical_path);
+            it != session_system.path_map.end()) {
+            image_group = &(*it->second);
+            auto &image_map = image_group->images;
+            if (auto it2 = image_map.find(hints); it2 != image_map.end()) {
+                auto &data = it2->second;
+                image = data.image;
+                data.count++;
+                goto out_exists;
+            }
+            sha256 = it->second->sha256;
+            size = it->second->size;
+
+            onnxdriver_log().debug("Session - No same hint in opened sessions");
+            goto out_search_sha256;
+        }
+
+        // Calculate SHA256
+        {
+            std::string sha256_str;
+            if (!getFileInfo(canonical_path, sha256, sha256_str, size)) {
+                if (error) {
+                    *error = Error(Error::FileNotFound, "failed to read file");
+                }
+                return false;
+            }
+            onnxdriver_log().debug("Session - SHA256 is %1", sha256_str);
+        }
+
+        // Search SHA256
+        if (auto it = session_system.sha256_size_map.find({size, sha256});
+            it != session_system.sha256_size_map.end()) {
+            image_group = &(*it->second);
+            auto &image_map = image_group->images;
+            if (auto it2 = image_map.find(hints); it2 != image_map.end()) {
+                auto &data = it2->second;
+                image = data.image;
+                data.count++;
+                goto out_exists;
+            }
+        }
+
+    out_search_sha256:
+
+        onnxdriver_log().debug("Session - The session image does not exist. Creating a new one...");
+
+        // Create new one
+        image = new SessionImage();
+        if (std::string error1; !image->open(canonical_path, hints, &error1)) {
+            delete image;
+            if (error) {
+                *error = {
+                    Error::FileNotFound,
+                    "failed to read file: " + error1,
+                };
+            }
+            return false;
+        }
+
+        // Insert
+        if (!image_group) {
+            onnxdriver_log().debug(
+                "Session - The session image group doesn't exist. Creating a new group.");
+
+            SessionSystem::ImageGroup group;
+            group.path = std::move(canonical_path);
+            group.size = size;
+            group.sha256 = std::move(sha256);
+
+            auto it = session_system.image_list.emplace(session_system.image_list.end(),
+                                                        std::move(group));
+            session_system.path_map[it->path] = it;
+            session_system.sha256_size_map[{size, it->sha256}] = it;
+            image_group = &(*it);
+        }
+        image_group->images[hints] = {image, 1};
+        goto out_success;
+
+    out_exists:
+        onnxdriver_log().debug(
+            "Session - The session image already exists. Increasing the reference count...");
+
+    out_success:
+        impl.group = image_group;
+        impl.hints = hints;
+        impl.image = image;
+        return true;
+    }
+
+    bool Session::close() {
+        __stdc_impl_t;
+        if (!impl.group)
+            return false;
+
+        onnxdriver_log().debug("Session [%1] - close", path().filename());
+
+        auto &session_system = SessionSystem::global();
+        std::unique_lock<std::shared_mutex> lock(session_system.mtx);
+
+        auto &group = *impl.group;
+        auto &images = group.images;
+        {
+            auto it = images.find(impl.hints);
+            assert(it != images.end());
+            auto &data = it->second;
+            if (--data.count != 0) {
+                onnxdriver_log().debug("SessionImage [%1] - ref(), now ref count = %2",
+                                       group.path.filename(), data.count);
+                goto out_success;
+            }
+            onnxdriver_log().debug("SessionImage [%1] - delete", group.path.filename());
+            delete it->second.image;
+            images.erase(it);
+        }
+        if (images.empty()) {
+            onnxdriver_log().debug("Session - The session image group is empty. Destroying.");
+            auto it = session_system.sha256_size_map.find({group.size, group.sha256});
+            assert(it != session_system.sha256_size_map.end());
+
+            auto list_it = it->second;
+
+            session_system.sha256_size_map.erase(it);
+            session_system.path_map.erase(group.path);
+            session_system.image_list.erase(list_it);
+        }
+
+    out_success:
+        impl.group = nullptr;
+        impl.image = nullptr;
+        impl.hints = 0;
+        return true;
+    }
+
+    fs::path Session::path() const {
+        __stdc_impl_t;
+        return impl.group ? impl.group->path : fs::path();
+    }
+
+    bool Session::isOpen() const {
+        __stdc_impl_t;
+        return impl.group != nullptr;
+    }
+
     std::vector<std::string> Session::inputNames() const {
         __stdc_impl_t;
         if (!impl.image) {
@@ -324,12 +451,26 @@ namespace dsinfer::onnxdriver {
 
     ValueMap Session::run(const ValueMap &inputValueMap, Error *error) {
         __stdc_impl_t;
-        return SessionRunHelper<ValueMap>(impl.image, impl.runOptions, inputValueMap, error);
+        if (!impl.group) {
+            if (error) {
+                *error = Error(Error::SessionError, "session is not open");
+            }
+            return {};
+        }
+        return SessionRunHelper<ValueMap>(impl.group->path, impl.image, impl.runOptions,
+                                          inputValueMap, error);
     }
 
     SharedValueMap Session::run(const SharedValueMap &inputValueMap, Error *error) {
         __stdc_impl_t;
-        return SessionRunHelper<SharedValueMap>(impl.image, impl.runOptions, inputValueMap, error);
+        if (!impl.group) {
+            if (error) {
+                *error = Error(Error::SessionError, "session is not open");
+            }
+            return {};
+        }
+        return SessionRunHelper<SharedValueMap>(impl.group->path, impl.image, impl.runOptions,
+                                                inputValueMap, error);
     }
 
 }

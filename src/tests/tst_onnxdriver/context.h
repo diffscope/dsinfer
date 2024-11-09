@@ -4,6 +4,8 @@
 #include <cstdarg>
 #include <filesystem>
 
+#include <stdcorelib/console.h>
+
 #include <dsinfer/environment.h>
 #include <dsinfer/log.h>
 

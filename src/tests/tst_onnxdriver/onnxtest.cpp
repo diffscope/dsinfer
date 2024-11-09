@@ -43,7 +43,8 @@ namespace VU = ValueUtils;
 
 
 template <typename T>
-bool insertObjectHelper(DS::Log::Category &logger, DS::InferenceContext *context, const char *key, const std::vector<T> &inputData) {
+bool insertObjectHelper(DS::Log::Category &logger, DS::InferenceContext *context, const char *key,
+                        const std::vector<T> &inputData) {
     logger.info(R"(Inserting new object "%1" to OnnxContext %2)", key, context->id());
     bool ok = context->insertObject(key, VU::toContextObj<T>(inputData));
     if (!ok) {
@@ -55,7 +56,8 @@ bool insertObjectHelper(DS::Log::Category &logger, DS::InferenceContext *context
     auto obj = context->getObject(key);
     auto objContent = obj["content"];
     if (objContent.isUndefined()) {
-        logger.critical(R"(Failed to get object "%1" from OnnxContext %2: "content" is missing)", key, context->id());
+        logger.critical(R"(Failed to get object "%1" from OnnxContext %2: "content" is missing)",
+                        key, context->id());
         return false;
     }
     logger.debug(R"(Content of "%1": %2)", key, VU::inferValueStringify(objContent));
@@ -81,7 +83,8 @@ bool OnnxTest::initContext() {
     ENSURE_CTX(impl.ctx);
     auto &logger = impl.ctx->logger;
 
-    auto inferenceReg = impl.ctx->env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
+    auto inferenceReg =
+        impl.ctx->env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
     impl.driver.reset(inferenceReg->createDriver("onnx"));
     if (!impl.driver) {
         logger.critical(R"(Failed to load driver "onnx")");
@@ -106,10 +109,12 @@ bool OnnxTest::initDriver(const char *ep) {
     DS::Error error;
     bool ok = true;
 
-    ok = impl.driver->initialize(DS::JsonObject {
-        {"ep", ep},
-        {"deviceIndex", "0"}
-    }, &error);
+    ok = impl.driver->initialize(
+        DS::JsonObject{
+            {"ep",          ep },
+            {"deviceIndex", "0"}
+    },
+        &error);
     ENSURE_OK_ERROR_CONSISTENT("OnnxDriver::initialize", ok, error);
     if (!ok) {
         logger.critical(error.what());
@@ -131,8 +136,7 @@ bool OnnxTest::testTask() {
 
     // ========== Utility Functions ==========
     // Create new session
-    const auto newSession = [&](const fs::path &modelPath,
-                                bool useCpuHint,
+    const auto newSession = [&](const fs::path &modelPath, bool useCpuHint,
                                 std::shared_ptr<DS::InferenceSession> *outSession) -> bool {
         logger.info("Creating new OnnxSession");
         if (!outSession) {
@@ -151,9 +155,10 @@ bool OnnxTest::testTask() {
         logger.info("Opening OnnxSession %1 using model %2", session->id(), modelPath);
 
         bool ok = session->open(modelPath,
-                           dsinfer::JsonObject{
-                               {"useCpuHint", useCpuHint}
-        }, &error);
+                                dsinfer::JsonObject{
+                                    {"useCpuHint", useCpuHint}
+        },
+                                &error);
         ENSURE_OK_ERROR_CONSISTENT("OnnxSession::open", ok, error);
         if (!ok) {
             logger.critical(error.what());
@@ -193,31 +198,26 @@ bool OnnxTest::testTask() {
 
     // Insert objects to context
 
-    if (!insertObjectHelper<float>(logger, context.get(),
-                                   "test_input1",
+    if (!insertObjectHelper<float>(logger, context.get(), "test_input1",
                                    {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f})) {
         return false;
     }
-    if (!insertObjectHelper<float>(logger, context.get(),
-                                   "test_input2",
+    if (!insertObjectHelper<float>(logger, context.get(), "test_input2",
                                    {3.0f, 6.0f, 7.0f, -8.0f, -9.0f, 12.0f})) {
         return false;
     }
-    if (!insertObjectHelper<float>(logger, context.get(),
-                                   "pitch",
+    if (!insertObjectHelper<float>(logger, context.get(), "pitch",
                                    {66.2008, 66.1732, 66.1448, 66.1164, 66.072, 66.0396})) {
         return false;
     }
-    if (!insertObjectHelper<int64_t>(logger, context.get(),
-                                     "tokens",
-                                     {15, 24, 16, 8, 32, 19})) {
+    if (!insertObjectHelper<int64_t>(logger, context.get(), "tokens", {15, 24, 16, 8, 32, 19})) {
         return false;
     }
-    if (!insertObjectHelper<bool>(logger, context.get(),
-                                     "retake",
-                                     {false, false, true, true, true, true})) {
+    if (!insertObjectHelper<bool>(logger, context.get(), "retake",
+                                  {false, false, true, true, true, true})) {
         return false;
     }
+    printf("\n");
 
     // ========== Test OnnxTask ==========
     auto totalCases = TestInferData::count() + 1; // 1 extra case
@@ -240,47 +240,32 @@ bool OnnxTest::testTask() {
         }
 
         // Read test cases
-        //std::filesystem::path taskInputJsonPath(
+        // std::filesystem::path taskInputJsonPath(
         //    _TSTR("test_data/input_data/input-two_float_vectors-1.json"));
-        //auto inputFormat = vu.jsonValueFromPath(taskInputJsonPath);
+        // auto inputFormat = vu.jsonValueFromPath(taskInputJsonPath);
 
         DS::JsonValue inputFormat;
         if (dataId <= TestInferData::count()) {
             inputFormat = TestInferData::generate(dataId, session1->id(), context->id());
         } else {
-            inputFormat = DS::JsonObject {
+            inputFormat = DS::JsonObject{
                 {"session", session1->id()},
                 {"context", context->id()},
                 {
-                    "input", DS::JsonArray {
-                        DS::JsonObject {
-                            {"name", "input1"},
-                            {"format", "reference"},
-                            {
-                                "data", DS::JsonObject {
-                                    {"value", "test_input1"}
-                                },
-                            }
-                        },
-                        DS::JsonObject {
-                            {"name", "input2"},
-                            {"format", "reference"},
-                            {
-                                "data", DS::JsonObject {
-                                    {"value", "test_input2"}
-                                }
-                            },
-                        }
-                    },
-                },
-                {
-                    "output", DS::JsonArray {
-                        DS::JsonObject {
-                            {"name", "output"},
-                            {"format", "reference"}
-                        }
-                    }
-                }
+                 "input", DS::JsonArray{DS::JsonObject{{"name", "input1"},
+                                                 {"format", "reference"},
+                                                 {
+                                                     "data",
+                                                     DS::JsonObject{{"value", "test_input1"}},
+                                                 }},
+                                  DS::JsonObject{
+                                      {"name", "input2"},
+                                      {"format", "reference"},
+                                      {"data", DS::JsonObject{{"value", "test_input2"}}},
+                                  }},
+                 },
+                {"output",
+                 DS::JsonArray{DS::JsonObject{{"name", "output"}, {"format", "reference"}}}}
             };
         }
         if (inputFormat.isUndefined()) {
@@ -336,13 +321,19 @@ bool OnnxTest::testTask() {
                 logger.debug(VU::inferValueStringify(obj["content"]));
             }
         }
+
+        printf("\n");
     }
 
     logger.info("Finished OnnxTask test cases");
 
     // Check OnnxContext keys
     DS::JsonValue cmdOutput;
-    context->executeCommand(DS::JsonObject {{"command", "list"}}, &cmdOutput);
+    context->executeCommand(
+        DS::JsonObject{
+            {"command", "list"}
+    },
+        &cmdOutput);
     logger.debug("OnnxContext keys: %1", cmdOutput.toJson());
 
     // Close OnnxSession

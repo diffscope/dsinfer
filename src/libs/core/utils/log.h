@@ -47,6 +47,13 @@ namespace dsinfer {
             }
 
             template <class... Args>
+            inline void log(int level, const std::string &format, Args &&...args) {
+                print(level, category, format, args...);
+                std::abort();
+            }
+
+        public:
+            template <class... Args>
             inline void trace(const std::string &format, Args &&...args) {
                 print(Trace, category, format, args...);
             }

@@ -27,6 +27,11 @@ namespace dsinfer::onnxdriver {
         EP_CoreML = 4,
     };
 
+    enum SessionHint {
+        SH_NoHint,
+        SH_PreferCPUHint = 0x1,
+    };
+
 }
 
 #endif // DSINFER_ONNXDRIVER_ONNXDRIVER_COMMON_H
