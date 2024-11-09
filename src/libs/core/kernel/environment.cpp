@@ -3,7 +3,7 @@
 
 #include <mutex>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 #include "inferenceregistry.h"
 #include "singerregistry.h"
@@ -159,7 +159,7 @@ namespace dsinfer {
         if (canonicalPath.empty() || !fs::is_directory(canonicalPath)) {
             *error = {
                 Error::FileNotFound,
-                stdc::formatTextN(R"(invalid library path "%1")", path),
+                stdc::formatN(R"(invalid library path "%1")", path),
             };
             return nullptr;
         }
@@ -228,7 +228,7 @@ namespace dsinfer {
                         auto lib = *it2->second;
                         error1 = {
                             Error::FileDuplicated,
-                            stdc::formatTextN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
+                            stdc::formatN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
                                         spec->id(), spec->version().toString(), lib.spec->path()),
                         };
                         goto out_dup;
@@ -245,7 +245,7 @@ namespace dsinfer {
                     if (it2 != versionMap.end()) {
                         error1 = {
                             Error::RecursiveDependency,
-                            stdc::formatTextN(
+                            stdc::formatN(
                                 R"(recursive depencency chain detected: library "%1[%2]" in %3 is being loaded)",
                                 spec->id(), spec->version().toString(), it2->second),
                         };
@@ -336,7 +336,7 @@ namespace dsinfer {
                 // Not found
                 error1 = {
                     Error::LibraryNotFound,
-                    stdc::formatTextN(R"(required library "%1[%2]" not found)", dep.id,
+                    stdc::formatN(R"(required library "%1[%2]" not found)", dep.id,
                                 dep.version.toString()),
                 };
                 goto out_deps;

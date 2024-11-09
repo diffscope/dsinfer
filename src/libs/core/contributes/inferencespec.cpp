@@ -1,7 +1,7 @@
 #include "inferencespec.h"
 #include "inferencespec_p.h"
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/path.h>
 
 #include "libraryspec.h"
 
@@ -82,7 +82,7 @@ namespace dsinfer {
                 return false;
             }
 
-            configPath = stdc::utf8ToPath(configPathString);
+            configPath = stdc::path::from_utf8(configPathString);
             if (configPath.is_relative()) {
                 configPath = basePath / configPath;
             }
@@ -95,7 +95,7 @@ namespace dsinfer {
             if (!file.is_open()) {
                 *error = {
                     Error::FileNotFound,
-                    stdc::formatTextN(R"(%1: failed to open inference manifest)", configPath),
+                    stdc::formatN(R"(%1: failed to open inference manifest)", configPath),
                 };
                 return false;
             }
@@ -108,14 +108,14 @@ namespace dsinfer {
             if (!error2.empty()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: invalid inference manifest format: %2)", configPath, error2),
+                    stdc::formatN(R"(%1: invalid inference manifest format: %2)", configPath, error2),
                 };
                 return false;
             }
             if (!root.isObject()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: invalid inference manifest format)", configPath),
+                    stdc::formatN(R"(%1: invalid inference manifest format)", configPath),
                 };
                 return false;
             }
@@ -129,7 +129,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: missing "$version" field)", configPath),
+                    stdc::formatN(R"(%1: missing "$version" field)", configPath),
                 };
                 return false;
             }
@@ -137,7 +137,7 @@ namespace dsinfer {
             if (fmtVersion_ > VersionNumber(1)) {
                 *error = {
                     Error::FeatureNotSupported,
-                    stdc::formatTextN(R"(%1: format version "%2" is not supported)", configPath,
+                    stdc::formatN(R"(%1: format version "%2" is not supported)", configPath,
                                 fmtVersion_.toString()),
                 };
                 return false;
@@ -159,7 +159,7 @@ namespace dsinfer {
             if (it == configObj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: missing "level" field)", configPath),
+                    stdc::formatN(R"(%1: missing "level" field)", configPath),
                 };
                 return false;
             }
@@ -167,7 +167,7 @@ namespace dsinfer {
             if (apiLevel_ == 0) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: "level" field has invalid value)", configPath),
+                    stdc::formatN(R"(%1: "level" field has invalid value)", configPath),
                 };
                 return false;
             }
@@ -179,7 +179,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        stdc::formatTextN(R"(%1: "schema" field has invalid value)", configPath),
+                        stdc::formatN(R"(%1: "schema" field has invalid value)", configPath),
                     };
                     return false;
                 }
@@ -193,7 +193,7 @@ namespace dsinfer {
                 if (!it->second.isObject()) {
                     *error = {
                         Error::InvalidFormat,
-                        stdc::formatTextN(R"(%1: "configuration" field has invalid value)", configPath),
+                        stdc::formatN(R"(%1: "configuration" field has invalid value)", configPath),
                     };
                     return false;
                 }

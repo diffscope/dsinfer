@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 #include <dsinfer/jsonvalue.h>
 #include <dsinfer/contributespec.h>
@@ -125,7 +125,7 @@ namespace cli {
 
                 // id
                 pkgObj["id"] =
-                    stdc::formatTextN("%1[%2]", packageItem.id, packageItem.version.toString());
+                    stdc::formatN("%1[%2]", packageItem.id, packageItem.version.toString());
 
                 // relativeLocation
                 pkgObj["relativeLocation"] = packageItem.relativeLocation;

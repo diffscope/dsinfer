@@ -1,7 +1,7 @@
 #include "singerregistry.h"
 #include "contributeregistry_p.h"
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 #include "singerspec_p.h"
 #include "inferenceregistry.h"
@@ -92,7 +92,7 @@ namespace dsinfer {
                     if (inferences.empty()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            stdc::formatTextN(R"(required inference "%1" of singer "%2" not found)",
+                            stdc::formatN(R"(required inference "%1" of singer "%2" not found)",
                                         imp.inference.toString(), singerSpec->id()),
                         };
                     }
@@ -103,7 +103,7 @@ namespace dsinfer {
                     if (!inference->validate(imp.options, &errMsg)) {
                         *error = {
                             Error::InvalidFormat,
-                            stdc::formatTextN(
+                            stdc::formatN(
                                 R"(inference "%1" of singer "%2" validate failed: %3)",
                                 imp.inference.toString(), singerSpec->id(), errMsg),
                         };

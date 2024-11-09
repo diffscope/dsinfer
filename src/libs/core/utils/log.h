@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstdarg>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 #include <dsinfer/dsinferglobal.h>
 
@@ -33,7 +33,7 @@ namespace dsinfer {
         template <class... Args>
         static inline void print(int level, const char *category, const std::string &format,
                                  Args &&...args) {
-            printf(level, category, "%s\n", stdc::formatTextN(format, args...).c_str());
+            printf(level, category, "%s\n", stdc::formatN(format, args...).c_str());
         }
 
         static void printf(int level, const char *category, const char *fmt, ...)

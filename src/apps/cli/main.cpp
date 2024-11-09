@@ -8,8 +8,8 @@
 
 #include <zlib.h>
 
-#include <stdcorelib/format.h>
 #include <stdcorelib/console.h>
+#include <stdcorelib/path.h>
 
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
@@ -97,7 +97,7 @@ struct Context {
 
     Context() {
         // Get basic directories
-        appDir = stdc::utf8ToPath(SCL::appDirectory());
+        appDir = stdc::path::from_utf8(SCL::appDirectory());
         defaultPluginDir =
             appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
 
@@ -142,21 +142,20 @@ struct Context {
     static inline void info(const std::string &format, Args &&...args) {
         using namespace stdc;
         Console::printf(Console::Default, Console::Default, "%s\n",
-                        formatTextN(format, args...).c_str());
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
         using namespace stdc;
         Console::printf(Console::Yellow, Console::Default, "%s\n",
-                        formatTextN(format, args...).c_str());
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
         using namespace stdc;
-        Console::printf(Console::Red, Console::Default, "%s\n",
-                        formatTextN(format, args...).c_str());
+        Console::printf(Console::Red, Console::Default, "%s\n", formatN(format, args...).c_str());
     }
 };
 
@@ -164,7 +163,7 @@ static std::vector<fs::path> getCmdPaths(const SCL::ParseResult &result) {
     std::vector<std::filesystem::path> paths;
     auto pathsResult = result.option("--paths").values();
     for (const auto &item : std::as_const(pathsResult)) {
-        auto path = fs::absolute(stdc::utf8ToPath(item.toString()));
+        auto path = fs::absolute(stdc::path::from_utf8(item.toString()));
         if (!fs::is_directory(path)) {
             continue;
         }
@@ -227,12 +226,11 @@ static int cmd_stat(const SCL::ParseResult &result) {
             identifier.id().empty()) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
-        } else if (auto path = stdc::utf8ToPath(idStr);
+        } else if (auto path = stdc::path::from_utf8(idStr);
                    fs::is_regular_file(path / _TSTR("desc.json"))) {
             pkgPath = fs::canonical(path);
         } else {
-            throw std::runtime_error(
-                stdc::formatTextN(R"(invalid package identifier "%1")", idStr));
+            throw std::runtime_error(stdc::formatN(R"(invalid package identifier "%1")", idStr));
         }
     }
 
@@ -245,7 +243,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     if (pkgPath.empty()) {
         pkgPath = searchPackage(paths, pkgId, pkgVersion);
         if (pkgPath.empty()) {
-            throw std::runtime_error(stdc::formatTextN(R"(package "%1" not found)", idStr));
+            throw std::runtime_error(stdc::formatN(R"(package "%1" not found)", idStr));
         }
     }
 
@@ -253,7 +251,7 @@ static int cmd_stat(const SCL::ParseResult &result) {
     DS::LibrarySpec *lib;
     if (DS::Error error; !(lib = env.openLibrary(pkgPath, false, &error))) {
         throw std::runtime_error(
-            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+            stdc::formatN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
 
     Context::info("ID: %1", lib->id());
@@ -361,8 +359,7 @@ static int cmd_list(const SCL::ParseResult &result) {
     // Print
     for (int i = 0; i < infoList.size(); ++i) {
         const auto &info = infoList[i];
-        std::string line =
-            stdc::formatTextN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
+        std::string line = stdc::formatN("[%1] %2[%3]", i + 1, info.id, info.version.toString());
         if (!info.valid) {
             Context::critical("%1 (invalid)", line);
             continue;
@@ -418,7 +415,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
         } else {
-            throw std::runtime_error(stdc::formatTextN(R"(invalid singer identifier "%1")", idStr));
+            throw std::runtime_error(stdc::formatN(R"(invalid singer identifier "%1")", idStr));
         }
     }
 
@@ -432,7 +429,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     // Search package
     fs::path pkgPath = searchPackage(paths, pkgId, pkgVersion);
     if (pkgPath.empty()) {
-        throw std::runtime_error(stdc::formatTextN(R"(package "%1" not found)", idStr));
+        throw std::runtime_error(stdc::formatN(R"(package "%1" not found)", idStr));
     }
 
     auto inferenceReg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
@@ -442,7 +439,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
     auto driver = inferenceReg->createDriver(realDriverId.c_str());
     if (!driver) {
-        throw std::runtime_error(stdc::formatTextN(R"(failed to load driver "%1")", realDriverId));
+        throw std::runtime_error(stdc::formatN(R"(failed to load driver "%1")", realDriverId));
     }
 
     // Initialize driver
@@ -451,8 +448,8 @@ static int cmd_exec(const SCL::ParseResult &result) {
         if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit, true)
                                                    : ctx.startupConfig.driver.init,
                                 &error)) {
-            throw std::runtime_error(stdc::formatTextN(R"(failed to initialize driver "%1": %2)",
-                                                       realDriverId, error.message()));
+            throw std::runtime_error(stdc::formatN(R"(failed to initialize driver "%1": %2)",
+                                                   realDriverId, error.message()));
         }
     }
     inferenceReg->setDriver(driver);
@@ -462,31 +459,31 @@ static int cmd_exec(const SCL::ParseResult &result) {
 
     if (DS::Error error; lib = env.openLibrary(pkgPath, false, &error), !lib) {
         throw std::runtime_error(
-            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+            stdc::formatN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
     if (auto error = lib->error(); !error.ok()) {
         throw std::runtime_error(
-            stdc::formatTextN(R"(failed to load package "%1": %2)", pkgPath, error.message()));
+            stdc::formatN(R"(failed to load package "%1": %2)", pkgPath, error.message()));
     }
 
     auto singerSpec = lib->contribute(DS::ContributeSpec::Singer, singerId)->cast<DS::SingerSpec>();
     if (!singerSpec) {
-        throw std::runtime_error(stdc::formatTextN(R"(singer "%1" not found in package "%2[%3]")",
-                                                   singerId, pkgId, pkgVersion.toString()));
+        throw std::runtime_error(stdc::formatN(R"(singer "%1" not found in package "%2[%3]")",
+                                               singerId, pkgId, pkgVersion.toString()));
     }
 
     std::vector<DS::Inference *> inferences;
     if (DS::Error error; inferences = singerSpec->createInferences(&error), !error.ok()) {
         throw std::runtime_error(
-            stdc::formatTextN(R"(failed to create inferences: %1)", error.message()));
+            stdc::formatN(R"(failed to create inferences: %1)", error.message()));
     }
 
     // Check inference api levels
     for (const auto &inference : std::as_const(inferences)) {
         auto spec = inference->spec();
         if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
-            throw std::runtime_error(stdc::formatTextN(R"(inference "%1" level %2 not supported)",
-                                                       spec->className(), spec->apiLevel()));
+            throw std::runtime_error(stdc::formatN(R"(inference "%1" level %2 not supported)",
+                                                   spec->className(), spec->apiLevel()));
         }
     }
 
@@ -514,7 +511,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
 static int cmd_pack(const SCL::ParseResult &result) {
     updateLogger(result);
 
-    const auto &pkgPath = stdc::utf8ToPath(result.value(0).toString());
+    const auto &pkgPath = stdc::path::from_utf8(result.value(0).toString());
 
     Context ctx;
     auto &env = ctx.env;
@@ -522,7 +519,7 @@ static int cmd_pack(const SCL::ParseResult &result) {
     // Try to load
     if (DS::Error error; !env.openLibrary(pkgPath, false, &error)) {
         throw std::runtime_error(
-            stdc::formatTextN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
+            stdc::formatN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
 
     // TODO: Calculate CRC
@@ -656,7 +653,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef _WIN32
         if (typeid(e) == typeid(fs::filesystem_error)) {
-            msg = stdc::ansiToUtf8(e.what());
+            msg = stdc::wstring_conv::to_utf8(stdc::wstring_conv::from_ansi(e.what()));
         }
 #endif
 

@@ -4,7 +4,7 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 #include "inferencespec_p.h"
 #include "contributeregistry_p.h"
@@ -122,7 +122,7 @@ namespace dsinfer {
                     if (!plugin) {
                         *error = {
                             Error::FeatureNotSupported,
-                            stdc::formatTextN(R"(required interpreter "%1" of inference "%2" not found)",
+                            stdc::formatN(R"(required interpreter "%1" of inference "%2" not found)",
                                         inferenceSpec->className(), inferenceSpec->id()),
                         };
                         return false;
@@ -135,7 +135,7 @@ namespace dsinfer {
                 if (interp->apiLevel() < inferenceSpec->apiLevel()) {
                     *error = {
                         Error::FeatureNotSupported,
-                        stdc::formatTextN(
+                        stdc::formatN(
                             R"(required interpreter "%1" of api level %2 doesn't support inference "%3" of api level %4)",
                             inferenceSpec->className(), interp->apiLevel(), inferenceSpec->id(),
                             inferenceSpec->apiLevel()),
@@ -148,7 +148,7 @@ namespace dsinfer {
                 if (!interp->validate(inferenceSpec, &errMsg)) {
                     *error = {
                         Error::InvalidFormat,
-                        stdc::formatTextN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
+                        stdc::formatN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
                                     errMsg),
                     };
                     return false;

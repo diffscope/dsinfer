@@ -3,7 +3,7 @@
 
 #include <regex>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/strings.h>
 
 namespace dsinfer {
 
@@ -15,12 +15,12 @@ namespace dsinfer {
             if (m_id.empty()) {
                 return m_library;
             }
-            return stdc::formatTextN("%1/%2", m_library, m_id);
+            return stdc::formatN("%1/%2", m_library, m_id);
         }
         if (m_id.empty()) {
-            return stdc::formatTextN("%1[%2]", m_library, m_version.toString());
+            return stdc::formatN("%1[%2]", m_library, m_version.toString());
         }
-        return stdc::formatTextN("%1[%2]/%3", m_library, m_version.toString(), m_id);
+        return stdc::formatN("%1[%2]/%3", m_library, m_version.toString(), m_id);
     }
 
     ContributeIdentifier ContributeIdentifier::fromString(const std::string &token) {

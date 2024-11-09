@@ -6,7 +6,7 @@
 #include <sstream>
 #include <unordered_set>
 
-#include <stdcorelib/format.h>
+#include <stdcorelib/path.h>
 
 #include "contributeregistry.h"
 #include "contributespec.h"
@@ -114,7 +114,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: missing "id" field)", descPath),
+                    stdc::formatN(R"(%1: missing "id" field)", descPath),
                 };
                 return false;
             }
@@ -122,7 +122,7 @@ namespace dsinfer {
             if (!ContributeIdentifier::isValidId(id_)) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: "id" field has invalid value)", descPath),
+                    stdc::formatN(R"(%1: "id" field has invalid value)", descPath),
                 };
                 return false;
             }
@@ -133,7 +133,7 @@ namespace dsinfer {
             if (it == obj.end()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: missing "version" field)", descPath),
+                    stdc::formatN(R"(%1: missing "version" field)", descPath),
                 };
                 return false;
             }
@@ -141,7 +141,7 @@ namespace dsinfer {
             if (version_.isEmpty()) {
                 *error = {
                     Error::InvalidFormat,
-                    stdc::formatTextN(R"(%1: invalid version)", descPath),
+                    stdc::formatN(R"(%1: invalid version)", descPath),
                 };
                 return false;
             }
@@ -154,7 +154,7 @@ namespace dsinfer {
                 if (compatVersion_ > version_) {
                     *error = {
                         Error::InvalidFormat,
-                        stdc::formatTextN(R"(%1: invalid compat version)", descPath),
+                        stdc::formatN(R"(%1: invalid compat version)", descPath),
                     };
                     return false;
                 }
@@ -187,7 +187,7 @@ namespace dsinfer {
         {
             auto it = obj.find("readme");
             if (it != obj.end()) {
-                readme_ = stdc::utf8ToPath(it->second.toString());
+                readme_ = stdc::path::from_utf8(it->second.toString());
             }
         }
         // url
@@ -204,7 +204,7 @@ namespace dsinfer {
                 if (!it->second.isArray()) {
                     *error = {
                         Error::InvalidFormat,
-                        stdc::formatTextN(R"(%1: "dependencies" field has invalid value)", descPath),
+                        stdc::formatN(R"(%1: "dependencies" field has invalid value)", descPath),
                     };
                     return false;
                 }
@@ -215,7 +215,7 @@ namespace dsinfer {
                     if (!readDependency(item, &dep, &errorMessage)) {
                         *error = {
                             Error::InvalidFormat,
-                            stdc::formatTextN(R"(%1: invalid "dependencies" field entry %2: %3)",
+                            stdc::formatN(R"(%1: invalid "dependencies" field entry %2: %3)",
                                         descPath, dependencies_.size() + 1, errorMessage),
                         };
                         return false;
@@ -244,7 +244,7 @@ namespace dsinfer {
                     if (it2 == regs.end()) {
                         *error = {
                             Error::FeatureNotSupported,
-                            stdc::formatTextN(R"(unknown contribute "%1")", contributeKey),
+                            stdc::formatN(R"(unknown contribute "%1")", contributeKey),
                         };
                         goto out_failed;
                     }
@@ -253,7 +253,7 @@ namespace dsinfer {
                     if (!pair.second.isArray()) {
                         *error = {
                             Error::InvalidFormat,
-                            stdc::formatTextN(
+                            stdc::formatN(
                                 R"(contribute "%1" field has invalid value in library manifest)",
                                 contributeKey),
                         };
@@ -273,7 +273,7 @@ namespace dsinfer {
                         if (idSet.count(contributeId)) {
                             *error = {
                                 Error::InvalidFormat,
-                                stdc::formatTextN(R"(contribute "%1" object has duplicated id "%2")",
+                                stdc::formatN(R"(contribute "%1" object has duplicated id "%2")",
                                             pair.first, contributeId),
                             };
                             goto out_failed;
@@ -311,7 +311,7 @@ namespace dsinfer {
         if (!file.is_open()) {
             *error = {
                 Error::FileNotFound,
-                stdc::formatTextN(R"("%1": failed to open library manifest)", descPath),
+                stdc::formatN(R"("%1": failed to open library manifest)", descPath),
             };
             return false;
         }
@@ -324,14 +324,14 @@ namespace dsinfer {
         if (!error2.empty()) {
             *error = {
                 Error::InvalidFormat,
-                stdc::formatTextN(R"("%1": invalid library manifest format: %2)", descPath, error2),
+                stdc::formatN(R"("%1": invalid library manifest format: %2)", descPath, error2),
             };
             return false;
         }
         if (!root.isObject()) {
             *error = {
                 Error::InvalidFormat,
-                stdc::formatTextN(R"("%1": invalid library manifest format)", descPath),
+                stdc::formatN(R"("%1": invalid library manifest format)", descPath),
             };
             return false;
         }

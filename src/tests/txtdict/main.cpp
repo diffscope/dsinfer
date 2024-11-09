@@ -3,6 +3,7 @@
 #include <stdcorelib/system.h>
 #include <stdcorelib/console.h>
 #include <stdcorelib/vla.h>
+#include <stdcorelib/path.h>
 
 #include <dsutils/phonemedictionary.h>
 
@@ -16,7 +17,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
     }
 
     {
-        const auto &filepath = stdc::utf8ToPath(cmdline[1]);
+        const auto &filepath = stdc::path::from_utf8(cmdline[1]);
         int len = cmdline.size() >= 3 ? std::stoi(cmdline.at(2)) : 1;
 
         auto start_time = cho::high_resolution_clock::now();
