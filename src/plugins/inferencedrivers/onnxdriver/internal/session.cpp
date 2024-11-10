@@ -63,130 +63,6 @@ namespace dsinfer::onnxdriver {
         }
     };
 
-    template <typename ValueMapType>
-    inline ValueMapType SessionRunHelper(const std::filesystem::path &path, SessionImage *image,
-                                         Ort::RunOptions &runOptions,
-                                         const ValueMapType &inputValueMap, Error *error) {
-        static_assert(std::is_same_v<ValueMapType, ValueMap> ||
-                      std::is_same_v<ValueMapType, SharedValueMap>);
-
-        auto filename = path.filename();
-
-        onnxdriver_log().info("Session [%1] - Running inference", filename);
-        auto timeStart = std::chrono::steady_clock::now();
-
-        if (inputValueMap.empty()) {
-            if (error) {
-                *error = Error(Error::SessionError, "Input map is empty");
-            }
-            return {};
-        }
-
-        const auto &requiredInputNames = image->inputNames;
-        std::ostringstream msgStream;
-        msgStream << '[' << filename << ']' << ' ';
-
-        // Check for missing and extra input names. If found, return empty map and the error
-        // message.
-        {
-            bool flagMissing = false;
-            // Check for missing input names
-
-            for (const auto &requiredInputName : requiredInputNames) {
-                if (inputValueMap.find(requiredInputName) == inputValueMap.end()) {
-                    if (flagMissing) {
-                        // It isn't the first missing input name. Append a comma separator.
-                        msgStream << ',' << ' ';
-                    } else {
-                        // It's the first missing input name. Append the message intro.
-                        msgStream << "Missing input name(s): ";
-                        flagMissing = true;
-                    }
-                    msgStream << '"' << requiredInputName << '"';
-                }
-            }
-
-            // Check for extra input names
-            bool flagExtra = false;
-            std::unordered_set<std::string> requiredSet(requiredInputNames.begin(),
-                                                        requiredInputNames.end());
-            for (auto &it : std::as_const(inputValueMap)) {
-                auto &actualInputName = it.first;
-                if (requiredSet.find(actualInputName) == requiredSet.end()) {
-                    if (flagExtra) {
-                        msgStream << ',' << ' ';
-                    } else {
-                        if (flagMissing) {
-                            msgStream << ';' << ' ';
-                        }
-                        msgStream << "Extra input names(s): ";
-                        flagExtra = true;
-                    }
-                    msgStream << '"' << actualInputName << '"';
-                }
-            }
-
-            if (flagMissing || flagExtra) {
-                if (error) {
-                    *error = Error(Error::SessionError, msgStream.str());
-                }
-                return {};
-            }
-        }
-
-        try {
-            auto memInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-            Ort::IoBinding binding(image->session);
-
-            if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
-                for (auto &[name, value] : inputValueMap) {
-                    binding.BindInput(name.c_str(), *value);
-                }
-            } else {
-                for (auto &[name, value] : inputValueMap) {
-                    binding.BindInput(name.c_str(), value);
-                }
-            }
-
-            const auto &outputNames = image->outputNames;
-            for (const auto &name : outputNames) {
-                binding.BindOutput(name.c_str(), memInfo);
-            }
-
-            runOptions.UnsetTerminate();
-            image->session.Run(runOptions, binding);
-
-            ValueMapType outValueMap;
-            auto outputValues = binding.GetOutputValues();
-            if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
-                for (size_t i = 0; i < outputValues.size(); ++i) {
-                    outValueMap.emplace(outputNames[i],
-                                        makeSharedValue(std::move(outputValues[i])));
-                }
-            } else {
-                for (size_t i = 0; i < outputValues.size(); ++i) {
-                    outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
-                }
-            }
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::steady_clock::now() - timeStart)
-                               .count();
-            auto elapsedSeconds = elapsed / 1000;
-            auto elapsedMs = static_cast<int>(elapsed % 1000);
-            char elapsedMsStr[4];
-            snprintf(elapsedMsStr, sizeof(elapsedMsStr), "%03d", elapsedMs);
-            onnxdriver_log().info("Session [%1] - Finished inference in %2.%3 seconds", filename,
-                                  elapsedSeconds, elapsedMsStr);
-            return outValueMap;
-        } catch (const Ort::Exception &err) {
-            if (error) {
-                *error = Error(Error::SessionError, err.what());
-            }
-        }
-        return {};
-    }
-
     class Session::Impl {
     public:
         Ort::RunOptions runOptions;
@@ -194,6 +70,130 @@ namespace dsinfer::onnxdriver {
         SessionSystem::ImageGroup *group = nullptr;
         SessionImage *image = nullptr;
         int hints = 0;
+
+        std::filesystem::path realPath;
+
+        template <typename ValueMapType>
+        inline ValueMapType sessionRun(Ort::RunOptions &runOptions,
+                                       const ValueMapType &inputValueMap, Error *error) {
+            static_assert(std::is_same_v<ValueMapType, ValueMap> ||
+                          std::is_same_v<ValueMapType, SharedValueMap>);
+
+            const auto &filename = realPath.filename();
+            onnxdriver_log().info("Session [%1] - Running inference", filename);
+
+            auto timeStart = std::chrono::steady_clock::now();
+            if (inputValueMap.empty()) {
+                if (error) {
+                    *error = Error(Error::SessionError, "Input map is empty");
+                }
+                return {};
+            }
+
+            const auto &requiredInputNames = image->inputNames;
+            std::ostringstream msgStream;
+            msgStream << '[' << filename << ']' << ' ';
+
+            // Check for missing and extra input names. If found, return empty map and the error
+            // message.
+            {
+                bool flagMissing = false;
+
+                // Check for missing input names
+                for (const auto &requiredInputName : requiredInputNames) {
+                    if (inputValueMap.find(requiredInputName) == inputValueMap.end()) {
+                        if (flagMissing) {
+                            // It isn't the first missing input name. Append a comma separator.
+                            msgStream << ',' << ' ';
+                        } else {
+                            // It's the first missing input name. Append the message intro.
+                            msgStream << "Missing input name(s): ";
+                            flagMissing = true;
+                        }
+                        msgStream << '"' << requiredInputName << '"';
+                    }
+                }
+
+                // Check for extra input names
+                bool flagExtra = false;
+                std::unordered_set<std::string> requiredSet(requiredInputNames.begin(),
+                                                            requiredInputNames.end());
+                for (auto &it : std::as_const(inputValueMap)) {
+                    auto &actualInputName = it.first;
+                    if (requiredSet.find(actualInputName) == requiredSet.end()) {
+                        if (flagExtra) {
+                            msgStream << ',' << ' ';
+                        } else {
+                            if (flagMissing) {
+                                msgStream << ';' << ' ';
+                            }
+                            msgStream << "Extra input names(s): ";
+                            flagExtra = true;
+                        }
+                        msgStream << '"' << actualInputName << '"';
+                    }
+                }
+
+                if (flagMissing || flagExtra) {
+                    if (error) {
+                        *error = Error(Error::SessionError, msgStream.str());
+                    }
+                    return {};
+                }
+            }
+
+            try {
+                auto memInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+                Ort::IoBinding binding(image->session);
+
+                if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
+                    for (auto &[name, value] : inputValueMap) {
+                        binding.BindInput(name.c_str(), *value);
+                    }
+                } else {
+                    for (auto &[name, value] : inputValueMap) {
+                        binding.BindInput(name.c_str(), value);
+                    }
+                }
+
+                const auto &outputNames = image->outputNames;
+                for (const auto &name : outputNames) {
+                    binding.BindOutput(name.c_str(), memInfo);
+                }
+
+                runOptions.UnsetTerminate();
+                image->session.Run(runOptions, binding);
+
+                ValueMapType outValueMap;
+                auto outputValues = binding.GetOutputValues();
+                if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
+                    for (size_t i = 0; i < outputValues.size(); ++i) {
+                        outValueMap.emplace(outputNames[i],
+                                            makeSharedValue(std::move(outputValues[i])));
+                    }
+                } else {
+                    for (size_t i = 0; i < outputValues.size(); ++i) {
+                        outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
+                    }
+                }
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::steady_clock::now() - timeStart)
+                                   .count();
+                auto elapsedSeconds = elapsed / 1000;
+                auto elapsedMs = static_cast<int>(elapsed % 1000);
+                char elapsedMsStr[4];
+                snprintf(elapsedMsStr, sizeof(elapsedMsStr), "%03d", elapsedMs);
+                onnxdriver_log().info("Session [%1] - Finished inference in %2.%3 seconds",
+                                      filename, elapsedSeconds, elapsedMsStr);
+                return outValueMap;
+            } catch (const Ort::Exception &err) {
+                if (error) {
+                    *error = Error(Error::SessionError, err.what());
+                }
+            }
+            return {};
+        }
     };
 
     Session::Session() : _impl(std::make_unique<Impl>()) {
@@ -350,7 +350,7 @@ namespace dsinfer::onnxdriver {
                 "Session - The session image group doesn't exist. Creating a new group.");
 
             SessionSystem::ImageGroup group;
-            group.path = std::move(canonical_path);
+            group.path = canonical_path;
             group.size = size;
             group.sha256 = std::move(sha256);
 
@@ -369,17 +369,21 @@ namespace dsinfer::onnxdriver {
 
     out_success:
         impl.group = image_group;
-        impl.hints = hints;
         impl.image = image;
+        impl.hints = hints;
+        impl.realPath = canonical_path;
         return true;
     }
 
     bool Session::close() {
         __stdc_impl_t;
+
         if (!impl.group)
             return false;
 
-        onnxdriver_log().debug("Session [%1] - close", path().filename());
+        const auto &path = impl.realPath;
+        const auto &filename = path.filename();
+        onnxdriver_log().debug("Session [%1] - close", filename);
 
         auto &session_system = SessionSystem::global();
         std::unique_lock<std::shared_mutex> lock(session_system.mtx);
@@ -391,11 +395,11 @@ namespace dsinfer::onnxdriver {
             assert(it != images.end());
             auto &data = it->second;
             if (--data.count != 0) {
-                onnxdriver_log().debug("SessionImage [%1] - ref(), now ref count = %2",
-                                       group.path.filename(), data.count);
+                onnxdriver_log().debug("SessionImage [%1] - ref(), now ref count = %2", filename,
+                                       data.count);
                 goto out_success;
             }
-            onnxdriver_log().debug("SessionImage [%1] - delete", group.path.filename());
+            onnxdriver_log().debug("SessionImage [%1] - delete", filename);
             delete it->second.image;
             images.erase(it);
         }
@@ -415,12 +419,13 @@ namespace dsinfer::onnxdriver {
         impl.group = nullptr;
         impl.image = nullptr;
         impl.hints = 0;
+        impl.realPath.clear();
         return true;
     }
 
     fs::path Session::path() const {
         __stdc_impl_t;
-        return impl.group ? impl.group->path : fs::path();
+        return impl.realPath;
     }
 
     bool Session::isOpen() const {
@@ -428,18 +433,23 @@ namespace dsinfer::onnxdriver {
         return impl.group != nullptr;
     }
 
-    std::vector<std::string> Session::inputNames() const {
+    static std::vector<std::string> &shared_empty_names() {
+        static std::vector<std::string> instance;
+        return instance;
+    }
+
+    const std::vector<std::string> &Session::inputNames() const {
         __stdc_impl_t;
         if (!impl.image) {
-            return {};
+            return shared_empty_names();
         }
         return impl.image->inputNames;
     }
 
-    std::vector<std::string> Session::outputNames() const {
+    const std::vector<std::string> &Session::outputNames() const {
         __stdc_impl_t;
         if (!impl.image) {
-            return {};
+            return shared_empty_names();
         }
         return impl.image->outputNames;
     }
@@ -457,8 +467,7 @@ namespace dsinfer::onnxdriver {
             }
             return {};
         }
-        return SessionRunHelper<ValueMap>(impl.group->path, impl.image, impl.runOptions,
-                                          inputValueMap, error);
+        return impl.sessionRun<ValueMap>(impl.runOptions, inputValueMap, error);
     }
 
     SharedValueMap Session::run(const SharedValueMap &inputValueMap, Error *error) {
@@ -469,8 +478,7 @@ namespace dsinfer::onnxdriver {
             }
             return {};
         }
-        return SessionRunHelper<SharedValueMap>(impl.group->path, impl.image, impl.runOptions,
-                                                inputValueMap, error);
+        return impl.sessionRun<SharedValueMap>(impl.runOptions, inputValueMap, error);
     }
 
 }

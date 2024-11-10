@@ -27,8 +27,8 @@ namespace dsinfer::onnxdriver {
         bool open(const std::filesystem::path &path, int hints, Error *error);
         bool close();
 
-        std::vector<std::string> inputNames() const;
-        std::vector<std::string> outputNames() const;
+        const std::vector<std::string> &inputNames() const;
+        const std::vector<std::string> &outputNames() const;
 
         ValueMap run(const ValueMap &inputTensorMap, Error *error = nullptr);
         SharedValueMap run(const SharedValueMap &inputTensorMap, Error *error = nullptr);
