@@ -8,7 +8,7 @@
 #include <fstream>
 #include <unordered_set>
 #include <algorithm>
-#include <cassert>
+#include <list>
 
 #include <dsinfer/dsinferglobal.h>
 

@@ -37,10 +37,16 @@ dsinfer_add_plugin(${PROJECT_NAME} ${CURRENT_PLUGIN_CATEGORY}
 )
 
 if(WIN32)
-    # Copy onnxruntime dlls
-    qm_add_copy_command(${PROJECT_NAME} # SKIP_INSTALL
-        SOURCES ${_onnxruntime_dir}/lib/*.dll
-        DESTINATION runtimes
-        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-    )
+    set(_ort_lib_files ${_onnxruntime_dir}/lib/*.dll)
+elseif(APPLE)
+    set(_ort_lib_files ${_onnxruntime_dir}/lib/*.dylib)
+else()
+    set(_ort_lib_files ${_onnxruntime_dir}/lib/*.so ${_onnxruntime_dir}/lib/*.so.*)
 endif()
+
+# Copy onnxruntime shared libraries
+qm_add_copy_command(${PROJECT_NAME} # SKIP_INSTALL
+    SOURCES ${_ort_lib_files}
+    DESTINATION runtimes
+    INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+)
