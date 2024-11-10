@@ -25,7 +25,7 @@ namespace dsinfer {
 
     static inline std::string generate_uuid() {
         std::random_device rd;
-        auto seed_data = std::array<int, std::mt19937::state_size> {};
+        auto seed_data = std::array<int, std::mt19937::state_size>{};
         std::generate(std::begin(seed_data), std::end(seed_data), std::ref(rd));
         std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
         std::mt19937 generator(seq);
@@ -38,7 +38,8 @@ namespace dsinfer {
         class ScopedStateUpdater {
         public:
             inline explicit ScopedStateUpdater(Impl *impl, State targetState = State::Failed)
-                : m_impl(impl), m_targetState(targetState) {}
+                : m_impl(impl), m_targetState(targetState) {
+            }
 
             inline ~ScopedStateUpdater() {
                 m_impl->state = m_targetState;
@@ -47,6 +48,7 @@ namespace dsinfer {
             inline void setTargetState(State targetState) {
                 m_targetState = targetState;
             }
+
         private:
             Impl *m_impl;
             State m_targetState;
@@ -59,8 +61,7 @@ namespace dsinfer {
         std::vector<JsonValue> result;
     };
 
-    OnnxTask::OnnxTask()
-            :_impl(std::make_unique<Impl>()) {
+    OnnxTask::OnnxTask() : _impl(std::make_unique<Impl>()) {
         __stdc_impl_t;
         auto taskId = idManager().add(this);
         impl.taskId = taskId;
@@ -89,7 +90,8 @@ namespace dsinfer {
 
         if (!input.isObject()) {
             if (error) {
-                *error = Error(Error::InvalidFormat, "Invalid task input format: input value is not object");
+                *error = Error(Error::InvalidFormat,
+                               "Invalid task input format: input value is not object");
             }
             return false;
         }
@@ -127,8 +129,8 @@ namespace dsinfer {
                 // both session and context do not exist
                 if (error) {
                     *error = Error(Error::InvalidFormat, // TODO: error type
-                                   "Session " + std::to_string(sessionId) + " and " +
-                                       "Context " + std::to_string(contextId) + " do not exist");
+                                   "Session " + std::to_string(sessionId) + " and " + "Context " +
+                                       std::to_string(contextId) + " do not exist");
                 }
             }
             return false;
@@ -175,8 +177,8 @@ namespace dsinfer {
             auto it_name = inputDataObj.find("name");
             if (it_name == inputDataObj.end() || !it_name->second.isString()) {
                 if (error) {
-                    *error = Error(Error::InvalidFormat,
-                                   "Invalid task input format: \"name\" in the input data is missing or not string");
+                    *error = Error(Error::InvalidFormat, "Invalid task input format: \"name\" in "
+                                                         "the input data is missing or not string");
                 }
                 return false;
             }
@@ -194,16 +196,16 @@ namespace dsinfer {
                     auto inputName = it_name->second.toString();
                     if (inputName.empty()) {
                         if (error) {
-                            *error = Error(Error::InvalidFormat,
-                                           "Input name is empty");
+                            *error = Error(Error::InvalidFormat, "Input name is empty");
                         }
                         return false;
                     }
                     valueMap[inputName] = ortValueObj;
                 } else {
                     if (error) {
-                        *error = Error(Error::InvalidFormat,
-                                       R"(Please specify key in object["data"]["value"] string field.)");
+                        *error =
+                            Error(Error::InvalidFormat,
+                                  R"(Please specify key in object["data"]["value"] string field.)");
                     }
                     return false;
                 }
@@ -212,9 +214,9 @@ namespace dsinfer {
                 if (!inputValue) {
                     return false;
                 }
-                valueMap[it_name->second.toString()] = onnxdriver::makeSharedValue(std::move(inputValue));
+                valueMap[it_name->second.toString()] =
+                    onnxdriver::makeSharedValue(std::move(inputValue));
             }
-
         }
 
         auto sessionResult = impl.sessionObj->_impl->session.run(valueMap, error);
@@ -237,10 +239,10 @@ namespace dsinfer {
                         }
                         return false;
                     }
-                    impl.result.emplace_back(JsonObject {
-                        {"name", name},
+                    impl.result.emplace_back(JsonObject{
+                        {"name",   name   },
                         {"format", "bytes"},
-                        {"data", jVal}
+                        {"data",   jVal   }
                     });
                 } else if (format == "array") {
                     Error err_;
@@ -251,20 +253,18 @@ namespace dsinfer {
                         }
                         return false;
                     }
-                    impl.result.emplace_back(JsonObject {
-                        {"name", name},
+                    impl.result.emplace_back(JsonObject{
+                        {"name",   name   },
                         {"format", "array"},
-                        {"data", jVal}
+                        {"data",   jVal   }
                     });
                 } else if (format == "reference") {
                     auto uuidKey = generate_uuid();
                     impl.contextObj->_impl->insertOrtValue(uuidKey, it->second);
-                    impl.result.emplace_back(JsonObject {
-                        {"name", name},
-                        {"format", "reference"},
-                        {"data", JsonObject {
-                            {"value", uuidKey}
-                        }}
+                    impl.result.emplace_back(JsonObject{
+                        {"name",   name                          },
+                        {"format", "reference"                   },
+                        {"data",   JsonObject{{"value", uuidKey}}}
                     });
                 }
             } else {
@@ -277,6 +277,12 @@ namespace dsinfer {
         }
         stateUpdater.setTargetState(State::Idle);
         return true;
+    }
+
+    bool OnnxTask::startAsync(const JsonValue &input,
+                              const std::function<void(const JsonValue &)> &callback,
+                              Error *error) {
+        return false;
     }
 
     bool OnnxTask::stop(Error *error) {

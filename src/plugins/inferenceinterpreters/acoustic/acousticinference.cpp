@@ -44,6 +44,12 @@ namespace dsinfer {
         return false;
     }
 
+    bool AcousticInference::startAsync(const JsonValue &input,
+                                       const std::function<void(const JsonValue &)> &callback,
+                                       Error *error) {
+        return false;
+    }
+
     bool AcousticInference::stop() {
         return false;
     }

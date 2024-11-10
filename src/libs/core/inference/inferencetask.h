@@ -1,6 +1,8 @@
 #ifndef INFERENCETASK_H
 #define INFERENCETASK_H
 
+#include <functional>
+
 #include <dsinfer/error.h>
 #include <dsinfer/jsonvalue.h>
 
@@ -22,6 +24,9 @@ namespace dsinfer {
         virtual bool initialize(const JsonValue &args, Error *error) = 0;
 
         virtual bool start(const JsonValue &input, Error *error) = 0;
+        virtual bool startAsync(const JsonValue &input,
+                                const std::function<void(const JsonValue &)> &callback,
+                                Error *error) = 0;
         virtual bool stop(Error *error) = 0;
 
         virtual int64_t id() const = 0;

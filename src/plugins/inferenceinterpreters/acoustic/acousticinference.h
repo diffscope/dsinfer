@@ -14,6 +14,9 @@ namespace dsinfer {
         bool initialize(const JsonValue &args, Error *error) override;
 
         bool start(const JsonValue &input, Error *error) override;
+        bool startAsync(const JsonValue &input,
+                        const std::function<void(const JsonValue &)> &callback,
+                        Error *error) override;
         bool stop() override;
 
         State state() const override;
