@@ -5,12 +5,20 @@
 #include <sstream>
 #include <thread>
 #include <sstream>
+#include <fstream>
+#include <algorithm>
 
-#include <zlib.h>
+// #include <zip.h>
+
+#include <hash-library/sha256.h>
+
+#include <indicators/progress_bar.hpp>
+#include <indicators/block_progress_bar.hpp>
 
 #include <stdcorelib/console.h>
 #include <stdcorelib/path.h>
 
+#include <dsinfer/jsonvalue.h>
 #include <dsinfer/environment.h>
 #include <dsinfer/inferenceregistry.h>
 #include <dsinfer/singerregistry.h>
@@ -511,7 +519,9 @@ static int cmd_exec(const SCL::ParseResult &result) {
 static int cmd_pack(const SCL::ParseResult &result) {
     updateLogger(result);
 
-    const auto &pkgPath = stdc::path::from_utf8(result.value(0).toString());
+    auto pkgPath = stdc::path::from_utf8(result.value(0).toString());
+    auto outputPath =
+        result.isArgumentSet(1) ? stdc::path::from_utf8(result.value(1).toString()) : fs::path();
 
     Context ctx;
     auto &env = ctx.env;
@@ -522,9 +532,153 @@ static int cmd_pack(const SCL::ParseResult &result) {
             stdc::formatN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
 
-    // TODO: Calculate CRC
-    printf("Compress: %p", compress);
+    pkgPath = fs::canonical(pkgPath);
+    if (outputPath.empty()) {
+        outputPath = pkgPath.filename();
+        outputPath += _TSTR(".zip");
+    } else {
+        auto extension = std::filesystem::path::string_type(outputPath.extension());
+        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+        if (extension != _TSTR(".zip")) {
+            outputPath += _TSTR(".zip");
+        }
+    }
+    outputPath = fs::absolute(outputPath);
 
+    // indicators::ProgressBar overall_progress{
+    //     indicators::option::BarWidth{50},
+    //     indicators::option::Start{"["},
+    //     indicators::option::End{"]"},
+    //     indicators::option::PrefixText{"Overall Progress"},
+    //     indicators::option::ForegroundColor{indicators::Color::cyan},
+    //     indicators::option::ShowPercentage{true},
+    //     indicators::option::ShowElapsedTime{true},
+    //     indicators::option::ShowRemainingTime{true},
+    // };
+
+    // Compress
+    {
+        // int error_code = 0;
+        // auto zip = zip_open(stdc::path::to_utf8(outputPath).c_str(), ZIP_CREATE | ZIP_TRUNCATE,
+        //                     &error_code);
+
+        // if (!zip) {
+        //     zip_error_t zip_error;
+        //     zip_error_init_with_code(&zip_error, error_code);
+        //     std::string error_message = zip_error_strerror(&zip_error);
+        //     zip_error_fini(&zip_error);
+        //     throw std::runtime_error(
+        //         stdc::formatN(R"(failed to open output file "%1": %2)", outputPath, error_message));
+        // }
+
+        // size_t total_files = 0;
+        // size_t files_processed = 0;
+        // for (const auto &entry : fs::recursive_directory_iterator(pkgPath)) {
+        //     if (!entry.is_regular_file()) {
+        //         continue;
+        //     }
+        //     total_files++;
+        // }
+
+        // bool success = true;
+        // std::string error_message;
+        // std::map<std::filesystem::path::string_type, std::string> sha256_map;
+        // for (const auto &entry : fs::recursive_directory_iterator(pkgPath)) {
+        //     if (!entry.is_regular_file()) {
+        //         continue;
+        //     }
+
+        //     fs::path canonical_path = fs::canonical(entry.path());
+        //     fs::path relative_path = fs::relative(canonical_path, pkgPath);
+
+        //     stdc::u8println("Processing: " + relative_path.filename().string() + " - ");
+
+        //     // Compute SHA256
+        //     std::string sha256_str;
+        //     {
+        //         std::ifstream file(entry.path(), std::ios::binary);
+        //         if (!file.is_open()) {
+        //             success = false;
+        //             error_message = stdc::formatN(R"(failed to open file "%1")", relative_path);
+        //             break;
+        //         }
+
+        //         static constexpr const size_t buffer_size = 4096; // Process 4KB each time
+        //         char buffer[buffer_size];
+        //         SHA256 sha256_ctx;
+        //         while (file.read(buffer, buffer_size) || file.gcount() > 0) {
+        //             sha256_ctx.add(buffer, file.gcount());
+        //         }
+        //         sha256_str = sha256_ctx.getHash();
+        //     }
+
+        //     // Create ZIP source
+        //     auto source = zip_source_file(zip, stdc::path::to_utf8(canonical_path).c_str(), 0, 0);
+        //     if (!source) {
+        //         success = false;
+        //         error_message =
+        //             stdc::formatN(R"(failed to create ZIP source for "%1")", relative_path);
+        //         break;
+        //     }
+
+        //     // Add ZIP index
+        //     zip_int64_t file_index = zip_file_add(zip, stdc::path::to_utf8(relative_path).c_str(),
+        //                                           source, ZIP_FL_ENC_UTF_8);
+        //     if (file_index < 0) {
+        //         zip_source_free(source);
+        //         success = false;
+        //         error_message = stdc::formatN(R"(failed to add ZIP entry for "%1")", relative_path);
+        //         break;
+        //     }
+
+        //     sha256_map.insert(std::make_pair(relative_path, sha256_str));
+
+        //     files_processed++;
+        //     // overall_progress.set_progress(100.0 * files_processed / total_files);
+        // }
+
+        // do {
+        //     DS::JsonArray sha256_array;
+        //     for (const auto &pair : std::as_const(sha256_map)) {
+        //         DS::JsonObject obj{
+        //             {"file",   stdc::path::to_utf8(pair.first)},
+        //             {"sha256", pair.second                    },
+        //         };
+        //         sha256_array.push_back(obj);
+        //     }
+        //     DS::JsonObject obj{
+        //         {"$version", "1.0"       },
+        //         {"files",    sha256_array},
+        //     };
+
+        //     // Create ZIP source
+        //     auto obj_str = DS::JsonValue(obj).toJson();
+        //     auto source = zip_source_buffer(zip, obj_str.c_str(), obj_str.size(), 0);
+        //     if (!source) {
+        //         success = false;
+        //         error_message = stdc::formatN(R"(failed to create ZIP source for metadata file)");
+        //         break;
+        //     }
+
+        //     // Add ZIP index
+        //     zip_int64_t file_index =
+        //         zip_file_add(zip, "PACKAGE_INFO/metadata.json", source, ZIP_FL_ENC_UTF_8);
+        //     if (file_index < 0) {
+        //         zip_source_free(source);
+        //         success = false;
+        //         error_message = stdc::formatN(R"(failed to add ZIP entry for metadata file)");
+        //         break;
+        //     }
+        // } while (false);
+
+        // if (!success) {
+        //     // overall_progress.mark_as_completed();
+        //     zip_discard(zip);
+        //     fs::remove(outputPath);
+        //     throw std::runtime_error(stdc::formatN(R"(compress archive error: %1)", error_message));
+        // }
+        // zip_close(zip);
+    }
     return 0;
 }
 

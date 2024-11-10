@@ -11,7 +11,6 @@ Low level library for DiffSinger onnx model inference.
 + [qmsetup](https://github.com/stdware/qmsetup)
 + [syscmdline](https://github.com/SineStriker/syscmdline)
 + [stdcorelib](https://github.com/SineStriker/stdcorelib)
-+ [zlib](https://github.com/madler/zlib)
 
 ## Functionalities
 

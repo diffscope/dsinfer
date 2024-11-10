@@ -81,3 +81,14 @@
 ```
 当上层插入这种 json object 时，下层将构造对应的`Ort::Value`。
 当上层获取`Ort::Value`时，下层应返回对应的 json object。
+
+<!-- ## OpenVPI DSPK 文件
+
+```
+0x0 - 0x4       DSPK
+0x4 - 0x8       VERSION (int32)
+
+0x8 - 0x16 + N  FILE_RELATIVE_PATH (int64 size + utf8 string)
+0x16 + N - ...  FILE_CONTENT (int64 size + binary)
+...
+``` -->

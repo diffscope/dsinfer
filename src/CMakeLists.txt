@@ -208,4 +208,10 @@ if(DSINFER_INSTALL)
         EXTRA_SEARCHING_PATHS ${_extra_search_path}
         VERBOSE
     )
+
+    # Install vcruntime
+    if(MSVC)
+        set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${OUTPUT_DIR}")
+        include(InstallRequiredSystemLibraries)
+    endif()
 endif()

@@ -4,15 +4,21 @@ string(TIMESTAMP _year "%Y")
 set(RC_COPYRIGHT "Copyright 2023-${_year} Team OpenVPI")
 set(RC_DESCRIPTION "DiffSinger Inference Command Line Tool")
 
-file(GLOB_RECURSE _src *.h *.cpp)
-add_executable(${PROJECT_NAME} ${_src})
+add_executable(${PROJECT_NAME})
 
-find_package(ZLIB REQUIRED)
+find_package(unofficial-hash-library CONFIG REQUIRED)
 find_package(syscmdline CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE dsinfer syscmdline::syscmdline ZLIB::ZLIB)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${DSINFER_BUILD_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE .)
+file(GLOB_RECURSE _src *.h *.cpp)
+qm_configure_target(${PROJECT_NAME}
+    SOURCES ${_src}
+    FEATURES cxx_std_17
+    LINKS_PRIVATE dsinfer syscmdline::syscmdline unofficial::hash-library
+    INCLUDE ${_onnxruntime_dir}/include
+    INCLUDE_PRIVATE * ${DSINFER_BUILD_INCLUDE_DIR}
+    PREFIX DSINFER_CORE
+    DEFINES ORT_API_MANUAL_INIT ${_onnxdriver_ep_macros}
+)
 
 if(WIN32)
     qm_add_win_rc(${PROJECT_NAME}

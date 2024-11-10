@@ -5,7 +5,6 @@
         "nlohmann-json",
         "stduuid",
         "stdcorelib",
-        "zlib",
         "hash-library",
         "sparsepp"
     ],
