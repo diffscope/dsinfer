@@ -1,6 +1,7 @@
 #include "onnxsession.h"
 #include "onnxsession_p.h"
 
+#include "internal/onnxdriver_common.h"
 #include "internal/onnxdriver_logger.h"
 #include "internal/session.h"
 #include "internal/idutil.h"
@@ -33,14 +34,14 @@ namespace dsinfer {
 
     bool OnnxSession::open(const std::filesystem::path &path, const JsonValue &args, Error *error) {
         __stdc_impl_t;
-        bool useCpuHint = false;
+        int hints = 0;
         auto obj = args.toObject();
         if (auto it = obj.find("useCpuHint"); it != obj.end()) {
-            if (it->second.isBool()) {
-                useCpuHint = it->second.toBool();
+            if (it->second.isBool() && it->second.toBool()) {
+                hints |= onnxdriver::SH_PreferCPUHint;
             }
         }
-        return impl.session.open(path, useCpuHint, error);
+        return impl.session.open(path, hints, error);
     }
 
     bool OnnxSession::isOpen() const {

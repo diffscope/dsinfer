@@ -220,7 +220,6 @@ namespace dsinfer {
         }
 
         auto sessionResult = impl.sessionObj->_impl->session.run(valueMap, error);
-
         if (sessionResult.empty()) {
             return false;
         }
