@@ -182,6 +182,21 @@ bool OnnxTest::testTask() {
         return false;
     }
 
+    // Test loading the same model (paths are different, but contents are identical)
+    fs::path model3Path(_TSTR("test_data/onnx_models/vector_add-duplicate.onnx"));
+    std::shared_ptr<DS::InferenceSession> session3;
+    if (!newSession(model3Path, false, &session3)) {
+        return false;
+    }
+
+    // Test loading the model whose filesize is the same as `vector_add.onnx`,
+    // but the contents are different
+    fs::path model4Path(_TSTR("test_data/onnx_models/vector_add-same_filesize.onnx"));
+    std::shared_ptr<DS::InferenceSession> session4;
+    if (!newSession(model4Path, false, &session4)) {
+        return false;
+    }
+
     // ========== Test OnnxContext ==========
     // TODO: InferenceContext should add a static interface to get context by ID,
     //       so the caller don't need a map to store contexts.
@@ -242,7 +257,7 @@ bool OnnxTest::testTask() {
         // Read test cases
         // std::filesystem::path taskInputJsonPath(
         //    _TSTR("test_data/input_data/input-two_float_vectors-1.json"));
-        // auto inputFormat = vu.jsonValueFromPath(taskInputJsonPath);
+        // auto inputFormat = VU::jsonValueFromPath(taskInputJsonPath);
 
         DS::JsonValue inputFormat;
         if (dataId <= TestInferData::count()) {
@@ -283,7 +298,7 @@ bool OnnxTest::testTask() {
         do {
             auto inputFormatInput = inputFormat["input"];
             if (inputFormatInput.isUndefined()) {
-                logger.warning("Input json does not contain key \"input\"!");
+                logger.warning(R"(Input json does not contain key "input"!)");
                 // Let OnnxTask::start handle it, so we don't return false here.
                 // return false;
                 break;
@@ -312,7 +327,7 @@ bool OnnxTest::testTask() {
                          VU::inferValueStringify(resultArr[i]));
             if (resultArr[i]["format"].toString() == "reference") {
                 auto key = resultArr[i]["data"]["value"].toString();
-                logger.debug("Getting key \"%1\" from context %2", key, contextId);
+                logger.debug(R"(Getting key "%1" from context %2)", key, contextId);
                 auto it = contextMap.find(contextId);
                 if (it == contextMap.end()) {
                     logger.critical("Context %1 not found in contextMap!", contextId);
