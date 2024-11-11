@@ -49,6 +49,12 @@ cd vcpkg
 #   Linux: `x64-linux` or `arm64-linux`
 ```
 
+### Install OnnxRuntime
+
+```cmake
+cd libs && cmake [-Dep=gpu] -P ../scripts/setup-onnxruntime.cmake
+```
+
 ### Build & Install
 
 <!-- If you have installed the required libraries specified in `scripts/vcpkg-manifest/vcpkg.json`, you can skip setting VCPKG variables so long as you make sure CMake can find them. -->

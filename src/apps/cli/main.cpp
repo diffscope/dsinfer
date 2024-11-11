@@ -8,15 +8,13 @@
 #include <fstream>
 #include <algorithm>
 
-// #include <zip.h>
+#include <bit7z/bitfilecompressor.hpp>
 
-#include <hash-library/sha256.h>
-
-// #include <indicators/progress_bar.hpp>
-// #include <indicators/block_progress_bar.hpp>
+#include <hash-library/crc32.h>
 
 #include <stdcorelib/console.h>
 #include <stdcorelib/path.h>
+#include <stdcorelib/system.h>
 
 #include <dsinfer/jsonvalue.h>
 #include <dsinfer/environment.h>
@@ -105,7 +103,7 @@ struct Context {
 
     Context() {
         // Get basic directories
-        appDir = stdc::path::from_utf8(SCL::appDirectory());
+        appDir = stdc::system::application_directory();
         defaultPluginDir =
             appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
 
@@ -357,7 +355,7 @@ static int cmd_list(const SCL::ParseResult &result) {
             for (const auto &item : lib->contributes(DS::ContributeSpec::Singer)) {
                 info.singers.emplace_back(item->cast<DS::SingerSpec>()->id());
             }
-            env.closeLibrary(lib);
+            std::ignore = env.closeLibrary(lib);
             infoList.emplace_back(info);
         }
     }
@@ -525,161 +523,119 @@ static int cmd_pack(const SCL::ParseResult &result) {
     auto &env = ctx.env;
 
     // Try to load
-    if (DS::Error error; !env.openLibrary(pkgPath, false, &error)) {
+    DS::LibrarySpec *lib;
+    if (DS::Error error; lib = env.openLibrary(pkgPath, false, &error), !lib) {
         throw std::runtime_error(
             stdc::formatN(R"(failed to open package "%1": %2)", pkgPath, error.message()));
     }
+    Context::info("Package Info: %1, version %2", lib->id(), lib->version().toString());
+    std::ignore = env.closeLibrary(lib);
 
+    // Normalize paths
     pkgPath = fs::canonical(pkgPath);
     if (outputPath.empty()) {
         outputPath = pkgPath.filename();
-        outputPath += _TSTR(".zip");
+        outputPath += _TSTR(".7z");
     } else {
         auto extension = std::filesystem::path::string_type(outputPath.extension());
         std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-        if (extension != _TSTR(".zip")) {
-            outputPath += _TSTR(".zip");
+        if (extension != _TSTR(".7z")) {
+            outputPath += _TSTR(".7z");
         }
     }
     outputPath = fs::absolute(outputPath);
 
-    // indicators::ProgressBar overall_progress{
-    //     indicators::option::BarWidth{50},
-    //     indicators::option::Start{"["},
-    //     indicators::option::End{"]"},
-    //     indicators::option::PrefixText{"Overall Progress"},
-    //     indicators::option::ForegroundColor{indicators::Color::cyan},
-    //     indicators::option::ShowPercentage{true},
-    //     indicators::option::ShowElapsedTime{true},
-    //     indicators::option::ShowRemainingTime{true},
-    // };
+    Context::info("Output Path: %1", outputPath);
+    stdc::u8println();
+
+    // Compute Hash
+    Context::info(stdc::formatN("Collecting CRC32 of files..."));
+
+    std::map<std::filesystem::path::string_type, std::string> files_hash_map;
+    for (const auto &entry : fs::recursive_directory_iterator(pkgPath)) {
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        fs::path canonical_path = fs::canonical(entry.path());
+        std::string hash_str;
+        std::ifstream file(canonical_path, std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error(stdc::formatN(R"(failed to open file "%1")", canonical_path));
+            break;
+        }
+
+        static constexpr const size_t buffer_size = 4096; // Process 4KB each time
+        char buffer[buffer_size];
+        CRC32 hash_ctx;
+        while (file.read(buffer, buffer_size) || file.gcount() > 0) {
+            hash_ctx.add(buffer, file.gcount());
+        }
+        hash_str = hash_ctx.getHash();
+        files_hash_map.insert(std::make_pair(canonical_path, hash_str));
+    }
 
     // Compress
-    {
-        // int error_code = 0;
-        // auto zip = zip_open(stdc::path::to_utf8(outputPath).c_str(), ZIP_CREATE | ZIP_TRUNCATE,
-        //                     &error_code);
+    Context::info(stdc::formatN("Compressing..."));
+    try {
+        using namespace bit7z;
 
-        // if (!zip) {
-        //     zip_error_t zip_error;
-        //     zip_error_init_with_code(&zip_error, error_code);
-        //     std::string error_message = zip_error_strerror(&zip_error);
-        //     zip_error_fini(&zip_error);
-        //     throw std::runtime_error(
-        //         stdc::formatN(R"(failed to open output file "%1": %2)", outputPath,
-        //         error_message));
-        // }
+        if (std::filesystem::exists(outputPath)) {
+            std::filesystem::remove(outputPath);
+        }
+        auto archivePathString = stdc::path::to_utf8(outputPath);
 
-        // size_t total_files = 0;
-        // size_t files_processed = 0;
-        // for (const auto &entry : fs::recursive_directory_iterator(pkgPath)) {
-        //     if (!entry.is_regular_file()) {
-        //         continue;
-        //     }
-        //     total_files++;
-        // }
+        const std::filesystem::path lib7zpath =
+#ifdef _WIN32
+            stdc::system::application_directory() / L"7zip.dll"
+#elif defined(__APPLE__)
+            stdc::system::application_directory().parent_path() / "lib" / "lib7zip.dylib"
+#else
+            stdc::system::application_directory().parent_path() / "lib" / "lib7zip.so"
+#endif
+            ;
 
-        // bool success = true;
-        // std::string error_message;
-        // std::map<std::filesystem::path::string_type, std::string> sha256_map;
-        // for (const auto &entry : fs::recursive_directory_iterator(pkgPath)) {
-        //     if (!entry.is_regular_file()) {
-        //         continue;
-        //     }
+        Bit7zLibrary lib(stdc::path::to_utf8(lib7zpath));
+        BitFileCompressor compressor{lib, BitFormat::SevenZip};
+        compressor.setCompressionLevel(BitCompressionLevel::None); // no compress
 
-        //     fs::path canonical_path = fs::canonical(entry.path());
-        //     fs::path relative_path = fs::relative(canonical_path, pkgPath);
+        std::map<std::string, std::string> files_map;
+        for (const auto &pair : std::as_const(files_hash_map)) {
+            files_map[stdc::path::to_utf8(pair.first)] =
+                stdc::path::to_utf8(std::filesystem::relative(pair.first, pkgPath));
+        }
+        compressor.compress(files_map, archivePathString);
 
-        //     stdc::u8println("Processing: " + relative_path.filename().string() + " - ");
+        // Add manifest
+        {
+            DS::JsonArray hash_array;
+            for (const auto &pair : std::as_const(files_hash_map)) {
+                DS::JsonObject obj{
+                    {"file", stdc::path::to_utf8(std::filesystem::relative(pair.first, pkgPath))},
+                    {"crc32", pair.second},
+                };
+                hash_array.push_back(obj);
+            }
+            DS::JsonObject manifest_obj{
+                {"$version", "1.0"     },
+                {"files",    hash_array},
+            };
+            auto manifest_data = DS::JsonValue(manifest_obj).toJson();
+            std::vector<byte_t> manifest_buffer(manifest_data.begin(), manifest_data.end());
 
-        //     // Compute SHA256
-        //     std::string sha256_str;
-        //     {
-        //         std::ifstream file(entry.path(), std::ios::binary);
-        //         if (!file.is_open()) {
-        //             success = false;
-        //             error_message = stdc::formatN(R"(failed to open file "%1")", relative_path);
-        //             break;
-        //         }
-
-        //         static constexpr const size_t buffer_size = 4096; // Process 4KB each time
-        //         char buffer[buffer_size];
-        //         SHA256 sha256_ctx;
-        //         while (file.read(buffer, buffer_size) || file.gcount() > 0) {
-        //             sha256_ctx.add(buffer, file.gcount());
-        //         }
-        //         sha256_str = sha256_ctx.getHash();
-        //     }
-
-        //     // Create ZIP source
-        //     auto source = zip_source_file(zip, stdc::path::to_utf8(canonical_path).c_str(), 0,
-        //     0); if (!source) {
-        //         success = false;
-        //         error_message =
-        //             stdc::formatN(R"(failed to create ZIP source for "%1")", relative_path);
-        //         break;
-        //     }
-
-        //     // Add ZIP index
-        //     zip_int64_t file_index = zip_file_add(zip,
-        //     stdc::path::to_utf8(relative_path).c_str(),
-        //                                           source, ZIP_FL_ENC_UTF_8);
-        //     if (file_index < 0) {
-        //         zip_source_free(source);
-        //         success = false;
-        //         error_message = stdc::formatN(R"(failed to add ZIP entry for "%1")",
-        //         relative_path); break;
-        //     }
-
-        //     sha256_map.insert(std::make_pair(relative_path, sha256_str));
-
-        //     files_processed++;
-        //     // overall_progress.set_progress(100.0 * files_processed / total_files);
-        // }
-
-        // do {
-        //     DS::JsonArray sha256_array;
-        //     for (const auto &pair : std::as_const(sha256_map)) {
-        //         DS::JsonObject obj{
-        //             {"file",   stdc::path::to_utf8(pair.first)},
-        //             {"sha256", pair.second                    },
-        //         };
-        //         sha256_array.push_back(obj);
-        //     }
-        //     DS::JsonObject obj{
-        //         {"$version", "1.0"       },
-        //         {"files",    sha256_array},
-        //     };
-
-        //     // Create ZIP source
-        //     auto obj_str = DS::JsonValue(obj).toJson();
-        //     auto source = zip_source_buffer(zip, obj_str.c_str(), obj_str.size(), 0);
-        //     if (!source) {
-        //         success = false;
-        //         error_message = stdc::formatN(R"(failed to create ZIP source for metadata
-        //         file)"); break;
-        //     }
-
-        //     // Add ZIP index
-        //     zip_int64_t file_index =
-        //         zip_file_add(zip, "PACKAGE_INFO/metadata.json", source, ZIP_FL_ENC_UTF_8);
-        //     if (file_index < 0) {
-        //         zip_source_free(source);
-        //         success = false;
-        //         error_message = stdc::formatN(R"(failed to add ZIP entry for metadata file)");
-        //         break;
-        //     }
-        // } while (false);
-
-        // if (!success) {
-        //     // overall_progress.mark_as_completed();
-        //     zip_discard(zip);
-        //     fs::remove(outputPath);
-        //     throw std::runtime_error(stdc::formatN(R"(compress archive error: %1)",
-        //     error_message));
-        // }
-        // zip_close(zip);
+            // Updating manifest
+            compressor.setUpdateMode(UpdateMode::Update);
+            BitOutputArchive outputArchive{compressor, archivePathString};
+            outputArchive.addFile(manifest_buffer, "package-info/manifest.json");
+            outputArchive.compressTo(archivePathString);
+        }
+    } catch (const bit7z::BitException &ex) {
+        if (std::filesystem::exists(outputPath)) {
+            std::filesystem::remove(outputPath);
+        }
+        throw std::runtime_error(stdc::formatN("7z error: %1", ex.what()));
     }
+    Context::info(stdc::formatN("OK", outputPath));
     return 0;
 }
 
@@ -760,7 +716,8 @@ int main(int argc, char *argv[]) {
         return command;
     }();
 
-    SCL::Command rootCommand(SCL::appName(), "DiffSinger package manager and inference tool.");
+    SCL::Command rootCommand(stdc::system::application_name(),
+                             "DiffSinger package manager and inference tool.");
     rootCommand.addCommands({
         statCommand,
         listCommand,

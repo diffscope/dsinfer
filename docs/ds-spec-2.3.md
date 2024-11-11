@@ -305,7 +305,7 @@ dsinfer 库提供一个命令行工具，名称为`dsinfer-cli`。
         "/home/user/.diffinger/packages"
     ],
     "driver": {
-        "id": "com.diffsinger.InferenceDriver.OnnxDriver",
+        "id": "onnx",
         "init": {
             "ep": "dml"
         }
