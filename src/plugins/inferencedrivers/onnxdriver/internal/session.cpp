@@ -1,7 +1,6 @@
 #include "session.h"
 
 #include <cassert>
-#include <chrono>
 #include <cstdio>
 #include <shared_mutex>
 #include <sstream>
@@ -17,6 +16,7 @@
 #include "onnxdriver_logger.h"
 #include "env.h"
 #include "sessionimage.h"
+#include "scopedtimer.h"
 
 namespace fs = std::filesystem;
 
@@ -74,25 +74,16 @@ namespace dsinfer::onnxdriver {
         std::filesystem::path realPath;
 
         template <typename ValueMapType>
-        inline ValueMapType sessionRun(Ort::RunOptions &runOptions,
-                                       const ValueMapType &inputValueMap, Error *error) {
+        inline Error validateInputValueMap(const ValueMapType &inputValueMap) {
             static_assert(std::is_same_v<ValueMapType, ValueMap> ||
                           std::is_same_v<ValueMapType, SharedValueMap>);
-
-            const auto &filename = realPath.filename();
-            onnxdriver_log().info("Session [%1] - Running inference", filename);
-
-            auto timeStart = std::chrono::steady_clock::now();
             if (inputValueMap.empty()) {
-                if (error) {
-                    *error = Error(Error::SessionError, "Input map is empty");
-                }
-                return {};
+                return {Error::SessionError, "Input map is empty"};
             }
 
             const auto &requiredInputNames = image->inputNames;
             std::ostringstream msgStream;
-            msgStream << '[' << filename << ']' << ' ';
+            msgStream << '[' << realPath.filename() << ']' << ' ';
 
             // Check for missing and extra input names. If found, return empty map and the error
             // message.
@@ -135,11 +126,33 @@ namespace dsinfer::onnxdriver {
                 }
 
                 if (flagMissing || flagExtra) {
-                    if (error) {
-                        *error = Error(Error::SessionError, msgStream.str());
-                    }
-                    return {};
+                    return {Error::SessionError, msgStream.str()};
                 }
+            }
+            return {}; // no error
+        }
+
+        template <typename ValueMapType>
+        inline ValueMapType sessionRun(const ValueMapType &inputValueMap, Error *error) {
+            static_assert(std::is_same_v<ValueMapType, ValueMap> ||
+                          std::is_same_v<ValueMapType, SharedValueMap>);
+
+            const auto &filename = realPath.filename();
+            onnxdriver_log().info("Session [%1] - Running inference", filename);
+
+            ScopedTimer timer([&](const ScopedTimer::duration_t &elapsed) {
+                // When finished, print time elapsed
+                auto elapsedStr = (std::ostringstream() << std::fixed << std::setprecision(3) << elapsed.count()).str();
+                onnxdriver_log().info("Session [%1] - Finished inference in %2 seconds",
+                                      filename, elapsedStr);
+            });
+
+            if (auto validateError = validateInputValueMap(inputValueMap); !validateError.ok()) {
+                if (error) {
+                    *error = std::move(validateError);
+                }
+                timer.deactivate();
+                return {};
             }
 
             try {
@@ -177,21 +190,13 @@ namespace dsinfer::onnxdriver {
                         outValueMap.emplace(outputNames[i], std::move(outputValues[i]));
                     }
                 }
-                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                   std::chrono::steady_clock::now() - timeStart)
-                                   .count();
-                auto elapsedSeconds = elapsed / 1000;
-                auto elapsedMs = static_cast<int>(elapsed % 1000);
-                char elapsedMsStr[4];
-                snprintf(elapsedMsStr, sizeof(elapsedMsStr), "%03d", elapsedMs);
-                onnxdriver_log().info("Session [%1] - Finished inference in %2.%3 seconds",
-                                      filename, elapsedSeconds, elapsedMsStr);
                 return outValueMap;
             } catch (const Ort::Exception &err) {
                 if (error) {
                     *error = Error(Error::SessionError, err.what());
                 }
             }
+            timer.deactivate();
             return {};
         }
     };
@@ -467,7 +472,7 @@ namespace dsinfer::onnxdriver {
             }
             return {};
         }
-        return impl.sessionRun<ValueMap>(impl.runOptions, inputValueMap, error);
+        return impl.sessionRun<ValueMap>(inputValueMap, error);
     }
 
     SharedValueMap Session::run(const SharedValueMap &inputValueMap, Error *error) {
@@ -478,7 +483,7 @@ namespace dsinfer::onnxdriver {
             }
             return {};
         }
-        return impl.sessionRun<SharedValueMap>(impl.runOptions, inputValueMap, error);
+        return impl.sessionRun<SharedValueMap>(inputValueMap, error);
     }
 
 }
