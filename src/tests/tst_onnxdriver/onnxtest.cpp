@@ -21,8 +21,8 @@
 #define ENSURE_CTX(ctx)                                                                            \
     do {                                                                                           \
         if (!ctx) {                                                                                \
-            stdc::Console::printf(stdc::Console::Red | stdc::Console::Intensified,                 \
-                                  stdc::Console::Default, "Context is nullptr!\n");                \
+            stdc::console::printf(stdc::console::red | stdc::console::intensified,                 \
+                                  stdc::console::plain, "Context is nullptr!\n");                  \
             return false;                                                                          \
         }                                                                                          \
     } while (false)

@@ -17,7 +17,7 @@ namespace dsutils {
         ~PhonemeDictionary();
 
         bool load(const std::filesystem::path &path, std::string *error = nullptr);
-        stdc::VarLengthArray<std::string_view> find(const char *key) const;
+        stdc::vlarray<std::string_view> find(const char *key) const;
 
         void print_front(int size) const;
 

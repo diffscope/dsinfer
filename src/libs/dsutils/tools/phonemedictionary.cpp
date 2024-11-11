@@ -148,7 +148,7 @@ namespace dsutils {
         return true;
     }
 
-    stdc::VarLengthArray<std::string_view> PhonemeDictionary::find(const char *key) const {
+    stdc::vlarray<std::string_view> PhonemeDictionary::find(const char *key) const {
         __stdc_impl_t;
         auto &filebuf = impl.filebuf;
         auto &map = impl.map;
@@ -158,7 +158,7 @@ namespace dsutils {
             return {};
         }
         auto &entry = it->second;
-        stdc::VarLengthArray<std::string_view> out(entry.count);
+        stdc::vlarray<std::string_view> out(entry.count);
         impl.readEntry(it->second, out.data());
         return out;
     }
@@ -184,7 +184,7 @@ namespace dsutils {
         auto it = map.begin();
         for (int i = 0; i < size; ++i, ++it) {
             const auto &entry = it->second;
-            stdc::VarLengthArray<std::string_view> values(entry.count);
+            stdc::vlarray<std::string_view> values(entry.count);
             impl.readEntry(entry, values.data());
             stdc::u8println("Phoneme %1: %2 - %3", i, it->first,
                             join(values.data(), values.size(), " ").c_str());

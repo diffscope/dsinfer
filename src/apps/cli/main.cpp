@@ -50,16 +50,16 @@ static void log_report_callback(int level, const char *category, const char *fmt
 
     int foreground, background;
     if (level <= Log::Verbose) {
-        foreground = Console::Default;
-        background = Console::White;
+        foreground = console::plain;
+        background = console::white;
     } else if (level <= Log::Information) {
-        foreground = stdc::Console::Blue | stdc::Console::Intensified;
+        foreground = stdc::console::blue | stdc::console::intensified;
         background = foreground;
     } else if (level <= Log::Warning) {
-        foreground = Console::Yellow;
+        foreground = console::yellow;
         background = foreground;
     } else {
-        foreground = Console::Red;
+        foreground = console::red;
         background = foreground;
     }
 
@@ -86,10 +86,10 @@ static void log_report_callback(int level, const char *category, const char *fmt
         default:
             break;
     }
-    Console::printf(foreground, Console::Default, "[%s] %-15s", dts.c_str(), category);
-    Console::printf(Console::Black, background, " %s ", sig);
-    Console::printf(Console::Default, Console::Default, "  ");
-    Console::vprintf(foreground, Console::Default, fmt, args);
+    console::printf(foreground, console::plain, "[%s] %-15s", dts.c_str(), category);
+    console::printf(console::black, background, " %s ", sig);
+    console::printf(console::plain, console::plain, "  ");
+    console::vprintf(foreground, console::plain, fmt, args);
 }
 
 struct Context {
@@ -149,21 +149,19 @@ struct Context {
     template <class... Args>
     static inline void info(const std::string &format, Args &&...args) {
         using namespace stdc;
-        Console::printf(Console::Default, Console::Default, "%s\n",
-                        formatN(format, args...).c_str());
+        console::printf(console::plain, console::plain, "%s\n", formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
         using namespace stdc;
-        Console::printf(Console::Yellow, Console::Default, "%s\n",
-                        formatN(format, args...).c_str());
+        console::printf(console::yellow, console::plain, "%s\n", formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
         using namespace stdc;
-        Console::printf(Console::Red, Console::Default, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::red, console::plain, "%s\n", formatN(format, args...).c_str());
     }
 };
 
@@ -568,7 +566,8 @@ static int cmd_pack(const SCL::ParseResult &result) {
         //     std::string error_message = zip_error_strerror(&zip_error);
         //     zip_error_fini(&zip_error);
         //     throw std::runtime_error(
-        //         stdc::formatN(R"(failed to open output file "%1": %2)", outputPath, error_message));
+        //         stdc::formatN(R"(failed to open output file "%1": %2)", outputPath,
+        //         error_message));
         // }
 
         // size_t total_files = 0;
@@ -613,8 +612,8 @@ static int cmd_pack(const SCL::ParseResult &result) {
         //     }
 
         //     // Create ZIP source
-        //     auto source = zip_source_file(zip, stdc::path::to_utf8(canonical_path).c_str(), 0, 0);
-        //     if (!source) {
+        //     auto source = zip_source_file(zip, stdc::path::to_utf8(canonical_path).c_str(), 0,
+        //     0); if (!source) {
         //         success = false;
         //         error_message =
         //             stdc::formatN(R"(failed to create ZIP source for "%1")", relative_path);
@@ -622,13 +621,14 @@ static int cmd_pack(const SCL::ParseResult &result) {
         //     }
 
         //     // Add ZIP index
-        //     zip_int64_t file_index = zip_file_add(zip, stdc::path::to_utf8(relative_path).c_str(),
+        //     zip_int64_t file_index = zip_file_add(zip,
+        //     stdc::path::to_utf8(relative_path).c_str(),
         //                                           source, ZIP_FL_ENC_UTF_8);
         //     if (file_index < 0) {
         //         zip_source_free(source);
         //         success = false;
-        //         error_message = stdc::formatN(R"(failed to add ZIP entry for "%1")", relative_path);
-        //         break;
+        //         error_message = stdc::formatN(R"(failed to add ZIP entry for "%1")",
+        //         relative_path); break;
         //     }
 
         //     sha256_map.insert(std::make_pair(relative_path, sha256_str));
@@ -656,8 +656,8 @@ static int cmd_pack(const SCL::ParseResult &result) {
         //     auto source = zip_source_buffer(zip, obj_str.c_str(), obj_str.size(), 0);
         //     if (!source) {
         //         success = false;
-        //         error_message = stdc::formatN(R"(failed to create ZIP source for metadata file)");
-        //         break;
+        //         error_message = stdc::formatN(R"(failed to create ZIP source for metadata
+        //         file)"); break;
         //     }
 
         //     // Add ZIP index
@@ -675,7 +675,8 @@ static int cmd_pack(const SCL::ParseResult &result) {
         //     // overall_progress.mark_as_completed();
         //     zip_discard(zip);
         //     fs::remove(outputPath);
-        //     throw std::runtime_error(stdc::formatN(R"(compress archive error: %1)", error_message));
+        //     throw std::runtime_error(stdc::formatN(R"(compress archive error: %1)",
+        //     error_message));
         // }
         // zip_close(zip);
     }

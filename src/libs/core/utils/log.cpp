@@ -8,17 +8,17 @@ namespace dsinfer {
                                      va_list args) {
         std::ignore = category;
 
-        using stdc::Console;
+        using namespace stdc;
 
-        Console::Color color;
+        console::color color;
         if (level <= Log::Information) {
-            color = Console::Default;
+            color = console::plain;
         } else if (level <= Log::Warning) {
-            color = Console::Yellow;
+            color = console::yellow;
         } else {
-            color = Console::Red;
+            color = console::red;
         }
-        Console::vprintf(color, Console::Default, fmt, args);
+        console::vprintf(color, console::plain, fmt, args);
     }
 
     static int m_level = Log::Information;

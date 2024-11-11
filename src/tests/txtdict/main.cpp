@@ -10,9 +10,9 @@
 namespace cho = std::chrono;
 
 int main(int /*argc*/, char * /*argv*/[]) {
-    auto cmdline = stdc::System::commandLineArguments();
+    auto cmdline = stdc::system::command_line_arguments();
     if (cmdline.size() < 2) {
-        stdc::u8println("Usage: %1 <dict> [count]", stdc::System::applicationName());
+        stdc::u8println("Usage: %1 <dict> [count]", stdc::system::application_name());
         return 1;
     }
 
@@ -23,7 +23,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
         auto start_time = cho::high_resolution_clock::now();
 
         // Load file
-        stdc::VarLengthArray<dsutils::PhonemeDictionary, 1024> dicts(len);
+        stdc::vlarray<dsutils::PhonemeDictionary, 1024> dicts(len);
         for (auto &dict : dicts) {
             if (!dict.load(filepath)) {
                 stdc::u8println("Failed to read dictionary \"%1\".", filepath);

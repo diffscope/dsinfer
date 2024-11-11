@@ -10,70 +10,66 @@
 #include "context.h"
 
 void log_report_callback(int level, const char *category, const char *fmt, va_list args) {
-    namespace DS = dsinfer;
-    namespace cho = std::chrono;
+    using namespace dsinfer;
+    using namespace stdc;
 
-    auto current_dt = cho::system_clock::to_time_t(cho::system_clock::now());
-    struct tm time_struct{};
-#if defined(_WIN32) || defined(_WIN64)
-    localtime_s(&time_struct, &current_dt);
-#else
-    localtime_r(&current_dt, &time_struct);
-#endif
-    auto dts = (std::stringstream() << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S")).str();
+    auto t = std::time(nullptr);
+    auto tm = std::localtime(&t);
+
+    std::stringstream ss;
+    ss << std::put_time(tm, "%Y-%m-%d %H:%M:%S");
+    auto dts = ss.str();
 
     int foreground, background;
-    if (level <= DS::Log::Verbose) {
-        foreground = stdc::Console::Default;
-        background = stdc::Console::White;
-    } else if (level <= DS::Log::Information) {
-        foreground = stdc::Console::Blue | stdc::Console::Intensified;
+    if (level <= Log::Verbose) {
+        foreground = console::plain;
+        background = console::white;
+    } else if (level <= Log::Information) {
+        foreground = stdc::console::blue | stdc::console::intensified;
         background = foreground;
-    } else if (level <= DS::Log::Warning) {
-        foreground = stdc::Console::Yellow;
+    } else if (level <= Log::Warning) {
+        foreground = console::yellow;
         background = foreground;
     } else {
-        foreground = stdc::Console::Red;
+        foreground = console::red;
         background = foreground;
     }
 
     const char *sig = "I";
     switch (level) {
-        case DS::Log::Trace:
+        case Log::Trace:
             sig = "T";
             break;
-        case DS::Log::Debug:
+        case Log::Debug:
             sig = "D";
             break;
-        case DS::Log::Verbose:
+        case Log::Verbose:
             sig = "V";
             break;
-        case DS::Log::Warning:
+        case Log::Warning:
             sig = "W";
             break;
-        case DS::Log::Critical:
+        case Log::Critical:
             sig = "C";
             break;
-        case DS::Log::Fatal:
+        case Log::Fatal:
             sig = "F";
             break;
         default:
             break;
     }
-    stdc::Console::printf(foreground, stdc::Console::Default, "[%s] %-15s", dts.c_str(), category);
-    stdc::Console::printf(stdc::Console::Black, background, " %s ", sig);
-    stdc::Console::printf(stdc::Console::Default, stdc::Console::Default, "  ");
-    stdc::Console::vprintf(foreground, stdc::Console::Default, fmt, args);
+    console::printf(foreground, console::plain, "[%s] %-15s", dts.c_str(), category);
+    console::printf(console::black, background, " %s ", sig);
+    console::printf(console::plain, console::plain, "  ");
+    console::vprintf(foreground, console::plain, fmt, args);
 }
 
 Context::Context() : logger("onnxtest") {
     // Get basic directories
-    appDir = stdc::System::applicationDirectory();
-    defaultPluginDir =
-        appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
+    appDir = stdc::system::application_directory();
+    defaultPluginDir = appDir.parent_path() / _TSTR("lib") / _TSTR("plugins") / _TSTR("dsinfer");
 
     // Set default plugin directories
     env.addPluginPath("com.diffsinger.InferenceDriver",
                       defaultPluginDir / _TSTR("inferencedrivers"));
-
 }
