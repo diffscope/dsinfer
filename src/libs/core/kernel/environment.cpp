@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 namespace dsinfer {
 
-    Environment::Impl::Impl(Environment *decl) : stdc::PluginFactory::Impl(decl) {
+    Environment::Impl::Impl(Environment *decl) : PluginFactory::Impl(decl) {
         registries.resize(2);
         registries[ContributeSpec::Inference] = new InferenceRegistry(decl);
         registries[ContributeSpec::Singer] = new SingerRegistry(decl);

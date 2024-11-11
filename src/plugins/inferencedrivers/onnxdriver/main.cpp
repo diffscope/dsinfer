@@ -21,4 +21,4 @@ namespace dsinfer {
 
 }
 
-STDCORELIB_EXPORT_PLUGIN(dsinfer::OnnxDriverPlugin)
+DSINFER_EXPORT_PLUGIN(dsinfer::OnnxDriverPlugin)

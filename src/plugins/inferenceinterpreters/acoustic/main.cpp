@@ -19,4 +19,4 @@ namespace dsinfer {
 
 }
 
-STDCORELIB_EXPORT_PLUGIN(dsinfer::AcousticInterpreterPlugin)
+DSINFER_EXPORT_PLUGIN(dsinfer::AcousticInterpreterPlugin)

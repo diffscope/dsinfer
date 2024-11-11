@@ -12,8 +12,8 @@
 
 #include <hash-library/sha256.h>
 
-#include <indicators/progress_bar.hpp>
-#include <indicators/block_progress_bar.hpp>
+// #include <indicators/progress_bar.hpp>
+// #include <indicators/block_progress_bar.hpp>
 
 #include <stdcorelib/console.h>
 #include <stdcorelib/path.h>

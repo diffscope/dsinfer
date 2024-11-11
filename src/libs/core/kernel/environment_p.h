@@ -9,11 +9,11 @@
 #include <dsinfer/environment.h>
 #include <dsinfer/contributespec.h>
 
-#include <stdcorelib/private/pluginfactory_p.h>
+#include <dsinfer/private/pluginfactory_p.h>
 
 namespace dsinfer {
 
-    class Environment::Impl : public stdc::PluginFactory::Impl {
+    class Environment::Impl : public PluginFactory::Impl {
     public:
         explicit Impl(Environment *decl);
         ~Impl();

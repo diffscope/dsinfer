@@ -1,13 +1,12 @@
 #ifndef INFERENCEDRIVERPLUGIN_H
 #define INFERENCEDRIVERPLUGIN_H
 
-#include <stdcorelib/plugin.h>
-
+#include <dsinfer/plugin.h>
 #include <dsinfer/inferencedriver.h>
 
 namespace dsinfer {
 
-    class DSINFER_EXPORT InferenceDriverPlugin : public stdc::Plugin {
+    class DSINFER_EXPORT InferenceDriverPlugin : public Plugin {
     public:
         InferenceDriverPlugin();
         ~InferenceDriverPlugin();

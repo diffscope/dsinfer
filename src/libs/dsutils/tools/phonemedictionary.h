@@ -5,8 +5,6 @@
 #include <string>
 #include <string_view>
 
-#include <sparsepp/spp.h>
-
 #include <stdcorelib/vla.h>
 
 #include <dsutils/dsutilsglobal.h>
