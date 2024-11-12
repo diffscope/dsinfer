@@ -36,8 +36,8 @@ namespace dsinfer::onnxdriver {
         ValueMap run(const ValueMap &inputTensorMap, Error *error = nullptr);
         SharedValueMap run(const SharedValueMap &inputTensorMap, Error *error = nullptr);
 
-        void runAsync(const ValueMap &inputTensorMap, callback_t callback);
-        void runAsync(const SharedValueMap &inputTensorMap, callback_shared_t callback);
+        void runAsync(const ValueMap &inputTensorMap, const callback_t &callback);
+        void runAsync(const SharedValueMap &inputTensorMap, const callback_shared_t &callback);
 
         void terminate();
 

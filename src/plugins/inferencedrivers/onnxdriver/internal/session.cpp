@@ -135,7 +135,7 @@ namespace dsinfer::onnxdriver {
         }
 
         template <typename ValueMapType, typename CallbackType>
-        inline void sessionRunAsync(const ValueMapType &inputValueMap, CallbackType callback) {
+        inline void sessionRunAsync(const ValueMapType &inputValueMap, const CallbackType &callback) {
             static_assert(std::is_same_v<ValueMapType, ValueMap> || std::is_same_v<ValueMapType, SharedValueMap>);
             static_assert(
                 std::is_same_v<CallbackType, callback_t> || std::is_same_v<CallbackType,
@@ -189,35 +189,35 @@ namespace dsinfer::onnxdriver {
 
             // User data for Ort RunAsync callback
             struct CallbackData {
-                CallbackType callback;
+                const CallbackType *callback;
                 ScopedTimer *timer;
                 std::vector<std::string> *outputNames;
             };
 
-            CallbackData ortCallbackData{callback, &timer, &(image->outputNames)};
+            CallbackData ortCallbackData{&callback, &timer, &(image->outputNames)};
 
             // Definition of RunAsyncCallbackFn
             const auto ortAsyncCallback = [](void *user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr) {
                 Ort::Status status(status_ptr);
                 auto data = static_cast<CallbackData *>(user_data);
+                const auto &callback_ = *data->callback;
+                const auto &outputNames_ = *data->outputNames;
                 if (!status.IsOK()) {
-                    data->callback({}, Error(Error::SessionError, status.GetErrorMessage()));
+                    callback_({}, Error(Error::SessionError, status.GetErrorMessage()));
                     data->timer->deactivate();
                     return;
                 }
                 ValueMapType outputValueMap;
                 if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
                     for (size_t i = 0; i < num_outputs; ++i) {
-                        auto &outputNamesArr = *data->outputNames;
-                        outputValueMap.emplace(outputNamesArr[i], makeSharedValue(outputs[i]));
+                        outputValueMap.emplace(outputNames_[i], makeSharedValue(outputs[i]));
                     }
                 } else if constexpr (std::is_same_v<ValueMapType, ValueMap>) {
                     for (size_t i = 0; i < num_outputs; ++i) {
-                        auto &outputNamesArr = *data->outputNames;
-                        outputValueMap.emplace(outputNamesArr[i], outputs[i]);
+                        outputValueMap.emplace(outputNames_[i], outputs[i]);
                     }
                 }
-                data->callback(outputValueMap, {});
+                callback_(outputValueMap, {});
             };
 
             // Call Ort RunAsync C API
@@ -581,7 +581,7 @@ namespace dsinfer::onnxdriver {
         return impl.sessionRun<SharedValueMap>(inputValueMap, error);
     }
 
-    void Session::runAsync(const ValueMap &inputTensorMap, callback_t callback) {
+    void Session::runAsync(const ValueMap &inputTensorMap, const callback_t &callback) {
         __stdc_impl_t;
         if (!impl.group) {
             callback({}, Error(Error::SessionError, "session is not open"));
@@ -590,7 +590,7 @@ namespace dsinfer::onnxdriver {
         impl.sessionRunAsync<ValueMap, callback_t>(inputTensorMap, callback);
     }
 
-    void Session::runAsync(const SharedValueMap &inputTensorMap, callback_shared_t callback) {
+    void Session::runAsync(const SharedValueMap &inputTensorMap, const callback_shared_t &callback) {
         __stdc_impl_t;
         if (!impl.group) {
             callback({}, Error(Error::SessionError, "session is not open"));
