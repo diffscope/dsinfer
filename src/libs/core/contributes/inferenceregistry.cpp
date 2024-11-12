@@ -28,6 +28,26 @@ namespace dsinfer {
 
     InferenceRegistry::~InferenceRegistry() = default;
 
+    bool InferenceRegistry::setup(const char *key, const JsonValue &args, Error *error) {
+        __stdc_impl_t;
+        auto plugin = impl.env->plugin<InferenceDriverPlugin>(key);
+        if (!plugin) {
+            *error = {
+                Error::FileNotFound,
+                stdc::formatN(R"(driver "%1" not found)", key),
+            };
+            return false;
+        }
+        auto driver = plugin->create();
+        if (!driver->initialize(args, error)) {
+            delete driver;
+            return false;
+        }
+        std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
+        impl.driver = driver;
+        return true;
+    }
+
     std::vector<InferenceSpec *>
         InferenceRegistry::findInferences(const ContributeIdentifier &identifier) const {
         __stdc_impl_t;
@@ -55,29 +75,6 @@ namespace dsinfer {
         __stdc_impl_t;
         std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
         return impl.driver;
-    }
-
-    InferenceDriver *InferenceRegistry::takeDriver() {
-        __stdc_impl_t;
-        std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
-        auto org = impl.driver;
-        impl.driver = nullptr;
-        return org;
-    }
-
-    void InferenceRegistry::setDriver(InferenceDriver *driver) {
-        __stdc_impl_t;
-        std::unique_lock<std::shared_mutex> lock(impl.env_mtx());
-        delete impl.driver;
-        impl.driver = driver;
-    }
-
-    InferenceDriver *InferenceRegistry::createDriver(const char *key) const {
-        auto plugin = env()->plugin<InferenceDriverPlugin>(key);
-        if (!plugin) {
-            return nullptr;
-        }
-        return plugin->create();
     }
 
     std::string InferenceRegistry::specKey() const {
@@ -122,8 +119,9 @@ namespace dsinfer {
                     if (!plugin) {
                         *error = {
                             Error::FeatureNotSupported,
-                            stdc::formatN(R"(required interpreter "%1" of inference "%2" not found)",
-                                        inferenceSpec->className(), inferenceSpec->id()),
+                            stdc::formatN(
+                                R"(required interpreter "%1" of inference "%2" not found)",
+                                inferenceSpec->className(), inferenceSpec->id()),
                         };
                         return false;
                     }
@@ -149,7 +147,7 @@ namespace dsinfer {
                     *error = {
                         Error::InvalidFormat,
                         stdc::formatN(R"(inference "%1" validate failed: %2)", inferenceSpec->id(),
-                                    errMsg),
+                                      errMsg),
                     };
                     return false;
                 }

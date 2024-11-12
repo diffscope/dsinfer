@@ -432,24 +432,17 @@ static int cmd_exec(const SCL::ParseResult &result) {
     auto inferenceReg = env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
     auto singerReg = env.registry(DS::ContributeSpec::Singer)->cast<DS::SingerRegistry>();
 
-    // Create driver
-    const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
-    auto driver = inferenceReg->createDriver(realDriverId.c_str());
-    if (!driver) {
-        throw std::runtime_error(stdc::formatN(R"(failed to load driver "%1")", realDriverId));
-    }
-
     // Initialize driver
-    {
-        DS::Error error;
-        if (!driver->initialize(driverInit.empty() ? DS::JsonValue::fromJson(driverInit, true)
-                                                   : ctx.startupConfig.driver.init,
-                                &error)) {
-            throw std::runtime_error(stdc::formatN(R"(failed to initialize driver "%1": %2)",
-                                                   realDriverId, error.message()));
-        }
+    const auto &realDriverId = driverId.empty() ? ctx.startupConfig.driver.id : driverId;
+    if (DS::Error error;
+        !inferenceReg->setup(realDriverId.c_str(),
+                             driverInit.empty() ? DS::JsonValue::fromJson(driverInit, true)
+                                                : ctx.startupConfig.driver.init,
+                             &error)) {
+        throw std::runtime_error(stdc::formatN(R"(failed to initialize driver "%1": %2)",
+                                               realDriverId, error.message()));
     }
-    inferenceReg->setDriver(driver);
+    auto driver = inferenceReg->driver();
 
     // Load package
     DS::LibrarySpec *lib;

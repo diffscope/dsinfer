@@ -67,7 +67,7 @@ bool insertObjectHelper(DS::Log::Category &logger, DS::InferenceContext *context
 class OnnxTest::Impl {
 public:
     Context *ctx = nullptr;
-    std::shared_ptr<DS::InferenceDriver> driver;
+    DS::InferenceDriver *driver;
 };
 
 
@@ -78,21 +78,6 @@ OnnxTest::OnnxTest(Context *context) : _impl(std::make_unique<Impl>()) {
 
 OnnxTest::~OnnxTest() = default;
 
-bool OnnxTest::initContext() {
-    __stdc_impl_t;
-    ENSURE_CTX(impl.ctx);
-    auto &logger = impl.ctx->logger;
-
-    auto inferenceReg =
-        impl.ctx->env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
-    impl.driver.reset(inferenceReg->createDriver("onnx"));
-    if (!impl.driver) {
-        logger.critical(R"(Failed to load driver "onnx")");
-        return false;
-    }
-    return true;
-}
-
 bool OnnxTest::initDriver() {
     return initDriver("cpu");
 }
@@ -102,24 +87,22 @@ bool OnnxTest::initDriver(const char *ep) {
     ENSURE_CTX(impl.ctx);
     auto &logger = impl.ctx->logger;
 
-    if (!impl.driver) {
-        logger.critical("Onnx driver plugin is not loaded!");
-    }
+    auto inferenceReg =
+        impl.ctx->env.registry(DS::ContributeSpec::Inference)->cast<DS::InferenceRegistry>();
 
     DS::Error error;
-    bool ok = true;
-
-    ok = impl.driver->initialize(
-        DS::JsonObject{
-            {"ep",          ep },
-            {"deviceIndex", "0"}
-    },
-        &error);
+    bool ok = inferenceReg->setup("onnx",
+                                  DS::JsonObject({
+                                      {"ep",          ep },
+                                      {"deviceIndex", "0"},
+    }),
+                                  &error);
     ENSURE_OK_ERROR_CONSISTENT("OnnxDriver::initialize", ok, error);
     if (!ok) {
         logger.critical(error.what());
         return false;
     }
+    impl.driver = inferenceReg->driver();
     return true;
 }
 bool OnnxTest::testTask() {

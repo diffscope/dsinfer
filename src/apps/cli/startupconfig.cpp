@@ -73,8 +73,6 @@ namespace cli {
                     continue;
                 }
                 paths_.emplace_back(path_);
-
-                stdc::u8println("PATH: %1", path_);
             }
         } while (false);
 

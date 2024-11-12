@@ -23,12 +23,6 @@ int main(int argc, char *argv[]) {
     bool ok = true;
     OnnxTest test(&ctx);
 
-    ok = test.initContext();
-    if (!ok) {
-        ctx.logger.critical("initContext - test failed");
-        return EXIT_FAILURE;
-    }
-
     ok = test.initDriver("cpu");
     if (!ok) {
         ctx.logger.critical("initDriver - test failed");

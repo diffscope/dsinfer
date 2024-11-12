@@ -11,15 +11,13 @@ namespace dsinfer {
     public:
         ~InferenceRegistry();
 
+        bool setup(const char *driver, const JsonValue &args, Error *error);
+
     public:
         std::vector<InferenceSpec *> findInferences(const ContributeIdentifier &identifier) const;
         std::vector<InferenceSpec *> inferences() const;
 
         InferenceDriver *driver() const;
-        InferenceDriver *takeDriver();
-        void setDriver(InferenceDriver *driver);
-
-        InferenceDriver *createDriver(const char *key) const;
 
     protected:
         std::string specKey() const override;
