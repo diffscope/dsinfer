@@ -14,6 +14,10 @@ namespace dsinfer::onnxdriver {
     inline std::shared_ptr<Ort::Value> makeSharedValue(Ort::Value &&value) {
         return std::make_shared<Ort::Value>(std::move(value));
     }
+
+    inline std::shared_ptr<Ort::Value> makeSharedValue(OrtValue *value) {
+        return std::make_shared<Ort::Value>(value);
+    }
 }
 
 #endif // DSINFER_ONNXDRIVER_VALUEMAP_H

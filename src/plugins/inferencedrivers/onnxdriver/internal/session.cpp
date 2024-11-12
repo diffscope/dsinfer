@@ -134,6 +134,104 @@ namespace dsinfer::onnxdriver {
             return {}; // no error
         }
 
+        template <typename ValueMapType, typename CallbackType>
+        inline void sessionRunAsync(const ValueMapType &inputValueMap, CallbackType callback) {
+            static_assert(std::is_same_v<ValueMapType, ValueMap> || std::is_same_v<ValueMapType, SharedValueMap>);
+            static_assert(
+                std::is_same_v<CallbackType, callback_t> || std::is_same_v<CallbackType,
+                    callback_shared_t>);
+
+            static_assert(
+                (std::is_same_v<ValueMapType, ValueMap> && std::is_same_v<CallbackType, callback_t>) ||
+                (std::is_same_v<ValueMapType, SharedValueMap> && std::is_same_v<CallbackType,
+                     callback_shared_t>), "ValueMapType and CallbackType mismatch");
+
+            using ValueType = typename ValueMapType::mapped_type;
+
+            const auto &filename = realPath.filename();
+            onnxdriver_log().info("Session [%1] - Running inference async", filename);
+
+            ScopedTimer timer([&](const ScopedTimer::duration_t &elapsed) {
+                // When finished, print time elapsed
+                auto elapsedStr = (std::ostringstream() << std::fixed << std::setprecision(3) << elapsed.count()).str();
+                onnxdriver_log().info("Session [%1] - Finished inference in %2 seconds",
+                                      filename, elapsedStr);
+            });
+
+            if (auto validateError = validateInputValueMap(inputValueMap); !validateError.ok()) {
+                callback({}, validateError);
+                timer.deactivate();
+                return;
+            }
+
+            std::vector<const char *> inputNames;
+            inputNames.reserve(inputValueMap.size());
+
+            std::vector<OrtValue *> inputValues;
+            inputValues.reserve(inputValueMap.size());
+
+            std::vector<const char *> outputNames;
+            outputNames.reserve(image->outputNames.size());
+
+            std::vector<OrtValue *> outputValues(outputNames.size());
+
+            for (const auto &[name, value] : inputValueMap) {
+                inputNames.push_back(name.c_str());
+                if constexpr (std::is_same_v<ValueType, SharedValueMap>) {
+                    inputValues.push_back(*value.get());
+                } else if constexpr (std::is_same_v<ValueType, ValueMap>) {
+                    inputValues.push_back(value);
+                }
+            }
+            for (const auto &name : image->outputNames) {
+                outputNames.push_back(name.c_str());
+            }
+
+            // User data for Ort RunAsync callback
+            struct CallbackData {
+                CallbackType callback;
+                ScopedTimer *timer;
+                std::vector<std::string> *outputNames;
+            };
+
+            CallbackData ortCallbackData{callback, &timer, &(image->outputNames)};
+
+            // Definition of RunAsyncCallbackFn
+            const auto ortAsyncCallback = [](void *user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr) {
+                Ort::Status status(status_ptr);
+                auto data = static_cast<CallbackData *>(user_data);
+                if (!status.IsOK()) {
+                    data->callback({}, Error(Error::SessionError, status.GetErrorMessage()));
+                    data->timer->deactivate();
+                    return;
+                }
+                ValueMapType outputValueMap;
+                if constexpr (std::is_same_v<ValueMapType, SharedValueMap>) {
+                    for (size_t i = 0; i < num_outputs; ++i) {
+                        auto &outputNamesArr = *data->outputNames;
+                        outputValueMap.emplace(outputNamesArr[i], makeSharedValue(outputs[i]));
+                    }
+                } else if constexpr (std::is_same_v<ValueMapType, ValueMap>) {
+                    for (size_t i = 0; i < num_outputs; ++i) {
+                        auto &outputNamesArr = *data->outputNames;
+                        outputValueMap.emplace(outputNamesArr[i], outputs[i]);
+                    }
+                }
+                data->callback(outputValueMap, {});
+            };
+
+            // Call Ort RunAsync C API
+            const Ort::Status statusRunAsync(
+                Ort::GetApi().RunAsync(image->session, runOptions, inputNames.data(), inputValues.data(), inputValues.size(),
+                                       outputNames.data(), outputNames.size(), outputValues.data(), ortAsyncCallback, &ortCallbackData));
+
+            // On RunAsync failed
+            if (!statusRunAsync.IsOK()) {
+                callback({}, Error(Error::SessionError, statusRunAsync.GetErrorMessage()));
+                timer.deactivate();
+            }
+        }
+
         template <typename ValueMapType>
         inline ValueMapType sessionRun(const ValueMapType &inputValueMap, Error *error) {
             static_assert(std::is_same_v<ValueMapType, ValueMap> ||
@@ -483,4 +581,21 @@ namespace dsinfer::onnxdriver {
         return impl.sessionRun<SharedValueMap>(inputValueMap, error);
     }
 
+    void Session::runAsync(const ValueMap &inputTensorMap, callback_t callback) {
+        __stdc_impl_t;
+        if (!impl.group) {
+            callback({}, Error(Error::SessionError, "session is not open"));
+            return;
+        }
+        impl.sessionRunAsync<ValueMap, callback_t>(inputTensorMap, callback);
+    }
+
+    void Session::runAsync(const SharedValueMap &inputTensorMap, callback_shared_t callback) {
+        __stdc_impl_t;
+        if (!impl.group) {
+            callback({}, Error(Error::SessionError, "session is not open"));
+            return;
+        }
+        impl.sessionRunAsync<SharedValueMap, callback_shared_t>(inputTensorMap, callback);
+    }
 }
