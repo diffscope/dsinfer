@@ -6,7 +6,8 @@
         "stduuid",
         "stdcorelib",
         "hash-library",
-        "sparsepp"
+        "sparsepp",
+        "bit7z"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

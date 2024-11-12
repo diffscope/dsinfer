@@ -28,6 +28,7 @@
 
 #include "startupconfig.h"
 #include "statusconfig.h"
+#include "utils.h"
 
 namespace fs = std::filesystem;
 
@@ -114,17 +115,9 @@ struct Context {
                           defaultPluginDir / _TSTR("inferenceinterpreters"));
 
         // Load startup config
-        fs::path homeDir =
-#ifdef WIN32
-            _wgetenv(L"USERPROFILE")
-#else
-            getenv("HOME")
-#endif
-            ;
-
         const std::filesystem::path startupConfigDirs[] = {
             appDir,
-            homeDir / _TSTR(".diffsinger"),
+            cli::home_dir() / _TSTR(".diffsinger"),
         };
 
         for (const auto &dir : std::as_const(startupConfigDirs)) {

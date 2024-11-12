@@ -3,7 +3,7 @@
 
 #include <mutex>
 
-#include <stdcorelib/strings.h>
+#include <stdcorelib/path.h>
 
 #include "inferenceregistry.h"
 #include "singerregistry.h"
@@ -143,19 +143,11 @@ namespace dsinfer {
         return impl.libraryPaths;
     }
 
-    static fs::path getCanonicalPath(const fs::path &path) {
-        try {
-            return fs::canonical(path);
-        } catch (...) {
-        }
-        return {};
-    }
-
     LibrarySpec *Environment::openLibrary(const std::filesystem::path &path, bool noLoad,
                                           Error *error) {
         __stdc_impl_t;
 
-        auto canonicalPath = getCanonicalPath(path);
+        auto canonicalPath = stdc::path::canonical(path);
         if (canonicalPath.empty() || !fs::is_directory(canonicalPath)) {
             *error = {
                 Error::FileNotFound,
@@ -229,7 +221,7 @@ namespace dsinfer {
                         error1 = {
                             Error::FileDuplicated,
                             stdc::formatN(R"(duplicated library "%1[%2]" in "%3" is loaded)",
-                                        spec->id(), spec->version().toString(), lib.spec->path()),
+                                          spec->id(), spec->version().toString(), lib.spec->path()),
                         };
                         goto out_dup;
                     }
@@ -337,7 +329,7 @@ namespace dsinfer {
                 error1 = {
                     Error::LibraryNotFound,
                     stdc::formatN(R"(required library "%1[%2]" not found)", dep.id,
-                                dep.version.toString()),
+                                  dep.version.toString()),
                 };
                 goto out_deps;
             }

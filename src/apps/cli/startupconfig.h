@@ -1,5 +1,5 @@
-#ifndef STARTUPCONFIG_H
-#define STARTUPCONFIG_H
+#ifndef DSINFER_CLI_STARTUPCONFIG_H
+#define DSINFER_CLI_STARTUPCONFIG_H
 
 #include <filesystem>
 
@@ -27,4 +27,4 @@ namespace cli {
 
 }
 
-#endif // STARTUPCONFIG_H
+#endif // DSINFER_CLI_STARTUPCONFIG_H

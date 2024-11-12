@@ -4,18 +4,32 @@
 #include <sstream>
 
 #include <stdcorelib/path.h>
+#include <stdcorelib/console.h>
 
 #include <dsinfer/jsonvalue.h>
 
+#include "utils.h"
+
 using namespace dsinfer;
 
+namespace fs = std::filesystem;
+
 namespace cli {
+
+    static const std::map<std::string, std::string> &systemPaths() {
+        static auto instance = []() -> std::map<std::string, std::string> {
+            return {
+                {"HOME", stdc::path::to_utf8(home_dir())}
+            };
+        }();
+        return instance;
+    }
 
     StartupConfig::StartupConfig() = default;
 
     StartupConfig::~StartupConfig() = default;
 
-    bool StartupConfig::load(const std::filesystem::path &path) {
+    bool StartupConfig::load(const fs::path &path) {
         std::ifstream file(path);
         if (!file.is_open()) {
             return false;
@@ -32,7 +46,7 @@ namespace cli {
         auto obj = root.toObject();
 
         // paths
-        std::vector<std::filesystem::path> paths_;
+        std::vector<fs::path> paths_;
         do {
             auto it = obj.find("paths");
             if (it == obj.end() || !it->second.isArray()) {
@@ -46,7 +60,21 @@ namespace cli {
                 if (pathStr.empty()) {
                     continue;
                 }
-                paths_.emplace_back(stdc::path::from_utf8(pathStr));
+                // Replace variables
+                pathStr = stdc::strings::parse_expr(pathStr, systemPaths());
+                auto path_ = stdc::path::from_utf8(pathStr);
+                // To absolute
+                if (path_.is_relative()) {
+                    path_ = path.parent_path() / path_;
+                }
+                // To canonical
+                path_ = stdc::path::canonical(path_);
+                if (path_.empty()) {
+                    continue;
+                }
+                paths_.emplace_back(path_);
+
+                stdc::u8println("PATH: %1", path_);
             }
         } while (false);
 

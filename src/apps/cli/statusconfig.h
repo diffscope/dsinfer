@@ -1,5 +1,5 @@
-#ifndef STATUSCONFIG_H
-#define STATUSCONFIG_H
+#ifndef DSINFER_CLI_STATUSCONFIG_H
+#define DSINFER_CLI_STATUSCONFIG_H
 
 #include <vector>
 #include <filesystem>
@@ -38,4 +38,4 @@ namespace cli {
 
 }
 
-#endif // STATUSCONFIG_H
+#endif // DSINFER_CLI_STATUSCONFIG_H

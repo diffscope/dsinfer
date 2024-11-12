@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <list>
 
+#include <stdcorelib/path.h>
+
 #include <dsinfer/dsinferglobal.h>
 
 #include <hash-library/sha256.h>
@@ -142,9 +144,11 @@ namespace dsinfer::onnxdriver {
 
             ScopedTimer timer([&](const ScopedTimer::duration_t &elapsed) {
                 // When finished, print time elapsed
-                auto elapsedStr = (std::ostringstream() << std::fixed << std::setprecision(3) << elapsed.count()).str();
-                onnxdriver_log().info("Session [%1] - Finished inference in %2 seconds",
-                                      filename, elapsedStr);
+                auto elapsedStr =
+                    (std::ostringstream() << std::fixed << std::setprecision(3) << elapsed.count())
+                        .str();
+                onnxdriver_log().info("Session [%1] - Finished inference in %2 seconds", filename,
+                                      elapsedStr);
             });
 
             if (auto validateError = validateInputValueMap(inputValueMap); !validateError.ok()) {
@@ -264,22 +268,15 @@ namespace dsinfer::onnxdriver {
 
         // Open
         onnxdriver_log().debug("Session - Try open " + path.string());
-        fs::path canonical_path;
-        try {
-            canonical_path = fs::canonical(path);
-            onnxdriver_log().debug("Session - The canonical path is " + canonical_path.string());
-        } catch (const fs::filesystem_error &e) {
-            if (error) {
-                *error = Error(Error::FileNotFound, e.what());
-            }
-            return false;
-        }
-        if (!fs::is_regular_file(canonical_path)) {
+        if (!fs::is_regular_file(path)) {
             if (error) {
                 *error = Error(Error::FileNotFound, "not a regular file");
             }
             return false;
         }
+
+        fs::path canonical_path = fs::canonical(path);
+        onnxdriver_log().debug("Session - The canonical path is " + canonical_path.string());
 
         // Ready to load
         auto &session_system = SessionSystem::global();
