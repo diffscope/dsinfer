@@ -25,7 +25,7 @@ namespace dsinfer {
 
         virtual bool start(const JsonValue &input, Error *error) = 0;
         virtual bool startAsync(const JsonValue &input,
-                                const std::function<void(const JsonValue &)> &callback,
+                                const std::function<void(const JsonValue &, const Error &)> &callback,
                                 Error *error) = 0;
         virtual bool stop(Error *error) = 0;
 
