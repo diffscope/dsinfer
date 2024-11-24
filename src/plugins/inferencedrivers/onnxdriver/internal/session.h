@@ -14,9 +14,6 @@ namespace dsinfer::onnxdriver {
 
     class Session {
     public:
-        using callback_t = std::function<void(const ValueMap &outputTensorMap, const Error &error)>;
-        using callback_shared_t = std::function<void(const SharedValueMap &outputTensorMap, const Error &error)>;
-
         Session();
         ~Session();
 
@@ -35,9 +32,6 @@ namespace dsinfer::onnxdriver {
 
         ValueMap run(const ValueMap &inputTensorMap, Error *error = nullptr);
         SharedValueMap run(const SharedValueMap &inputTensorMap, Error *error = nullptr);
-
-        void runAsync(const ValueMap &inputTensorMap, const callback_t &callback);
-        void runAsync(const SharedValueMap &inputTensorMap, const callback_shared_t &callback);
 
         void terminate();
 
