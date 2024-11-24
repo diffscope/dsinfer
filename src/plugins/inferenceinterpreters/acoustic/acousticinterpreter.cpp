@@ -31,10 +31,12 @@ namespace dsinfer {
             default:
                 break;
         }
-        *error = {
-            Error::FeatureNotSupported,
-            stdc::formatN("acoustic api level %1 not supported", spec->apiLevel()),
-        };
+        if (error) {
+            *error = {
+                Error::FeatureNotSupported,
+                stdc::formatN("acoustic api level %1 not supported", spec->apiLevel()),
+            };
+        }
         return nullptr;
     }
 
