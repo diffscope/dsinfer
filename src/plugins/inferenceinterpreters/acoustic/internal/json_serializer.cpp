@@ -280,8 +280,8 @@ namespace dsinfer::dsinterp {
             return false;
         }
 
-        // offset
-        segment.offset = json["offset"].toDouble();
+        // context id
+        segment.context = json["context"].toInt64(-1);
 
         // words
         auto j_words = json["words"];
@@ -337,7 +337,7 @@ namespace dsinfer::dsinterp {
 
     JsonValue to_json(const Segment &segment) {
         JsonObject j = {
-            {"offset", segment.offset},
+            {"context", segment.context},
             {"words", to_json_array(segment.words)},
         };
 

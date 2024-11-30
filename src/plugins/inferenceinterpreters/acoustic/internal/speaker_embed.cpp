@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include <stdcorelib/strings.h>
+#include "acoustic_logger.h"
 
 #ifdef _WIN32
 #define DS_STRING_CONVERT(x) stdc::strings::conv<std::wstring>::from_utf8(x)
@@ -16,28 +17,27 @@
 namespace dsinfer::dsinterp {
 
 SpeakerEmbed::SpeakerEmbed() = default;
-SpeakerEmbed::SpeakerEmbed(const std::vector<std::string> &speakers, const std::string &path) {
-    loadSpeakers(speakers, path);
-}
 
-void SpeakerEmbed::loadSpeakers(const std::vector<std::string> &speakers, const std::filesystem::path &path) {
-    for (const auto &speaker : speakers) {
+bool SpeakerEmbed::loadSpeakers(const std::vector<SpeakerPair> &speakers) {
+    if (speakers.empty()) {
+        return false;
+    }
+    for (const auto &[speaker, fullPath] : speakers) {
 
-        auto fullPath = path / DS_STRING_CONVERT(speaker + ".emb");
         if (!std::filesystem::exists(fullPath)) {
             // ERROR!
-            std::cout << "ERROR: emb file of speaker \"" << speaker << "\" does not exist!\n";
-            continue;
+            acoustic_log().critical("emb file of speaker \"" + speaker + "\" does not exist!");
+            return false;
         }
         auto size = std::filesystem::file_size(fullPath);
         if (size != SPK_EMBED_SIZE * sizeof(float)) {
-            std::cout << "ERROR: emb file size of speaker \"" << speaker << "\" must be exactly " << SPK_EMBED_SIZE << " bytes!\n";
-            continue;
+            acoustic_log().critical("emb file size of speaker \"" + speaker + "\" must be exactly " + std::to_string(SPK_EMBED_SIZE) + " bytes!");
+            return false;
         }
         std::ifstream inputFile(fullPath, std::ios::binary);
         if (!inputFile.is_open()) {
-            std::cout << "ERROR: emb file size of speaker \"" << speaker << "\" could not be opened!\n";
-            continue;
+            acoustic_log().critical("emb file size of speaker \"" + speaker + "\" could not be opened!");
+            return false;
         }
         SpeakerEmbedArray emb{};
         inputFile.read(reinterpret_cast<char *>(emb.data()), emb.size() * sizeof(float));
@@ -46,10 +46,7 @@ void SpeakerEmbed::loadSpeakers(const std::vector<std::string> &speakers, const 
 
         inputFile.close();
     }
-}
-
-const SpeakerEmbedMap &SpeakerEmbed::getEmb() {
-    return m_emb;
+    return true;
 }
 
 SpeakerEmbedArray SpeakerEmbed::getMixedEmb(const std::unordered_map<std::string, double> &mix) const {

@@ -46,7 +46,7 @@ namespace dsinfer::dsinterp {
     };
 
     struct Segment {
-        double offset = 0.0;
+        int64_t context = -1;
         std::vector<Word> words;
         std::map<std::string, Parameter> parameters;
         SpeakerMixCurve speakers;
