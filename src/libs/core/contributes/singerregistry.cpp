@@ -95,6 +95,7 @@ namespace dsinfer {
                             stdc::formatN(R"(required inference "%1" of singer "%2" not found)",
                                         imp.inference.toString(), singerSpec->id()),
                         };
+                        return false;
                     }
 
                     // Validate
@@ -107,6 +108,7 @@ namespace dsinfer {
                                 R"(inference "%1" of singer "%2" validate failed: %3)",
                                 imp.inference.toString(), singerSpec->id(), errMsg),
                         };
+                        return false;
                     }
                 }
                 return true;

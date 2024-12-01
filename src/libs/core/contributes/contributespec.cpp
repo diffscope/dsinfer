@@ -34,7 +34,7 @@ namespace dsinfer {
         if (std::regex_match(token, matches, pattern)) {
             std::string id = matches[1].str();
             std::string ver = matches[3].matched ? matches[3].str() : std::string();
-            std::string sid = matches[5].matched ? matches[5].str() : std::string();
+            std::string sid = matches[6].matched ? matches[6].str() : std::string();
             if (!ver.empty()) {
                 return {id, VersionNumber::fromString(ver), sid};
             }

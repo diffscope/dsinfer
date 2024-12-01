@@ -413,6 +413,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
             !identifier.id().empty()) {
             pkgId = identifier.library();
             pkgVersion = identifier.version();
+            singerId = identifier.id();
         } else {
             throw std::runtime_error(stdc::formatN(R"(invalid singer identifier "%1")", idStr));
         }
@@ -472,8 +473,10 @@ static int cmd_exec(const SCL::ParseResult &result) {
         relatedInferenceSpecList.reserve(singerSpec->imports().size());
         for (const auto &imp : std::as_const(singerSpec->imports())) {
             auto inf = inferenceReg->findInferences(imp.inference);
-            throw std::runtime_error(
-                stdc::formatN(R"(inference %1 not found)", imp.inference.toString()));
+            if (inf.empty()) {
+                throw std::runtime_error(
+                    stdc::formatN(R"(inference %1 not found)", imp.inference.toString()));
+            }
             relatedInferenceSpecList.push_back(inf.front());
         }
 
