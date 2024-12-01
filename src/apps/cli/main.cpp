@@ -30,6 +30,8 @@
 #include "statusconfig.h"
 #include "utils.h"
 
+#define PACKAGE_EXTENSION "7z"
+
 namespace fs = std::filesystem;
 
 namespace SCL = SysCmdLine;
@@ -462,19 +464,29 @@ static int cmd_exec(const SCL::ParseResult &result) {
                                                singerId, pkgId, pkgVersion.toString()));
     }
 
+    // Create inferences
     std::vector<DS::Inference *> inferences;
-    if (DS::Error error; inferences = singerSpec->createInferences(&error), !error.ok()) {
-        throw std::runtime_error(
-            stdc::formatN(R"(failed to create inferences: %1)", error.message()));
-    }
-
-    // Check inference api levels
-    for (const auto &inference : std::as_const(inferences)) {
-        auto spec = inference->spec();
-        if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
-            throw std::runtime_error(stdc::formatN(R"(inference "%1" level %2 not supported)",
-                                                   spec->className(), spec->apiLevel()));
+    {
+        // Find inference spec list
+        std::vector<DS::InferenceSpec *> relatedInferenceSpecList;
+        relatedInferenceSpecList.reserve(singerSpec->imports().size());
+        for (const auto &imp : std::as_const(singerSpec->imports())) {
+            auto inf = inferenceReg->findInferences(imp.inference);
+            throw std::runtime_error(
+                stdc::formatN(R"(inference %1 not found)", imp.inference.toString()));
+            relatedInferenceSpecList.push_back(inf.front());
         }
+
+        // Check inference api levels
+        for (const auto &spec : std::as_const(relatedInferenceSpecList)) {
+            if (!isApiLevelSupported(spec->className(), spec->apiLevel())) {
+                throw std::runtime_error(stdc::formatN(R"(inference "%1" level %2 not supported)",
+                                                       spec->className(), spec->apiLevel()));
+            }
+        }
+
+        // Initialize inferences
+        // TODO:
     }
 
     // Execute inferences
@@ -483,6 +495,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
         DS::JsonObject args = {
             {"ctx", ic->id()},
         };
+        // TODO: build args
         for (const auto &inference : std::as_const(inferences)) {
             DS::Error error;
             if (!inference->start(args, &error)) {
@@ -521,12 +534,12 @@ static int cmd_pack(const SCL::ParseResult &result) {
     pkgPath = fs::canonical(pkgPath);
     if (outputPath.empty()) {
         outputPath = pkgPath.filename();
-        outputPath += _TSTR(".7z");
+        outputPath += _TSTR("." PACKAGE_EXTENSION);
     } else {
         auto extension = std::filesystem::path::string_type(outputPath.extension());
         std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-        if (extension != _TSTR(".7z")) {
-            outputPath += _TSTR(".7z");
+        if (extension != _TSTR("." PACKAGE_EXTENSION)) {
+            outputPath += _TSTR("." PACKAGE_EXTENSION);
         }
     }
     outputPath = fs::absolute(outputPath);
@@ -597,7 +610,8 @@ static int cmd_pack(const SCL::ParseResult &result) {
             DS::JsonArray hash_array;
             for (const auto &pair : std::as_const(files_hash_map)) {
                 DS::JsonObject obj{
-                    {"file", stdc::path::to_utf8(std::filesystem::relative(pair.first, pkgPath))},
+                    {"file", stdc::path::normalize_separators(
+                                 std::filesystem::relative(pair.first, pkgPath), false)},
                     {"crc32", pair.second},
                 };
                 hash_array.push_back(obj);

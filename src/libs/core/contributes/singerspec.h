@@ -36,9 +36,6 @@ namespace dsinfer {
 
         JsonObject configuration() const;
 
-    public:
-        std::vector<class Inference *> createInferences(Error *error);
-
     protected:
         class Impl;
         SingerSpec();

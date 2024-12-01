@@ -1,9 +1,9 @@
 #include "singerspec.h"
 #include "singerspec_p.h"
 
-#include <stdcorelib/path.h>
-
 #include <fstream>
+
+#include <stdcorelib/path.h>
 
 namespace fs = std::filesystem;
 
@@ -46,7 +46,8 @@ namespace dsinfer {
         // for (const auto &item : arr) {
         //     if (!item.isString()) {
         //         *errorMessage =
-        //             stdc::formatN(R"(invalid item in roles field entry %1)", res.roles.size() + 1);
+        //             stdc::formatN(R"(invalid item in roles field entry %1)", res.roles.size() +
+        //             1);
         //         return false;
         //     }
         //     auto role = item.toString();
@@ -196,7 +197,7 @@ namespace dsinfer {
                 *error = {
                     Error::FeatureNotSupported,
                     stdc::formatN(R"(%1: format version "%1" is not supported)",
-                                fmtVersion_.toString()),
+                                  fmtVersion_.toString()),
                 };
                 return false;
             }
@@ -251,7 +252,7 @@ namespace dsinfer {
                         *error = {
                             Error::InvalidFormat,
                             stdc::formatN(R"(%1: invalid "imports" field entry %2: %3)", configPath,
-                                        imports_.size() + 1, errorMessage),
+                                          imports_.size() + 1, errorMessage),
                         };
                         return false;
                     }
@@ -328,12 +329,6 @@ namespace dsinfer {
         return impl.configuration;
     }
 
-    std::vector<Inference *> SingerSpec::createInferences(Error *error) {
-        __stdc_impl_t;
-        return {};
-    }
-
     SingerSpec::SingerSpec() : ContributeSpec(*new Impl()) {
     }
-
 }

@@ -197,11 +197,12 @@ if(DSINFER_INSTALL)
         set(_lib_dir lib)
     endif()
 
-    # if(WIN32)
-    # set(_extra_search_path ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    # else()
-    # set(_extra_search_path ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    # endif()
+    if(WIN32)
+        set(_extra_search_path ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    else()
+        set(_extra_search_path ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    endif()
+
     qm_import(Deploy)
     qm_deploy_directory(${CMAKE_INSTALL_PREFIX}
         LIBRARY_DIR ${_lib_dir}
