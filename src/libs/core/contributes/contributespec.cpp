@@ -28,7 +28,7 @@ namespace dsinfer {
             return {};
         }
 
-        // A single regex to handle all cases: id/sid, id[version]/sid, idToken/sid, and sid
+        // A single regex to handle all cases: id/sid, id[version]/sid, and sid
         static std::regex pattern(R"((\w+)(\[(\d+(\.\d+){0,3})\])?(\/(\w+))?)");
         std::smatch matches;
         if (std::regex_match(token, matches, pattern)) {

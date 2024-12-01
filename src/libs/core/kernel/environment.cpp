@@ -412,7 +412,7 @@ namespace dsinfer {
                 }
 
                 // Delete
-                for (i = (int) contributes.size(); i-- > 0;) {
+                for (i = int(contributes.size()) - 1; i >= 0; i--) {
                     const auto &contribute = contributes[i];
                     const auto &type = contribute->type();
                     const auto &reg = impl.registries[type];
