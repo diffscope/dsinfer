@@ -1,7 +1,7 @@
 #include "preprocess.h"
 
+#include <algorithm>
 #include <array>
-#include <cmath>
 #include <fstream>
 #include <numeric>
 

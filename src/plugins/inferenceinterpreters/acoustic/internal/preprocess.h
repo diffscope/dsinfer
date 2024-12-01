@@ -2,6 +2,7 @@
 #define PREPROCESS_H
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
