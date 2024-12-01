@@ -89,7 +89,7 @@ namespace cli {
                     // hasSinger (optional)
                     do {
                         auto it3 = metadataObj.find("hasSinger");
-                        if (it3 == packageObj.end() || !it3->second.isBool()) {
+                        if (it3 == metadataObj.end() || !it3->second.isBool()) {
                             break;
                         }
                         metadata_.hasSinger = it3->second.toBool();
@@ -98,7 +98,7 @@ namespace cli {
                     // installedTimestamp (optional)
                     do {
                         auto it3 = metadataObj.find("installedTimestamp");
-                        if (it3 == packageObj.end() || !it3->second.isInt()) {
+                        if (it3 == metadataObj.end() || !it3->second.isInt()) {
                             break;
                         }
                         metadata_.installedTimestamp = it3->second.toInt64();
