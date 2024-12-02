@@ -466,7 +466,7 @@ static int cmd_exec(const SCL::ParseResult &result) {
     }
 
     // Create inferences
-    std::vector<DS::Inference *> inferences;
+    std::vector<std::unique_ptr<DS::Inference>> inferences;
     {
         // Find inference spec list
         std::vector<DS::InferenceSpec *> relatedInferenceSpecList;
@@ -489,11 +489,20 @@ static int cmd_exec(const SCL::ParseResult &result) {
         }
 
         // Initialize inferences
-        // TODO:
+        for (const auto &spec : std::as_const(relatedInferenceSpecList)) {
+            DS::Error error;
+            // TODO: inference create options
+            auto inference = spec->create({}, &error);
+            if (!inference) {
+                throw std::runtime_error(stdc::formatN(R"(could not create inference %1: %2")",
+                                                       spec->className(), error.what()));
+            }
+            inferences.emplace_back(inference);
+        }
     }
 
     // Execute inferences
-    if (false) {
+    if (true) {
         std::unique_ptr<DS::InferenceContext> ic(driver->createContext());
         DS::JsonObject args = {
             {"ctx", ic->id()},
@@ -501,8 +510,13 @@ static int cmd_exec(const SCL::ParseResult &result) {
         // TODO: build args
         for (const auto &inference : std::as_const(inferences)) {
             DS::Error error;
+            if (!inference->initialize({}, &error)) {
+                ctx.logger.critical("Could not initialize inference: " + error.message());
+                break;
+            }
             if (!inference->start(args, &error)) {
                 // TODO: error
+                ctx.logger.critical("Could not start inference: " + error.message());
             }
 
             // Wait for finished
