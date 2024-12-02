@@ -49,7 +49,9 @@ namespace dsinfer {
             template <class... Args>
             inline void log(int level, const std::string &format, Args &&...args) {
                 print(level, category, format, args...);
-                std::abort();
+                if (level == Fatal) {
+                    std::abort();
+                }
             }
 
         public:

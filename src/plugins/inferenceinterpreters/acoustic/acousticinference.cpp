@@ -79,7 +79,7 @@ namespace dsinfer {
 
     bool AcousticInference::initialize(const JsonValue &args, Error *error) {
         __stdc_impl_t;
-        if (!args.isObject()) {
+        if (!(args.isUndefined() || args.isNull() || args.isObject())) {
             if (error) {
                 *error = Error(Error::InvalidFormat,
                     "Invalid format of AcousticInference::initialize: json value is not object");
@@ -137,7 +137,8 @@ namespace dsinfer {
         if (!get_input(acousticConfigClass, spec->configuration(), "model", error, model)) {
             return false;
         }
-        if (!impl.session->open(stdc::path::from_utf8(model), JsonObject{{"useCpuHint", impl.useCpuHint}}, error)) {
+        const auto modelPath = spec->path() / stdc::path::from_utf8(model);
+        if (!impl.session->open(modelPath, JsonObject{{"useCpuHint", impl.useCpuHint}}, error)) {
             return false;
         }
 

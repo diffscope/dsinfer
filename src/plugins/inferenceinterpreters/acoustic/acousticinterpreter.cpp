@@ -13,12 +13,14 @@ namespace dsinfer {
     }
 
     bool AcousticInterpreter::validate(const InferenceSpec *spec, std::string *message) const {
-        return false;
+        // TODO: to be implemented
+        return true;
     }
 
     bool AcousticInterpreter::validate(const InferenceSpec *spec, const JsonValue &importOptions,
                                        std::string *message) const {
-        return false;
+        // TODO: to be implemented
+        return true;
     }
 
     Inference *AcousticInterpreter::create(const InferenceSpec *spec, const JsonValue &options,
