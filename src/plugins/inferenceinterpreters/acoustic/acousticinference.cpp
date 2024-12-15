@@ -11,7 +11,6 @@
 #include <dsinfer/inferenceregistry.h>
 #include <dsinfer/contributeregistry.h>
 #include <dsinfer/inferencedriver.h>
-#include <nlohmann/detail/input/binary_reader.hpp>
 #include <stdcorelib/path.h>
 
 #include <stduuid/uuid.h>
@@ -269,11 +268,11 @@ namespace dsinfer {
         inputParams.push_back(dsinterp::parsePhonemeTokens(segment, phonemesMap));
 
         // onnx input value: languages
-        bool useLangId = false;
-        if (const auto it = config.find("useLangId"); it != config.end()) {
-            useLangId = it->second.toBool(false);
+        bool useLanguageId = false;
+        if (const auto it = config.find("useLanguageId"); it != config.end()) {
+            useLanguageId = it->second.toBool(false);
         }
-        if (useLangId) {
+        if (useLanguageId) {
             std::unordered_map<std::string, int64_t> langIdMap;
             if (!readFileOrObject("languages", langIdMap, error)) {
                 return false;
@@ -375,7 +374,7 @@ namespace dsinfer {
                 speakerPairs.reserve(object.size());
                 speakers.reserve(object.size());
                 for (const auto &[key, val]: object) {
-                    speakerPairs.emplace_back(key, stdc::path::from_utf8(val.toString()));
+                    speakerPairs.emplace_back(key, spec->path() / stdc::path::from_utf8(val.toString()));
                     speakers.emplace_back(key);
                 }
                 dsinterp::SpeakerEmbed spkEmb;

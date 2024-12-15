@@ -42,7 +42,7 @@ namespace dsinfer::dsinterp {
             return false;
         }
         note.cents = json["cents"].toInt(); // can be omitted
-        if (!get_input<int>("Note", json, "key", error, note.key)) {
+        if (!get_input<double>("Note", json, "duration", error, note.duration)) {
             return false;
         }
         const std::string glide = json["glide"].toString(); // can be omitted;
