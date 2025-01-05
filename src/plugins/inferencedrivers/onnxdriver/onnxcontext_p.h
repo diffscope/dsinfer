@@ -1,6 +1,7 @@
 #ifndef ONNXCONTEXT_P_H
 #define ONNXCONTEXT_P_H
 
+#include <mutex>
 #include <shared_mutex>
 
 #include "onnxcontext.h"
