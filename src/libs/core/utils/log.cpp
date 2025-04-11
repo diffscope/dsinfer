@@ -12,13 +12,13 @@ namespace dsinfer {
 
         console::color color;
         if (level <= Log::Information) {
-            color = console::plain;
+            color = console::nocolor;
         } else if (level <= Log::Warning) {
             color = console::yellow;
         } else {
             color = console::red;
         }
-        console::vprintf(color, console::plain, fmt, args);
+        console::vprintf(console::nostyle, color, console::nocolor, fmt, args);
     }
 
     static int m_level = Log::Information;

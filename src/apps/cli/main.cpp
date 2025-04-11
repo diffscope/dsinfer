@@ -51,7 +51,7 @@ static void log_report_callback(int level, const char *category, const char *fmt
 
     int foreground, background;
     if (level <= Log::Verbose) {
-        foreground = console::plain;
+        foreground = console::nocolor;
         background = console::white;
     } else if (level <= Log::Information) {
         foreground = stdc::console::blue | stdc::console::intensified;
@@ -87,10 +87,11 @@ static void log_report_callback(int level, const char *category, const char *fmt
         default:
             break;
     }
-    console::printf(foreground, console::plain, "[%s] %-15s", dts.c_str(), category);
-    console::printf(console::black, background, " %s ", sig);
-    console::printf(console::plain, console::plain, "  ");
-    console::vprintf(foreground, console::plain, fmt, args);
+    console::printf(console::nostyle, foreground, console::nocolor, "[%s] %-15s", dts.c_str(),
+                    category);
+    console::printf(console::nostyle, console::black, background, " %s ", sig);
+    console::printf(console::nostyle, console::nocolor, console::nocolor, "  ");
+    console::vprintf(console::nostyle, foreground, console::nocolor, fmt, args);
 }
 
 struct Context {
@@ -142,19 +143,22 @@ struct Context {
     template <class... Args>
     static inline void info(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::plain, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::nocolor, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::yellow, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::yellow, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::red, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::red, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 };
 
@@ -377,11 +381,13 @@ static int cmd_list(const SCL::ParseResult &result) {
 }
 
 static int cmd_install(const SCL::ParseResult &result) {
+    // TODO
     updateLogger(result);
     return 0;
 }
 
 static int cmd_remove(const SCL::ParseResult &result) {
+    // TODO
     updateLogger(result);
     return 0;
 }

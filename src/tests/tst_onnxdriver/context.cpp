@@ -22,7 +22,7 @@ void log_report_callback(int level, const char *category, const char *fmt, va_li
 
     int foreground, background;
     if (level <= Log::Verbose) {
-        foreground = console::plain;
+        foreground = console::nocolor;
         background = console::white;
     } else if (level <= Log::Information) {
         foreground = stdc::console::blue | stdc::console::intensified;
@@ -58,10 +58,10 @@ void log_report_callback(int level, const char *category, const char *fmt, va_li
         default:
             break;
     }
-    console::printf(foreground, console::plain, "[%s] %-15s", dts.c_str(), category);
-    console::printf(console::black, background, " %s ", sig);
-    console::printf(console::plain, console::plain, "  ");
-    console::vprintf(foreground, console::plain, fmt, args);
+    console::printf(console::nostyle, foreground, console::nocolor, "[%s] %-15s", dts.c_str(), category);
+    console::printf(console::nostyle, console::black, background, " %s ", sig);
+    console::printf(console::nostyle, console::nocolor, console::nocolor, "  ");
+    console::vprintf(console::nostyle, foreground, console::nocolor, fmt, args);
 }
 
 Context::Context() : logger("onnxtest") {

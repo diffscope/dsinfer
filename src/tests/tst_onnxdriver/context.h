@@ -24,19 +24,22 @@ struct Context {
     template <class... Args>
     static inline void info(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::plain, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::nocolor, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void warning(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::yellow, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::yellow, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 
     template <class... Args>
     static inline void critical(const std::string &format, Args &&...args) {
         using namespace stdc;
-        console::printf(console::red, console::plain, "%s\n", formatN(format, args...).c_str());
+        console::printf(console::nostyle, console::red, console::nocolor, "%s\n",
+                        formatN(format, args...).c_str());
     }
 };
 
